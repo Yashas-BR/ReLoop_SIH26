@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 
 export default function MatchRecyclers({ lot, onHandover }) {
+  const { t } = useTranslation();
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -43,8 +45,7 @@ export default function MatchRecyclers({ lot, onHandover }) {
     return (
       <div className="p-12 bg-slate-50 text-center rounded-2xl border border-slate-200">
         <div className="text-4xl mb-4">🏭</div>
-        <h3 className="text-lg font-bold text-slate-800 mb-2">No Authorized Recyclers Found</h3>
-        <p className="text-slate-600 text-sm">No authorized recyclers in your area accept this material right now.</p>
+        <h3 className="text-lg font-bold text-slate-800 mb-2">{t('match.noMatches')}</h3>
       </div>
     );
   }
@@ -54,9 +55,12 @@ export default function MatchRecyclers({ lot, onHandover }) {
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-extrabold text-slate-900">🏆 Matched Authorized Recyclers</h2>
+          <h2 className="text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+            <span>🏆</span>
+            <span>{t('match.title')}</span>
+          </h2>
           <p className="text-slate-500 text-sm mt-1">
-            Ranked by distance (55%) + offered rate (45%) — Haversine-based real calculation
+            {t('match.subtitle')}
           </p>
         </div>
         <div className="text-right text-xs text-slate-400 font-mono bg-slate-100 px-3 py-2 rounded-lg">
@@ -66,11 +70,7 @@ export default function MatchRecyclers({ lot, onHandover }) {
         </div>
       </div>
 
-      {/* Scoring explanation */}
-      <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900">
-        <span className="font-bold">Scoring formula:</span> score = (0.55 × distance_score) + (0.45 × rate_score) — closer and higher-paying recyclers rank first. Only KSPCB/CPCB authorized recyclers are shown.
-      </div>
-
+      {/* Recyclers List */}
       <div className="space-y-4">
         {result.matches.map((recycler, index) => (
           <div
@@ -81,7 +81,7 @@ export default function MatchRecyclers({ lot, onHandover }) {
           >
             {index === 0 && (
               <div className="absolute -top-3 left-5 px-3 py-1 bg-emerald-600 text-white text-xs font-bold rounded-full shadow">
-                ⭐ BEST MATCH (#1)
+                ⭐ {t('match.bestMatch', { score: recycler.match_score })}
               </div>
             )}
 
@@ -98,58 +98,38 @@ export default function MatchRecyclers({ lot, onHandover }) {
                   )}
                 </div>
 
-                <div className="text-sm text-slate-500 mb-3">
+                <p className="text-xs text-slate-500 mb-2">
                   📍 {recycler.address}, {recycler.city}
-                </div>
+                </p>
 
-                {/* Score breakdown */}
-                <div className="flex flex-wrap gap-3 text-xs">
-                  <span className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full font-mono font-bold">
-                    📏 {recycler.distance_km} km away
+                <div className="flex flex-wrap gap-4 text-xs font-medium text-slate-600">
+                  <span className="flex items-center gap-1 font-mono text-slate-700">
+                    📏 <strong>{t('match.distanceAway', { distance: recycler.distance_km })}</strong>
                   </span>
-                  <span className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full font-mono font-bold">
-                    ⭐ Rating: {recycler.rating}
+                  <span className="flex items-center gap-1">
+                    🏷️ {t('match.offeredRate')}: <strong className="text-slate-800 font-mono">{recycler.offered_rate_modifier}x</strong>
                   </span>
-                  <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full font-bold">
-                    Match Score: {recycler.match_score}/100
+                  <span className="flex items-center gap-1">
+                    ⭐ <strong className="text-slate-800">{recycler.rating} / 5.0</strong>
                   </span>
-                </div>
-
-                {/* Score breakdown detail */}
-                <div className="mt-2 text-xs text-slate-400 font-mono">
-                  Normalized Dist Score: {recycler.score_breakdown.normalized_dist_score} | Rate Score: {recycler.score_breakdown.normalized_rate_score}
-                </div>
-
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {recycler.materials_accepted.map((mat) => (
-                    <span key={mat} className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-md font-medium">
-                      {mat}
-                    </span>
-                  ))}
                 </div>
               </div>
 
-              {/* Right: price + action */}
-              <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6 min-w-[170px]">
-                <div className="text-left md:text-right mb-0 md:mb-4">
-                  <p className="text-xs text-slate-500 font-medium">Offered for this lot</p>
-                  <p className="text-2xl font-black text-slate-900">
-                    ₹{recycler.offered_price.toLocaleString('en-IN')}
-                  </p>
-                  <p className="text-xs text-slate-400 font-mono">
-                    rate modifier: {recycler.offered_rate_modifier}×
+              {/* Right: Payout + Action */}
+              <div className="flex flex-row md:flex-col items-center md:items-end justify-between gap-3 border-t md:border-t-0 pt-3 md:pt-0">
+                <div className="text-left md:text-right">
+                  <p className="text-xs text-slate-400 font-medium">{t('match.offeredTotal')}</p>
+                  <p className="text-2xl font-black text-emerald-600 font-mono">
+                    ₹{Number(recycler.offered_price).toLocaleString('en-IN')}
                   </p>
                 </div>
 
                 <button
                   onClick={() => onHandover(recycler)}
-                  className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 ${
-                    index === 0
-                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-200'
-                      : 'bg-slate-900 hover:bg-emerald-700 text-white'
-                  }`}
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer"
                 >
-                  Select &amp; Handover →
+                  <span>🤝</span>
+                  <span>{t('match.handoverBtn')}</span>
                 </button>
               </div>
             </div>

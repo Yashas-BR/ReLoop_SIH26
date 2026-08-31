@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import MatchRecyclers from './MatchRecyclers';
 import HandoverConfirm from './HandoverConfirm';
 
 // ── Live DB Status Poller ─────────────────────────────────────────────────────
 function HandoverPendingReceipt({ transaction, lotId, onViewAllLots }) {
+  const { t } = useTranslation();
   const [traceStatus, setTraceStatus] = useState(null);
   const [checking, setChecking] = useState(false);
   const [lastChecked, setLastChecked] = useState(null);
@@ -22,7 +24,6 @@ function HandoverPendingReceipt({ transaction, lotId, onViewAllLots }) {
     }
   }, [lotId]);
 
-  // Check once on mount
   useEffect(() => { checkStatus(); }, [checkStatus]);
 
   const isConfirmed = traceStatus?.status === 'recycler_confirmed';
@@ -43,7 +44,7 @@ function HandoverPendingReceipt({ transaction, lotId, onViewAllLots }) {
         <h3 className={`text-2xl font-bold mb-2 ${
           isConfirmed ? 'text-emerald-900' : 'text-amber-900'
         }`}>
-          {isConfirmed ? 'Handover Complete!' : 'Handover Initiated — Awaiting Recycler'}
+          {isConfirmed ? t('receipt.completedTitle') : t('receipt.awaitingRecycler')}
         </h3>
         <p className={`text-sm mb-1 ${
           isConfirmed ? 'text-emerald-700' : 'text-amber-700'
@@ -61,11 +62,11 @@ function HandoverPendingReceipt({ transaction, lotId, onViewAllLots }) {
           <button
             onClick={checkStatus}
             disabled={checking}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors disabled:opacity-60"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors disabled:opacity-60 cursor-pointer"
           >
             {checking
               ? <><span className="w-3 h-3 border-2 border-slate-500 border-t-transparent rounded-full animate-spin"></span> Checking DB…</>
-              : '↻ Refresh Status from DB'
+              : `↻ ${t('receipt.refreshBtn')}`
             }
           </button>
         </div>
@@ -81,7 +82,7 @@ function HandoverPendingReceipt({ transaction, lotId, onViewAllLots }) {
           </div>
           <div>
             <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Amount</p>
-            <p className="font-bold text-slate-900">₹{Number(transaction.amount).toLocaleString('en-IN')}</p>
+            <p className="font-bold text-slate-900 font-mono">₹{Number(transaction.amount).toLocaleString('en-IN')}</p>
           </div>
           <div>
             <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">GPS Captured</p>
@@ -126,9 +127,9 @@ function HandoverPendingReceipt({ transaction, lotId, onViewAllLots }) {
       <div className="flex gap-3">
         <button
           onClick={onViewAllLots}
-          className="flex-1 px-6 py-3 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-700 transition-colors"
+          className="flex-1 px-6 py-3 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-700 transition-colors cursor-pointer text-sm"
         >
-          View All Lots
+          {t('receipt.viewAll')}
         </button>
       </div>
     </div>
@@ -136,6 +137,7 @@ function HandoverPendingReceipt({ transaction, lotId, onViewAllLots }) {
 }
 
 export default function LotConfirmation({ lotId, onLogAnother, onViewAllLots }) {
+  const { t } = useTranslation();
   const [lot, setLot] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -149,7 +151,6 @@ export default function LotConfirmation({ lotId, onLogAnother, onViewAllLots }) 
       if (!lotId) return;
       setLoading(true);
       try {
-        // Genuine GET request to server to fetch actual saved row from SQLite
         const res = await axios.get(`/api/lots/${lotId}`);
         if (res.data.status === 'ok') {
           setLot(res.data.data);
@@ -183,7 +184,7 @@ export default function LotConfirmation({ lotId, onLogAnother, onViewAllLots }) 
           <p className="text-sm text-slate-400">{error || 'Lot record could not be retrieved.'}</p>
           <button
             onClick={onLogAnother}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold"
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold cursor-pointer"
           >
             Return to Form
           </button>
@@ -205,15 +206,15 @@ export default function LotConfirmation({ lotId, onLogAnother, onViewAllLots }) 
           Real Database Round-Trip Verified
         </span>
         <h1 className="text-2xl sm:text-3xl font-black text-white font-['Outfit']">
-          Material Lot Successfully Logged!
+          {t('receipt.successTitle')}
         </h1>
         <p className="text-slate-300 text-sm max-w-md mx-auto mt-2">
-          This lot has been assigned a unique immutable reference ID and recorded in the SQLite database with real-time fair valuation.
+          {t('receipt.successSubtitle')}
         </p>
 
         {/* Lot Reference Tag */}
         <div className="mt-5 inline-flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-slate-950 border border-slate-700 shadow-inner">
-          <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Lot Reference:</span>
+          <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">{t('receipt.lotRef')}:</span>
           <span className="text-base sm:text-lg font-mono font-black text-brand-400 tracking-wider">
             {lot.lot_ref}
           </span>
@@ -295,19 +296,12 @@ export default function LotConfirmation({ lotId, onLogAnother, onViewAllLots }) 
                 <span>Recorded Timestamp:</span>
                 <span className="text-slate-200 font-mono">{lot.created_at}</span>
               </div>
-              {lot.notes && (
-                <div className="flex justify-between">
-                  <span>Notes:</span>
-                  <span className="text-slate-300 italic">{lot.notes}</span>
-                </div>
-              )}
             </div>
           </div>
         </div>
 
         {/* Right Col: Photo Proof & Action Steps (5 cols) */}
         <div className="md:col-span-5 space-y-6">
-          {/* Uploaded Photo */}
           <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
               Uploaded Photo Proof
@@ -319,9 +313,6 @@ export default function LotConfirmation({ lotId, onLogAnother, onViewAllLots }) 
                   alt="Saved material lot"
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute bottom-2 right-2 bg-slate-950/80 backdrop-blur-sm px-2 py-1 rounded text-[10px] text-brand-300 font-mono border border-slate-700">
-                  ✓ Verified File
-                </div>
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-slate-800 p-8 text-center bg-slate-950/40">
@@ -338,7 +329,7 @@ export default function LotConfirmation({ lotId, onLogAnother, onViewAllLots }) 
               className="w-full py-3.5 px-4 rounded-xl bg-brand-500 hover:bg-brand-400 text-surface-950 font-bold text-sm transition-all shadow-md shadow-brand-500/20 flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>➕</span>
-              <span>Log Another Material Lot</span>
+              <span>{t('receipt.logAnother')}</span>
             </button>
 
             <button
@@ -346,14 +337,14 @@ export default function LotConfirmation({ lotId, onLogAnother, onViewAllLots }) 
               className="w-full py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition-all border border-slate-700 flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>📋</span>
-              <span>View All Logged Lots in Database</span>
+              <span>{t('receipt.viewAll')}</span>
             </button>
           </div>
         </div>
       </div>
       
       {/* Handover & Matching Section */}
-      <div className="mt-8 border-t border-slate-800 pt-8 bg-white text-slate-900 rounded-3xl overflow-hidden">
+      <div className="mt-8 border-t border-slate-800 pt-8 bg-white text-slate-900 rounded-3xl overflow-hidden shadow-2xl">
           <div className="p-6">
               {!selectedRecycler && !transaction && (
                   <MatchRecyclers 
@@ -380,7 +371,6 @@ export default function LotConfirmation({ lotId, onLogAnother, onViewAllLots }) 
               )}
           </div>
       </div>
-
     </div>
   );
 }

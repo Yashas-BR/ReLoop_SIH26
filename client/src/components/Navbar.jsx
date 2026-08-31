@@ -1,8 +1,18 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function Navbar({ activeTab, setActiveTab, activeCollector, setActiveCollector, collectors = [] }) {
+  const { t, i18n } = useTranslation();
+
+  const handleLanguageChange = (lang) => {
+    i18n.changeLanguage(lang);
+    localStorage.setItem('reloop_lang', lang);
+  };
+
+  const currentLang = i18n.language || 'en';
+
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-md bg-surface-950/80 border-b border-slate-800">
+    <header className="sticky top-0 z-50 backdrop-blur-md bg-surface-950/90 border-b border-slate-800 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Brand */}
@@ -13,14 +23,14 @@ export default function Navbar({ activeTab, setActiveTab, activeCollector, setAc
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xl font-black tracking-tight text-white font-['Outfit']">
-                  Kabadiwala<span className="text-brand-400">Connect</span>
+                  {t('app.title')}<span className="text-brand-400">{t('app.subtitle')}</span>
                 </span>
                 <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-brand-500/10 text-brand-400 border border-brand-500/20 rounded-full">
-                  SIH 2026 Prototype
+                  {t('app.badge')}
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 hidden md:block">
-                Informal E-Waste & Scrap Traceability Network
+                {t('app.tagline')}
               </p>
             </div>
           </div>
@@ -36,7 +46,7 @@ export default function Navbar({ activeTab, setActiveTab, activeCollector, setAc
               }`}
             >
               <span>📦</span>
-              <span>Create Lot</span>
+              <span>{t('nav.createLot')}</span>
             </button>
 
             <button
@@ -48,7 +58,7 @@ export default function Navbar({ activeTab, setActiveTab, activeCollector, setAc
               }`}
             >
               <span>📋</span>
-              <span>Logged Lots</span>
+              <span>{t('nav.myLots')}</span>
             </button>
 
             <button
@@ -60,7 +70,7 @@ export default function Navbar({ activeTab, setActiveTab, activeCollector, setAc
               }`}
             >
               <span>📊</span>
-              <span className="hidden sm:inline">Market</span> Rates
+              <span>{t('nav.marketRates')}</span>
             </button>
 
             <button
@@ -72,7 +82,7 @@ export default function Navbar({ activeTab, setActiveTab, activeCollector, setAc
               }`}
             >
               <span>💰</span>
-              <span>Earnings Ledger</span>
+              <span>{t('nav.ledger')}</span>
             </button>
 
             <button
@@ -84,21 +94,47 @@ export default function Navbar({ activeTab, setActiveTab, activeCollector, setAc
               }`}
             >
               <span>♻️</span>
-              <span className="hidden sm:inline">Recycler</span> Portal
+              <span>{t('nav.recyclerPortal')}</span>
             </button>
           </nav>
 
-          {/* Demo Collector Persona Switcher */}
-          <div className="flex items-center gap-2 border-l border-slate-800 pl-3 sm:pl-4">
-            <div className="hidden lg:block text-right">
-              <p className="text-xs font-semibold text-slate-200">{activeCollector?.name || 'Raju Kabadiwal'}</p>
-              <p className="text-[10px] text-slate-400 flex items-center justify-end gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-brand-400"></span>
-                {activeCollector?.operating_location || 'Bengaluru'}
-              </p>
+          {/* Right Section: Language Switcher + Collector Persona */}
+          <div className="flex items-center gap-3">
+            {/* Real Language Switcher */}
+            <div className="flex items-center bg-slate-900 border border-slate-700/80 rounded-xl p-1 shadow-inner">
+              <span className="text-xs px-2 text-slate-400 font-bold hidden xl:inline">🌐</span>
+              {[
+                { code: 'en', label: 'EN', full: 'English' },
+                { code: 'hi', label: 'हिन्दी', full: 'Hindi' },
+                { code: 'mr', label: 'मराठी', full: 'Marathi' },
+              ].map((lang) => (
+                <button
+                  key={lang.code}
+                  onClick={() => handleLanguageChange(lang.code)}
+                  title={`Switch to ${lang.full}`}
+                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+                    currentLang.startsWith(lang.code)
+                      ? 'bg-brand-500 text-surface-950 shadow-sm font-black'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                  }`}
+                >
+                  {lang.label}
+                </button>
+              ))}
             </div>
-            <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-sm font-bold text-brand-400 shadow-inner">
-              👤
+
+            {/* Collector Persona Switcher */}
+            <div className="hidden lg:flex items-center gap-2 border-l border-slate-800 pl-3">
+              <div className="text-right">
+                <p className="text-xs font-semibold text-slate-200">{activeCollector?.name || 'Raju Kabadiwal'}</p>
+                <p className="text-[10px] text-slate-400 flex items-center justify-end gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand-400"></span>
+                  {activeCollector?.operating_location || 'Bengaluru'}
+                </p>
+              </div>
+              <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-sm font-bold text-brand-400 shadow-inner">
+                👤
+              </div>
             </div>
           </div>
         </div>

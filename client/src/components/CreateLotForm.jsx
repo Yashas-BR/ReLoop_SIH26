@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 
 const CATEGORY_ICONS = {
   'E-Waste': '💻',
@@ -15,6 +16,7 @@ const CATEGORY_ICONS = {
 };
 
 export default function CreateLotForm({ onLotCreated, activeCollector }) {
+  const { t } = useTranslation();
   const [materials, setMaterials] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('E-Waste');
@@ -43,11 +45,9 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
         if (res.data.status === 'ok') {
           setMaterials(res.data.data);
           
-          // Extract unique categories
           const cats = [...new Set(res.data.data.map(m => m.category))];
           setCategories(cats);
 
-          // Default selection to first item in E-Waste or first category
           const defaultMat = res.data.data.find(m => m.category === 'E-Waste') || res.data.data[0];
           if (defaultMat) {
             setSelectedCategory(defaultMat.category);
@@ -62,7 +62,6 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
     loadMaterials();
   }, []);
 
-  // When category changes, auto-select first material in that category
   const filteredMaterials = materials.filter(m => m.category === selectedCategory);
   useEffect(() => {
     if (filteredMaterials.length > 0) {
@@ -75,7 +74,7 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
 
   const selectedMaterial = materials.find(m => m.id === Number(selectedMaterialId));
 
-  // 2. Fetch real live valuation calculation whenever material, weight, or condition changes
+  // 2. Fetch real live valuation calculation
   useEffect(() => {
     let active = true;
     async function fetchEstimate() {
@@ -95,9 +94,7 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
           setValuation(res.data.valuation);
         }
       } catch (err) {
-        if (active) {
-          console.error('Estimate error:', err);
-        }
+        if (active) console.error('Estimate error:', err);
       } finally {
         if (active) setIsValuing(false);
       }
@@ -110,7 +107,6 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
     };
   }, [selectedMaterialId, weightKg, condition, activeCollector]);
 
-  // Handle photo select
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -129,7 +125,12 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // 3. Handle Form Submit (Multipart POST)
+  const addPresetWeight = (amount) => {
+    const current = parseFloat(weightKg) || 0;
+    setWeightKg((current + amount).toFixed(1));
+  };
+
+  // 3. Handle Form Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedMaterialId || !weightKg || Number(weightKg) <= 0) {
@@ -179,15 +180,16 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
           <div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-['Outfit'] flex items-center gap-2.5">
               <span>📦</span>
-              <span>Log Material Lot</span>
+              <span>{t('form.title')}</span>
             </h1>
             <p className="text-slate-400 text-sm mt-1">
-              Record collected e-waste or scrap to discover fair authorized market value and match with verified recyclers.
+              {t('form.subtitle')}
             </p>
           </div>
-          <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse"></span>
-            <span>Live Price Discovery: <strong className="text-brand-400 font-mono">ON</strong></span>
+          {/* Low-literacy quick hint banner */}
+          <div className="flex items-center gap-2 bg-slate-900 border border-brand-500/30 rounded-xl px-3.5 py-2 text-xs text-brand-300 shadow-sm">
+            <span className="text-base">💡</span>
+            <span>{t('form.lowLiteracyTip')}</span>
           </div>
         </div>
       </div>
@@ -204,33 +206,35 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
           {/* Left Column: Form Controls (7 cols) */}
           <div className="lg:col-span-7 space-y-6">
             
-            {/* Step 1: Category Picker */}
+            {/* Step 1: Category Picker (High-visual icon grid for low-literacy accessibility) */}
             <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur-sm">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-                1. Select Material Category
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
+                <span>1️⃣</span>
+                <span>{t('form.selectCategory')}</span>
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                 {categories.map(cat => (
                   <button
                     key={cat}
                     type="button"
                     onClick={() => setSelectedCategory(cat)}
-                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-semibold transition-all text-left ${
+                    className={`flex items-center gap-2.5 px-3.5 py-3 rounded-xl border text-xs font-bold transition-all text-left cursor-pointer ${
                       selectedCategory === cat
-                        ? 'bg-brand-500/15 border-brand-500/60 text-brand-300 shadow-sm shadow-brand-500/20'
-                        : 'bg-slate-950/40 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white'
+                        ? 'bg-brand-500/20 border-brand-500 text-brand-300 shadow-md shadow-brand-500/20 ring-1 ring-brand-400'
+                        : 'bg-slate-950/50 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white'
                     }`}
                   >
-                    <span className="text-base">{CATEGORY_ICONS[cat] || '♻️'}</span>
-                    <span className="truncate">{cat}</span>
+                    <span className="text-2xl">{CATEGORY_ICONS[cat] || '♻️'}</span>
+                    <span className="truncate leading-snug">{cat}</span>
                   </button>
                 ))}
               </div>
 
               {/* Sub-Category Dropdown */}
               <div className="mt-4">
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Specific Material / Item Type:
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                  <span>🏷️</span>
+                  <span>{t('form.selectItem')}:</span>
                 </label>
                 <select
                   value={selectedMaterialId}
@@ -239,317 +243,234 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
                 >
                   {filteredMaterials.map(m => (
                     <option key={m.id} value={m.id}>
-                      {m.sub_category} ({m.unit ? `INR/${m.unit}` : 'kg'})
+                      {m.sub_category} ({m.unit ? `₹/${m.unit}` : 'kg'})
                     </option>
                   ))}
                 </select>
-
-                {selectedMaterial && (
-                  <div className="mt-3 p-3 bg-slate-950/70 border border-slate-800/80 rounded-xl text-xs space-y-1.5">
-                    <p className="text-slate-400">{selectedMaterial.description}</p>
-                    {selectedMaterial.recoverable_materials?.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                        <span className="text-[10px] uppercase font-bold text-amber-400/90 tracking-wide">
-                          Recoverable Critical Minerals:
-                        </span>
-                        {selectedMaterial.recoverable_materials.map((rm) => (
-                          <span
-                            key={rm}
-                            className="px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-300 font-mono text-[11px]"
-                          >
-                            ✦ {rm}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
 
-            {/* Step 2: Weight & Source */}
-            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur-sm space-y-4">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">
-                2. Weight & Quantity
+            {/* Step 2: Weight & Condition Input */}
+            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-2">
+                <span>2️⃣</span>
+                <span>{t('form.weight')}</span>
               </label>
 
-              <div>
-                <div className="flex items-center justify-between text-xs text-slate-300 mb-1.5">
-                  <span className="font-semibold">Approximate Weight (kg)</span>
-                  <span className="text-slate-500">Preset buttons:</span>
+              {/* Weight Input + Quick Preset Buttons */}
+              <div className="space-y-2">
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0.1"
+                    value={weightKg}
+                    onChange={(e) => setWeightKg(e.target.value)}
+                    placeholder={t('form.weightPlaceholder')}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-lg font-mono font-bold text-white focus:outline-none focus:border-brand-400 transition-colors pr-12"
+                  />
+                  <span className="absolute right-4 top-3.5 text-slate-400 font-mono font-bold text-sm">
+                    kg
+                  </span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="relative flex-1">
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="0.1"
-                      value={weightKg}
-                      onChange={(e) => setWeightKg(e.target.value)}
-                      placeholder="e.g. 15.0"
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-base font-bold text-white focus:outline-none focus:border-brand-400 transition-colors font-mono"
-                      required
-                    />
-                    <span className="absolute right-3.5 top-2.5 text-slate-500 font-mono text-sm">kg</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    {[2, 5, 10, 25, 50].map((w) => (
-                      <button
-                        key={w}
-                        type="button"
-                        onClick={() => setWeightKg(String(w))}
-                        className={`px-2.5 py-2 rounded-lg border text-xs font-mono font-medium transition-all ${
-                          Number(weightKg) === w
-                            ? 'bg-brand-500 text-surface-950 border-brand-400 font-bold'
-                            : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:bg-slate-800'
-                        }`}
-                      >
-                        {w}k
-                      </button>
-                    ))}
-                  </div>
+
+                {/* Visual Quick Add Buttons for Ease of Use */}
+                <div className="flex items-center gap-2 pt-1">
+                  <span className="text-[11px] text-slate-500 font-semibold uppercase">Quick Add:</span>
+                  {[
+                    { label: '+5 kg', val: 5 },
+                    { label: '+10 kg', val: 10 },
+                    { label: '+25 kg', val: 25 },
+                    { label: '+50 kg', val: 50 },
+                  ].map((btn) => (
+                    <button
+                      key={btn.label}
+                      type="button"
+                      onClick={() => addPresetWeight(btn.val)}
+                      className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-mono font-bold border border-slate-700/80 transition-all cursor-pointer"
+                    >
+                      {btn.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Condition Selector */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-2">
-                  Material Condition (Affects Payout Rate):
+              {/* Condition Options */}
+              <div className="pt-2">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-2">
+                  <span>3️⃣</span>
+                  <span>{t('form.condition')}</span>
                 </label>
-                <div className="grid grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-3 gap-2">
                   {[
-                    { id: 'good', label: 'Good / Intact', bonus: '+5% Fair Bonus', desc: 'Clean, sorted, undamaged', border: 'border-emerald-500/40', text: 'text-emerald-400' },
-                    { id: 'fair', label: 'Fair / Standard', bonus: 'Standard 100%', desc: 'Normal wear, complete unit', border: 'border-blue-500/40', text: 'text-blue-400' },
-                    { id: 'poor', label: 'Poor / Damaged', bonus: '-15% Discount', desc: 'Stripped, burnt, mixed', border: 'border-rose-500/40', text: 'text-rose-400' },
+                    { id: 'good', label: t('conditions.good'), icon: '✨' },
+                    { id: 'fair', label: t('conditions.fair'), icon: '⚖️' },
+                    { id: 'poor', label: t('conditions.poor'), icon: '⚠️' },
                   ].map((c) => (
                     <button
                       key={c.id}
                       type="button"
                       onClick={() => setCondition(c.id)}
-                      className={`p-3 rounded-xl border text-left transition-all ${
+                      className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center justify-center gap-1.5 transition-all text-center cursor-pointer ${
                         condition === c.id
-                          ? `bg-slate-800/90 ${c.border} ring-1 ring-brand-400`
-                          : 'bg-slate-950/40 border-slate-800 hover:border-slate-700'
+                          ? 'bg-brand-500/20 border-brand-500 text-brand-300 shadow-sm ring-1 ring-brand-400'
+                          : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:text-slate-200'
                       }`}
                     >
-                      <p className="text-xs font-bold text-white">{c.label}</p>
-                      <p className={`text-[10px] font-semibold mt-0.5 ${c.text}`}>{c.bonus}</p>
-                      <p className="text-[10px] text-slate-500 mt-1 leading-tight">{c.desc}</p>
+                      <span className="text-xl">{c.icon}</span>
+                      <span className="leading-tight text-[11px]">{c.label}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* Source Type */}
-              <div className="pt-1">
+              <div className="pt-2">
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Collection Source:
+                  {t('form.sourceType')}:
                 </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { id: 'household', label: '🏠 Household', desc: 'Residential pickups' },
-                    { id: 'industrial', label: '🏭 Industrial', desc: 'Factory/Workshop scrap' },
-                    { id: 'institutional', label: '🏢 Institutional', desc: 'Offices, IT parks, schools' },
-                  ].map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => setSourceType(s.id)}
-                      className={`px-3 py-2 rounded-xl border text-xs font-semibold text-left transition-all ${
-                        sourceType === s.id
-                          ? 'bg-slate-800 border-brand-500/60 text-white'
-                          : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      <p className="font-semibold text-xs">{s.label}</p>
-                    </button>
-                  ))}
-                </div>
+                <select
+                  value={sourceType}
+                  onChange={(e) => setSourceType(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-brand-400"
+                >
+                  <option value="household">{t('sources.household')}</option>
+                  <option value="industrial">{t('sources.industrial')}</option>
+                  <option value="institutional">{t('sources.institutional')}</option>
+                </select>
               </div>
-            </div>
 
-            {/* Step 3: Photo Upload & Location */}
-            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur-sm space-y-4">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">
-                3. Photo Verification & Pickup Location
-              </label>
-
-              {/* File upload with drag & preview */}
-              <div>
+              {/* Pickup Address */}
+              <div className="pt-2">
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                  <span>📍</span>
+                  <span>{t('form.pickupLocation')}:</span>
+                </label>
                 <input
-                  type="file"
-                  ref={fileInputRef}
-                  accept="image/*"
-                  onChange={handlePhotoChange}
-                  className="hidden"
+                  type="text"
+                  value={pickupAddress}
+                  onChange={(e) => setPickupAddress(e.target.value)}
+                  placeholder="e.g. Peenya Industrial Area, Bengaluru"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-brand-400"
                 />
-
-                {!photoPreview ? (
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-slate-700 hover:border-brand-500/60 rounded-xl p-5 text-center cursor-pointer transition-all bg-slate-950/30 hover:bg-slate-950/60 group"
-                  >
-                    <div className="w-12 h-12 rounded-full bg-slate-800 group-hover:bg-brand-500/20 text-slate-400 group-hover:text-brand-400 flex items-center justify-center mx-auto mb-2 transition-colors text-2xl">
-                      📷
-                    </div>
-                    <p className="text-sm font-semibold text-slate-200">
-                      Click to upload photo of material lot
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Required for digital traceability certificate & recycler verification (PNG, JPG, max 10MB)
-                    </p>
-                  </div>
-                ) : (
-                  <div className="relative rounded-xl overflow-hidden border border-slate-700 bg-slate-950">
-                    <img
-                      src={photoPreview}
-                      alt="Lot preview"
-                      className="w-full h-48 object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent flex items-end justify-between p-3">
-                      <span className="text-xs text-slate-200 font-mono bg-slate-900/80 px-2 py-1 rounded-md border border-slate-700">
-                        {photoFile?.name} ({(photoFile?.size / 1024).toFixed(0)} KB)
-                      </span>
-                      <button
-                        type="button"
-                        onClick={clearPhoto}
-                        className="px-2.5 py-1 bg-red-500/80 hover:bg-red-500 text-white rounded-md text-xs font-semibold transition-colors"
-                      >
-                        Remove Photo
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
 
-              {/* Pickup Address & Notes */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Pickup Location / Area:
-                  </label>
-                  <input
-                    type="text"
-                    value={pickupAddress}
-                    onChange={(e) => setPickupAddress(e.target.value)}
-                    placeholder="e.g. Peenya 2nd Stage, Bengaluru"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-400"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Additional Notes:
-                  </label>
-                  <input
-                    type="text"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="e.g. 5 laptops without charger, sorted"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-400"
-                  />
-                </div>
+              {/* Notes */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  {t('form.notes')}:
+                </label>
+                <input
+                  type="text"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="e.g. Dell Laptops x 4 with batteries removed"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-brand-400"
+                />
               </div>
             </div>
           </div>
 
-          {/* Right Column: Real-Time Valuation Breakdown & Submit Card (5 cols) */}
+          {/* Right Column: Live Fair Valuation Card & Photo Proof (5 cols) */}
           <div className="lg:col-span-5 space-y-6">
-            <div className="sticky top-20 bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-5">
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
+            {/* Live Pricing / Valuation Card */}
+            <div className="bg-gradient-to-br from-slate-900 via-surface-900 to-slate-900 border-2 border-brand-500/40 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">💰</span>
-                  <h2 className="text-base font-bold text-white font-['Outfit']">
-                    Real-Time Fair Market Valuation
-                  </h2>
+                  <span className="text-2xl">💰</span>
+                  <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-300">
+                    {t('form.estimatedValue')}
+                  </h3>
                 </div>
                 {isValuing && (
-                  <div className="flex items-center gap-1 text-[11px] text-brand-400">
-                    <span className="w-2 h-2 rounded-full bg-brand-400 animate-ping"></span>
-                    <span>Updating…</span>
-                  </div>
+                  <span className="w-4 h-4 border-2 border-brand-400 border-t-transparent rounded-full animate-spin"></span>
                 )}
               </div>
 
-              {/* Primary Value Display */}
-              <div className="bg-slate-950/80 border border-brand-500/30 rounded-2xl p-5 text-center relative overflow-hidden">
-                <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-brand-500 via-emerald-400 to-brand-500"></div>
-                <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">
-                  Estimated Authorized Recycler Payout
-                </p>
-                <div className="text-4xl sm:text-5xl font-black text-brand-300 font-mono tracking-tight my-2">
-                  ₹{valuation?.total_estimated_value ? valuation.total_estimated_value.toLocaleString('en-IN') : '0'}
+              {/* Big Price Display */}
+              <div className="my-3">
+                <div className="text-4xl sm:text-5xl font-black text-brand-300 font-mono tracking-tight">
+                  {valuation ? `₹${Number(valuation.total_estimated_value).toLocaleString('en-IN')}` : '₹—'}
                 </div>
-                <p className="text-xs text-slate-400 font-mono">
-                  Confidence Range: <span className="text-white font-semibold">₹{valuation?.estimated_range?.min?.toLocaleString('en-IN') || 0}</span> – <span className="text-white font-semibold">₹{valuation?.estimated_range?.max?.toLocaleString('en-IN') || 0}</span>
+                <p className="text-xs text-slate-400 mt-1">
+                  Guaranteed transparent minimum benchmark
                 </p>
               </div>
 
-              {/* Breakdown Table */}
-              <div className="space-y-2.5 text-xs">
-                <div className="flex justify-between py-1.5 border-b border-slate-800 text-slate-300">
-                  <span className="text-slate-400">Selected Material:</span>
-                  <span className="font-semibold text-white">{selectedMaterial?.sub_category || '—'}</span>
+              {/* Breakdown Grid */}
+              {valuation && (
+                <div className="mt-5 pt-4 border-t border-slate-800/80 space-y-2.5 text-xs">
+                  <div className="flex justify-between text-slate-300">
+                    <span className="text-slate-400">{t('form.marketPrice')}:</span>
+                    <span className="font-mono font-bold">₹{valuation.avg_buying_price_7d}/kg</span>
+                  </div>
+                  <div className="flex justify-between text-slate-300">
+                    <span className="text-slate-400">Condition Multiplier:</span>
+                    <span className="font-mono font-bold">{valuation.condition_multiplier}x</span>
+                  </div>
+                  <div className="flex justify-between text-slate-300">
+                    <span className="text-slate-400">{t('form.effectiveRate')}:</span>
+                    <span className="font-mono font-bold text-brand-400">₹{valuation.effective_rate_per_kg}/kg</span>
+                  </div>
+                  <div className="flex justify-between text-slate-300">
+                    <span className="text-slate-400">Net Weight:</span>
+                    <span className="font-mono font-bold">{valuation.weight_kg} kg</span>
+                  </div>
                 </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-800 text-slate-300">
-                  <span className="text-slate-400">Logged Net Weight:</span>
-                  <span className="font-mono font-semibold text-white">{weightKg || 0} kg</span>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-800 text-slate-300">
-                  <span className="text-slate-400">7-Day Market Average:</span>
-                  <span className="font-mono font-semibold text-slate-200">
-                    ₹{valuation?.avg_buying_price_7d || 0}/kg
-                  </span>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-800 text-slate-300">
-                  <span className="text-slate-400">Condition Adjustment:</span>
-                  <span className={`font-mono font-semibold ${
-                    condition === 'good' ? 'text-emerald-400' : condition === 'poor' ? 'text-rose-400' : 'text-slate-300'
-                  }`}>
-                    {valuation?.condition_multiplier ? `${(valuation.condition_multiplier * 100).toFixed(0)}%` : '100%'}
-                  </span>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-800 text-slate-300">
-                  <span className="text-slate-400">Effective Rate Applied:</span>
-                  <span className="font-mono font-bold text-brand-400">
-                    ₹{valuation?.effective_rate_per_kg || 0}/kg
-                  </span>
-                </div>
-                <div className="flex justify-between py-1.5 text-slate-300">
-                  <span className="text-slate-400">Price Trend:</span>
-                  <span className={`font-semibold flex items-center gap-1 ${
-                    valuation?.price_trend === 'rising' ? 'text-emerald-400' : valuation?.price_trend === 'falling' ? 'text-rose-400' : 'text-slate-300'
-                  }`}>
-                    {valuation?.price_trend === 'rising' ? '📈 Rising (+3%)' : valuation?.price_trend === 'falling' ? '📉 Falling (-3%)' : '➡️ Stable'}
-                  </span>
-                </div>
-              </div>
+              )}
 
-              {/* Informative Comparison Box: Informal Middleman vs Authorized */}
-              <div className="bg-amber-950/30 border border-amber-500/20 rounded-xl p-3.5 text-xs text-amber-200/90 space-y-1">
-                <p className="font-bold flex items-center gap-1.5 text-amber-300">
-                  <span>💡</span>
-                  <span>Why Authorized Recyclers?</span>
-                </p>
-                <p className="text-[11px] leading-relaxed text-slate-300">
-                  Informal local scrap yards typically offer ~30–40% below fair market value for e-waste (₹{Math.round((valuation?.total_estimated_value || 0) * 0.65).toLocaleString('en-IN')}). By logging here, you connect directly with CPCB/KSPCB authorized recyclers.
-                </p>
+              {/* Photo Proof Box */}
+              <div className="mt-6 pt-5 border-t border-slate-800">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2 flex items-center justify-between">
+                  <span>📸 {t('form.photoProof')}</span>
+                  {photoPreview && (
+                    <button
+                      type="button"
+                      onClick={clearPhoto}
+                      className="text-[11px] text-red-400 hover:underline cursor-pointer"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </label>
+
+                {photoPreview ? (
+                  <div className="rounded-xl overflow-hidden border border-slate-700 aspect-video relative group">
+                    <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-slate-700 hover:border-brand-400 rounded-xl p-4 text-center cursor-pointer transition-colors bg-slate-950/40"
+                  >
+                    <span className="text-2xl">📷</span>
+                    <p className="text-xs text-slate-400 mt-1">Tap to capture or upload photo</p>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handlePhotoChange}
+                  accept="image/*"
+                  className="hidden"
+                />
               </div>
 
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={submitting || !selectedMaterialId || !weightKg || Number(weightKg) <= 0}
-                className="w-full py-4 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 text-surface-950 font-extrabold text-base transition-all shadow-lg shadow-brand-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                disabled={submitting || !valuation}
+                className="w-full mt-6 py-4 px-6 rounded-2xl bg-brand-500 hover:bg-brand-400 text-surface-950 font-black text-sm uppercase tracking-wider transition-all shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? (
                   <>
-                    <span className="w-5 h-5 border-2 border-surface-950 border-t-transparent rounded-full animate-spin"></span>
-                    <span>Saving to Database…</span>
+                    <span className="w-4 h-4 border-2 border-surface-950 border-t-transparent rounded-full animate-spin"></span>
+                    <span>{t('form.submitting')}</span>
                   </>
                 ) : (
                   <>
                     <span>✓</span>
-                    <span>Save Lot & Generate Handover Record</span>
+                    <span>{t('form.submit')}</span>
                   </>
                 )}
               </button>

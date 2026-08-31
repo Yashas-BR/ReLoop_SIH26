@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { announcer } from '../utils/speech';
 import PriceChartModal from './PriceChartModal';
 
@@ -48,7 +49,6 @@ function Sparkline({ points = [], color = '#22c55e' }) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      {/* End point dot */}
       {values.length > 0 && (
         <circle
           cx={coords[coords.length - 1].split(',')[0]}
@@ -62,6 +62,7 @@ function Sparkline({ points = [], color = '#22c55e' }) {
 }
 
 export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
+  const { t, i18n } = useTranslation();
   const [prices, setPrices] = useState([]);
   const [locations, setLocations] = useState(['Bengaluru', 'Mumbai', 'Chennai']);
   const [selectedLocation, setSelectedLocation] = useState('Bengaluru');
@@ -73,7 +74,7 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
 
   // Audio Speech state
   const [speakingId, setSpeakingId] = useState(null);
-  const [speechLanguage, setSpeechLanguage] = useState('en-IN'); // 'en-IN' | 'hi-IN'
+  const speechLanguage = i18n.language === 'mr' ? 'mr-IN' : i18n.language === 'hi' ? 'hi-IN' : 'en-IN';
 
   // Modal Detailed Trend Chart state
   const [selectedMaterialForChart, setSelectedMaterialForChart] = useState(null);
@@ -99,26 +100,24 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
     loadMeta();
   }, []);
 
-  // 2. Fetch live prices from SQLite on load or whenever location/category changes
+  // 2. Fetch live prices from DB
   const fetchLivePrices = async () => {
     setLoading(true);
     setError(null);
     try {
-      let url = `/api/prices?location=${encodeURIComponent(selectedLocation)}`;
-      if (selectedCategory && selectedCategory !== 'All') {
-        url += `&category=${encodeURIComponent(selectedCategory)}`;
-      }
-      if (search) {
-        url += `&search=${encodeURIComponent(search)}`;
-      }
-
-      const res = await axios.get(url);
+      const res = await axios.get('/api/prices', {
+        params: {
+          location: selectedLocation,
+          category: selectedCategory !== 'All' ? selectedCategory : undefined,
+          search: search || undefined,
+        },
+      });
       if (res.data.status === 'ok') {
         setPrices(res.data.data);
       }
     } catch (err) {
       console.error('Failed to fetch prices:', err);
-      setError('Could not load real-time prices from database.');
+      setError('Failed to query prices table from SQLite database.');
     } finally {
       setLoading(false);
     }
@@ -128,41 +127,23 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
     fetchLivePrices();
   }, [selectedLocation, selectedCategory, search]);
 
-  // 3. Web Speech API Handler
+  // 3. Web Speech API read aloud handler
   const handleReadAloud = (item) => {
-    if (speakingId === (item.material_id || item.id)) {
+    const matId = item.material_id || item.id;
+    if (speakingId === matId) {
       announcer.stop();
       setSpeakingId(null);
       return;
     }
 
-    announcer.speakPrice(
-      { ...item, location: selectedLocation },
-      speechLanguage,
-      (id) => setSpeakingId(id),
-      () => setSpeakingId(null),
-      (err) => {
-        console.error('Speech error:', err);
-        setSpeakingId(null);
-      }
-    );
+    setSpeakingId(matId);
+    announcer.speakPrice(item, {
+      lang: speechLanguage,
+      onEnd: () => setSpeakingId(null),
+      onError: () => setSpeakingId(null),
+    });
   };
 
-  const handleReadSummary = () => {
-    if (prices.length === 0) return;
-    const top = prices[0];
-    const summaryItem = {
-      material_name: `Top e-waste scrap in ${selectedLocation}`,
-      sub_category: `Top scrap in ${selectedLocation} is ${top.sub_category}`,
-      current_buying_price: top.current_buying_price,
-      unit: top.unit,
-      price_trend: top.price_trend,
-      location: selectedLocation,
-    };
-    handleReadAloud(summaryItem);
-  };
-
-  // Top gainers & high value highlights
   const highValueItem = [...prices].sort((a, b) => b.current_buying_price - a.current_buying_price)[0];
   const topGainer = [...prices].sort((a, b) => b.pct_change - a.pct_change)[0];
 
@@ -174,18 +155,18 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
           <div className="flex items-center gap-2.5">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-['Outfit'] flex items-center gap-2.5">
               <span>📊</span>
-              <span>Price Discovery Board</span>
+              <span>{t('rates.title')}</span>
             </h1>
             <span className="px-2.5 py-0.5 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-400 text-xs font-mono font-bold">
               Live SQLite Feed
             </span>
           </div>
           <p className="text-slate-400 text-sm mt-1">
-            Real authorized buying benchmarks & 60-day price trends across Indian scrap clusters.
+            {t('rates.subtitle')}
           </p>
         </div>
 
-        {/* Global Controls: Location Selector + Speech Language Toggle */}
+        {/* Global Controls: Location Selector + Refresh Button */}
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Location Selector */}
           <div className="flex items-center bg-slate-900 border border-slate-800 rounded-2xl p-1 shadow-inner">
@@ -206,27 +187,6 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
                 {loc}
               </button>
             ))}
-          </div>
-
-          {/* Voice Language Switcher */}
-          <div className="flex items-center bg-slate-900 border border-slate-800 rounded-2xl p-1">
-            <span className="text-xs text-slate-400 px-2 font-semibold">🔊 Voice:</span>
-            <button
-              onClick={() => setSpeechLanguage('en-IN')}
-              className={`px-2.5 py-1 rounded-xl text-xs font-semibold cursor-pointer ${
-                speechLanguage === 'en-IN' ? 'bg-slate-700 text-brand-300 font-bold' : 'text-slate-400'
-              }`}
-            >
-              English
-            </button>
-            <button
-              onClick={() => setSpeechLanguage('hi-IN')}
-              className={`px-2.5 py-1 rounded-xl text-xs font-semibold cursor-pointer ${
-                speechLanguage === 'hi-IN' ? 'bg-slate-700 text-brand-300 font-bold' : 'text-slate-400'
-              }`}
-            >
-              हिंदी (Hindi)
-            </button>
           </div>
 
           {/* Refresh button */}
@@ -298,7 +258,7 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
               }`}
             >
               <span>{CATEGORY_ICONS[cat] || '♻️'}</span>
-              <span>{cat}</span>
+              <span>{cat === 'All' ? t('categories.all') : cat}</span>
             </button>
           ))}
         </div>
@@ -308,7 +268,7 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search material or mineral…"
+            placeholder={t('rates.searchPlaceholder')}
             className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-1.5 text-xs text-white focus:outline-none focus:border-brand-400"
           />
         </div>
@@ -385,18 +345,18 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
                   {/* Prices & Sparkline Row */}
                   <div className="grid grid-cols-12 gap-2 items-center bg-slate-950/70 p-3 rounded-2xl border border-slate-800/80 my-3">
                     <div className="col-span-7">
-                      <p className="text-[10px] text-slate-400 uppercase font-semibold">Authorized Buying Rate</p>
+                      <p className="text-[10px] text-slate-400 uppercase font-semibold">{t('rates.buyingPrice')}</p>
                       <div className="text-2xl font-black text-brand-400 font-mono tracking-tight">
                         ₹{item.current_buying_price}
                         <span className="text-xs font-normal text-slate-400">/{item.unit || 'kg'}</span>
                       </div>
                       <p className="text-[10px] text-slate-500 font-mono">
-                        Market Quote: ₹{item.current_quoted_price}
+                        {t('rates.quotedPrice')}: ₹{item.current_quoted_price}
                       </p>
                     </div>
 
                     <div className="col-span-5 text-right flex flex-col items-end">
-                      <p className="text-[9px] text-slate-500 uppercase font-semibold mb-1">14-Day Trend</p>
+                      <p className="text-[9px] text-slate-500 uppercase font-semibold mb-1">{t('rates.trend')}</p>
                       <Sparkline points={item.sparkline} color={sparklineColor} />
                       <span
                         className={`text-[10px] font-mono font-bold mt-1 ${
@@ -418,7 +378,7 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
                   {/* Read Aloud Button (Web Speech API) */}
                   <button
                     onClick={() => handleReadAloud(item)}
-                    title="Read price out loud using Web Speech API"
+                    title={t('rates.readAloud')}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                       isItemSpeaking
                         ? 'bg-amber-500 text-surface-950 shadow-md shadow-amber-500/30 animate-pulse'
@@ -426,7 +386,7 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
                     }`}
                   >
                     <span>{isItemSpeaking ? '🔊' : '🔈'}</span>
-                    <span>{isItemSpeaking ? 'Speaking…' : 'Read Aloud'}</span>
+                    <span>{isItemSpeaking ? t('rates.speaking') : t('rates.readAloud')}</span>
                   </button>
 
                   {/* Trend Details Modal Trigger */}
@@ -434,7 +394,7 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
                     onClick={() => setSelectedMaterialForChart(item)}
                     className="px-3 py-1.5 bg-brand-500/10 hover:bg-brand-500/20 text-brand-300 border border-brand-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
                   >
-                    <span>📈 60-Day Curve</span>
+                    <span>📈 {t('rates.viewTrend')}</span>
                   </button>
                 </div>
               </div>

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 
 export default function HandoverConfirm({ lot, recycler, onCancel, onSuccess }) {
+  const { t } = useTranslation();
   const [notes, setNotes]         = useState('');
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState(null);
@@ -80,10 +82,10 @@ export default function HandoverConfirm({ lot, recycler, onCancel, onSuccess }) 
       <div className="bg-slate-900 p-6 text-white">
         <div className="flex items-center gap-3 mb-1">
           <span className="text-3xl">🛡️</span>
-          <h2 className="text-2xl font-bold">Confirm Handover</h2>
+          <h2 className="text-2xl font-bold">{t('handover.title')}</h2>
         </div>
         <p className="text-slate-300 text-sm">
-          This creates a verifiable traceability record. The recycler must confirm receipt to finalize.
+          {t('handover.subtitle')}
         </p>
       </div>
 
@@ -98,7 +100,7 @@ export default function HandoverConfirm({ lot, recycler, onCancel, onSuccess }) 
         {/* Recycler + Lot grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
-            <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">Receiving Facility</h3>
+            <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">{t('handover.facility')}</h3>
             <p className="font-bold text-lg text-slate-900 mb-1">{recycler.name}</p>
             {recycler.authorization_status === 'authorized' && (
               <p className="text-xs font-bold text-emerald-600 flex items-center mb-2">
@@ -110,7 +112,7 @@ export default function HandoverConfirm({ lot, recycler, onCancel, onSuccess }) 
           </div>
 
           <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
-            <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">Lot Summary</h3>
+            <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">{t('handover.lotSummary')}</h3>
             <p className="text-sm font-medium text-slate-800 mb-1">
               Ref: <span className="font-mono bg-slate-200 px-1.5 py-0.5 rounded text-xs font-bold">{lot.lot_ref}</span>
             </p>
@@ -118,7 +120,7 @@ export default function HandoverConfirm({ lot, recycler, onCancel, onSuccess }) 
               Weight: <span className="font-bold text-slate-900">{lot.total_weight_kg} kg</span>
             </p>
             <div className="pt-3 border-t border-slate-200">
-              <p className="text-xs text-slate-500 uppercase font-bold mb-1">Final Agreed Value</p>
+              <p className="text-xs text-slate-500 uppercase font-bold mb-1">{t('handover.finalAgreedValue')}</p>
               <p className="text-3xl font-black text-emerald-600 font-mono">
                 ₹{Number(recycler.offered_price).toLocaleString('en-IN')}
               </p>
@@ -131,7 +133,7 @@ export default function HandoverConfirm({ lot, recycler, onCancel, onSuccess }) 
           <div className="bg-slate-50 px-4 py-3 flex items-center justify-between border-b border-slate-200">
             <div className="flex items-center gap-2">
               <span className="text-base">📍</span>
-              <span className="text-sm font-bold text-slate-800">Collection Location</span>
+              <span className="text-sm font-bold text-slate-800">{t('handover.collectionGps')}</span>
             </div>
             <div className="flex items-center gap-2">
               {gpsStatus === 'fetching' && (
@@ -142,7 +144,7 @@ export default function HandoverConfirm({ lot, recycler, onCancel, onSuccess }) 
               )}
               {gpsStatus === 'ok' && (
                 <span className="flex items-center gap-1 text-xs text-emerald-600 font-bold">
-                  ✓ Live GPS (±{Math.round(gps.accuracy)}m)
+                  ✓ {t('handover.liveGps')} (±{Math.round(gps.accuracy)}m)
                 </span>
               )}
               {(gpsStatus === 'denied' || gpsStatus === 'manual') && (
@@ -190,20 +192,10 @@ export default function HandoverConfirm({ lot, recycler, onCancel, onSuccess }) 
             {gpsStatus === 'ok' && (
               <button
                 onClick={() => setShowManual(!showManual)}
-                className="text-xs text-slate-400 hover:text-slate-600 underline"
+                className="text-xs text-slate-400 hover:text-slate-600 underline cursor-pointer"
               >
-                {showManual ? 'Hide manual override' : 'Override with manual coords'}
+                {showManual ? 'Hide manual override' : t('handover.manualGps')}
               </button>
-            )}
-
-            {gpsStatus === 'idle' && (
-              <p className="text-xs text-slate-400">Requesting location access…</p>
-            )}
-
-            {!activeGps && (
-              <p className="text-xs text-amber-600 flex items-center gap-1">
-                ⚠️ No GPS attached — handover will be saved without location
-              </p>
             )}
           </div>
         </div>
@@ -211,9 +203,9 @@ export default function HandoverConfirm({ lot, recycler, onCancel, onSuccess }) 
         {/* Weight at handover */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-            Weight at Handover (kg)
+            {t('handover.actualWeight')}
             <span className="ml-2 text-slate-400 normal-case font-normal">
-              — leave blank to use logged weight ({lot.total_weight_kg} kg)
+              — default: {lot.total_weight_kg} kg
             </span>
           </label>
           <input
@@ -230,27 +222,22 @@ export default function HandoverConfirm({ lot, recycler, onCancel, onSuccess }) 
         {/* Notes */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-            Handover Notes (Optional)
+            {t('handover.notes')}
           </label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="e.g. Weighbridge slip attached, verified PCBs, all serial numbers documented…"
+            placeholder="e.g. Weighbridge slip attached, verified PCBs…"
             className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all resize-none h-20 text-sm"
           />
         </div>
 
-        {/* Info about two-step confirmation */}
+        {/* Info banner */}
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex gap-3">
           <span className="text-blue-500 text-lg flex-shrink-0">ℹ️</span>
-          <div className="text-sm text-blue-800">
-            <p className="font-semibold mb-1">Two-Step Verification</p>
-            <p className="text-xs text-blue-700">
-              After you confirm, the handover status will be <strong>pending recycler confirmation</strong>.
-              The recycler must log in and click "Confirm Received" to finalize — at which point your lot
-              status changes to <strong>completed</strong>.
-            </p>
-          </div>
+          <p className="text-xs text-blue-800 font-medium">
+            {t('handover.infoBanner')}
+          </p>
         </div>
 
         {/* Actions */}
@@ -258,19 +245,19 @@ export default function HandoverConfirm({ lot, recycler, onCancel, onSuccess }) 
           <button
             onClick={onCancel}
             disabled={loading}
-            className="flex-1 px-6 py-3 border border-slate-300 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-50 text-sm"
+            className="flex-1 px-6 py-3 border border-slate-300 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-50 text-sm cursor-pointer"
           >
-            ← Back to Matches
+            ← {t('handover.backBtn')}
           </button>
           <button
             onClick={handleConfirm}
             disabled={loading}
-            className="flex-1 px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200 flex justify-center items-center gap-2 text-sm disabled:opacity-70 disabled:cursor-not-allowed"
+            className="flex-1 px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200 flex justify-center items-center gap-2 text-sm disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
           >
             {loading ? (
               <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
             ) : (
-              '✓ Initiate Handover'
+              `✓ ${t('handover.confirmBtn')}`
             )}
           </button>
         </div>
