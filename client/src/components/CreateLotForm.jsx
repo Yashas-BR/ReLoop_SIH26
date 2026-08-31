@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { getLocalizedMaterial } from '../i18n';
+import { saveOfflineLot, cacheCatalog, getCachedMaterials } from '../db/offlineDb';
+import { syncManager } from '../utils/syncManager';
 
 const CATEGORY_ICONS = {
   'E-Waste': '💻',
@@ -16,9 +18,31 @@ const CATEGORY_ICONS = {
   'Mixed E-Scrap': '🗑️',
 };
 
+// Offline default benchmark multiplier table
+const FALLBACK_PRICES = {
+  1: 180,  // Laptop
+  2: 240,  // Mobile Phone
+  3: 45,   // CRT Monitor
+  4: 120,  // LCD Monitor
+  5: 110,  // Desktop Computer
+  6: 35,   // Refrigerator
+  7: 40,   // Washing Machine
+  8: 30,   // Printer
+  9: 90,   // Lead-Acid Battery
+  10: 125, // Lithium-Ion Battery
+  11: 85,  // NiMH Battery
+  12: 130, // Coaxial Cable
+  13: 550, // Copper Wire
+  14: 140, // Aluminium Scrap
+  15: 32,  // Steel Scrap
+  16: 380, // Brass Items
+  17: 1350,// Neodymium Magnet
+};
+
 export default function CreateLotForm({ onLotCreated, activeCollector }) {
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language || 'en';
+
   const [materials, setMaterials] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('E-Waste');
@@ -31,34 +55,68 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
 
-  // Live valuation state from real DB lookup
+  // Live valuation state
   const [valuation, setValuation] = useState(null);
   const [isValuing, setIsValuing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [isOfflineMode, setIsOfflineMode] = useState(!syncManager.getState().isOnline);
 
   const fileInputRef = useRef(null);
 
-  // 1. Fetch materials on mount
+  // Listen to network state changes
+  useEffect(() => {
+    return syncManager.subscribe((state) => {
+      setIsOfflineMode(!state.isOnline);
+    });
+  }, []);
+
+  // 1. Fetch materials on mount (with IndexedDB caching & fallback)
   useEffect(() => {
     async function loadMaterials() {
       try {
-        const res = await axios.get('/api/materials');
-        if (res.data.status === 'ok') {
-          setMaterials(res.data.data);
-          
-          const cats = [...new Set(res.data.data.map(m => m.category))];
-          setCategories(cats);
+        if (syncManager.getState().isOnline) {
+          const res = await axios.get('/api/materials');
+          if (res.data.status === 'ok') {
+            setMaterials(res.data.data);
+            await cacheCatalog(res.data.data);
+            
+            const cats = [...new Set(res.data.data.map(m => m.category))];
+            setCategories(cats);
 
-          const defaultMat = res.data.data.find(m => m.category === 'E-Waste') || res.data.data[0];
-          if (defaultMat) {
-            setSelectedCategory(defaultMat.category);
-            setSelectedMaterialId(defaultMat.id);
+            const defaultMat = res.data.data.find(m => m.category === 'E-Waste') || res.data.data[0];
+            if (defaultMat) {
+              setSelectedCategory(defaultMat.category);
+              setSelectedMaterialId(defaultMat.id);
+            }
+            return;
           }
         }
       } catch (err) {
-        console.error('Failed to load materials:', err);
-        setError('Failed to load materials catalog from server.');
+        console.warn('Network materials fetch failed, attempting IndexedDB cache...', err.message);
+      }
+
+      // Fallback to IndexedDB cache
+      const cached = await getCachedMaterials();
+      if (cached && cached.length > 0) {
+        setMaterials(cached);
+        const cats = [...new Set(cached.map(m => m.category))];
+        setCategories(cats);
+        setSelectedCategory(cached[0].category);
+        setSelectedMaterialId(cached[0].id);
+      } else {
+        // Hard fallback minimal catalog if DB was never populated
+        const fallback = [
+          { id: 1, category: 'E-Waste', sub_category: 'Laptop', unit: 'kg', description: 'Working or dead laptops' },
+          { id: 9, category: 'Batteries', sub_category: 'Lead-Acid Battery', unit: 'kg', description: 'Car and inverter batteries' },
+          { id: 10, category: 'Batteries', sub_category: 'Lithium-Ion Battery', unit: 'kg', description: 'Mobile and laptop batteries' },
+          { id: 13, category: 'Metals', sub_category: 'Copper Wire', unit: 'kg', description: 'High purity copper wire' },
+          { id: 17, category: 'Motors & Magnets', sub_category: 'Neodymium Magnet', unit: 'kg', description: 'Rare earth magnets' },
+        ];
+        setMaterials(fallback);
+        setCategories(['E-Waste', 'Batteries', 'Metals', 'Motors & Magnets']);
+        setSelectedCategory('E-Waste');
+        setSelectedMaterialId(1);
       }
     }
     loadMaterials();
@@ -76,7 +134,7 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
 
   const selectedMaterial = materials.find(m => m.id === Number(selectedMaterialId));
 
-  // 2. Fetch real live valuation calculation
+  // 2. Fetch or compute valuation (Live SQLite when online, local formula when offline)
   useEffect(() => {
     let active = true;
     async function fetchEstimate() {
@@ -84,30 +142,57 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
         setValuation(null);
         return;
       }
-      setIsValuing(true);
-      try {
-        const res = await axios.post('/api/lots/estimate', {
-          material_id: Number(selectedMaterialId),
-          weight_kg: Number(weightKg),
-          condition,
-          location: activeCollector?.operating_location || 'Bengaluru',
-        });
-        if (active && res.data.status === 'ok') {
-          setValuation(res.data.valuation);
+
+      const w = Number(weightKg);
+      const condMultiplier = condition === 'good' ? 1.05 : condition === 'poor' ? 0.90 : 1.0;
+
+      // If online, query backend API
+      if (syncManager.getState().isOnline) {
+        setIsValuing(true);
+        try {
+          const res = await axios.post('/api/lots/estimate', {
+            material_id: Number(selectedMaterialId),
+            weight_kg: w,
+            condition,
+            location: activeCollector?.operating_location || 'Bengaluru',
+          });
+          if (active && res.data.status === 'ok') {
+            setValuation(res.data.valuation);
+            return;
+          }
+        } catch (err) {
+          // Fall through to offline valuation
+        } finally {
+          if (active) setIsValuing(false);
         }
-      } catch (err) {
-        if (active) console.error('Estimate error:', err);
-      } finally {
-        if (active) setIsValuing(false);
+      }
+
+      // Offline Valuation Math Engine (Runs inside browser using benchmark cache)
+      const baseRate = FALLBACK_PRICES[selectedMaterialId] || 100;
+      const effectiveRate = Math.round(baseRate * condMultiplier);
+      const totalVal = Math.round(effectiveRate * w);
+
+      if (active) {
+        setValuation({
+          material_id: Number(selectedMaterialId),
+          material_name: selectedMaterial?.sub_category || 'Scrap Material',
+          weight_kg: w,
+          condition,
+          condition_multiplier: condMultiplier,
+          avg_buying_price_7d: baseRate,
+          effective_rate_per_kg: effectiveRate,
+          total_estimated_value: totalVal,
+          is_offline_estimate: true,
+        });
       }
     }
 
-    const timer = setTimeout(fetchEstimate, 150);
+    const timer = setTimeout(fetchEstimate, 100);
     return () => {
       active = false;
       clearTimeout(timer);
     };
-  }, [selectedMaterialId, weightKg, condition, activeCollector]);
+  }, [selectedMaterialId, weightKg, condition, activeCollector, selectedMaterial]);
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -132,7 +217,7 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
     setWeightKg((current + amount).toFixed(1));
   };
 
-  // 3. Handle Form Submit
+  // 3. Handle Form Submit (Offline-First with IndexedDB)
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedMaterialId || !weightKg || Number(weightKg) <= 0) {
@@ -143,17 +228,55 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
     setSubmitting(true);
     setError(null);
 
+    const isOnline = syncManager.getState().isOnline;
+
+    const lotPayload = {
+      collector_id: activeCollector?.id || 1,
+      material_id: selectedMaterialId,
+      material_name: selectedMaterial?.sub_category || '',
+      material_category: selectedCategory || '',
+      weight_kg: weightKg,
+      condition,
+      source_type: sourceType,
+      notes,
+      pickup_address: pickupAddress,
+      latitude: activeCollector?.latitude || 12.9716,
+      longitude: activeCollector?.longitude || 77.5946,
+      estimated_value: valuation?.total_estimated_value || 0,
+      photo_preview: photoPreview,
+    };
+
+    // --- Path A: If currently Offline -> Save directly to IndexedDB ---
+    if (!isOnline) {
+      try {
+        console.log('[CreateLotForm] Offline detected. Saving to IndexedDB...');
+        const savedOffline = await saveOfflineLot(lotPayload);
+        await syncManager.refreshPendingCount();
+
+        setSubmitting(false);
+        // Call parent handler with offline record
+        onLotCreated(savedOffline.id, { isOffline: true, offlineLot: savedOffline });
+        return;
+      } catch (dbErr) {
+        console.error('IndexedDB save failed:', dbErr);
+        setError('Failed to save lot locally to IndexedDB: ' + dbErr.message);
+        setSubmitting(false);
+        return;
+      }
+    }
+
+    // --- Path B: If Online -> Attempt POST to backend SQLite ---
     try {
       const formData = new FormData();
-      formData.append('collector_id', activeCollector?.id || 1);
-      formData.append('material_id', selectedMaterialId);
-      formData.append('weight_kg', weightKg);
-      formData.append('condition', condition);
-      formData.append('source_type', sourceType);
-      formData.append('notes', notes);
-      formData.append('pickup_address', pickupAddress);
-      formData.append('latitude', activeCollector?.latitude || 12.9716);
-      formData.append('longitude', activeCollector?.longitude || 77.5946);
+      formData.append('collector_id', lotPayload.collector_id);
+      formData.append('material_id', lotPayload.material_id);
+      formData.append('weight_kg', lotPayload.weight_kg);
+      formData.append('condition', lotPayload.condition);
+      formData.append('source_type', lotPayload.source_type);
+      formData.append('notes', lotPayload.notes);
+      formData.append('pickup_address', lotPayload.pickup_address);
+      formData.append('latitude', lotPayload.latitude);
+      formData.append('longitude', lotPayload.longitude);
 
       if (photoFile) {
         formData.append('photo', photoFile);
@@ -164,11 +287,18 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
       });
 
       if (res.data.status === 'ok') {
-        onLotCreated(res.data.lot_id);
+        onLotCreated(res.data.lot_id, { isOffline: false });
       }
     } catch (err) {
-      console.error('Create lot error:', err);
-      setError(err.response?.data?.message || 'Failed to submit lot. Check server connection.');
+      console.warn('POST /api/lots failed (likely network drop). Falling back to IndexedDB local storage...', err);
+      // Graceful offline fallback
+      try {
+        const savedOffline = await saveOfflineLot(lotPayload);
+        await syncManager.refreshPendingCount();
+        onLotCreated(savedOffline.id, { isOffline: true, offlineLot: savedOffline });
+      } catch (dbErr) {
+        setError(err.response?.data?.message || 'Network failed and could not store to IndexedDB.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -188,6 +318,15 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
               {t('form.subtitle')}
             </p>
           </div>
+
+          {/* Offline Banner if offline */}
+          {isOfflineMode && (
+            <div className="flex items-center gap-2 bg-amber-500/15 border border-amber-500/40 rounded-xl px-3.5 py-2 text-xs text-amber-300 font-bold shadow-sm">
+              <span>💾</span>
+              <span>IndexedDB Offline Mode Active (Auto-syncs when online)</span>
+            </div>
+          )}
+
           {/* Low-literacy quick hint banner */}
           <div className="flex items-center gap-2 bg-slate-900 border border-brand-500/30 rounded-xl px-3.5 py-2 text-xs text-brand-300 shadow-sm">
             <span className="text-base">💡</span>
@@ -208,7 +347,7 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
           {/* Left Column: Form Controls (7 cols) */}
           <div className="lg:col-span-7 space-y-6">
             
-            {/* Step 1: Category Picker (High-visual icon grid for low-literacy accessibility) */}
+            {/* Step 1: Category Picker */}
             <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur-sm">
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
                 <span>1️⃣</span>
@@ -276,7 +415,7 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
                   </span>
                 </div>
 
-                {/* Visual Quick Add Buttons for Ease of Use */}
+                {/* Quick Add Buttons */}
                 <div className="flex items-center gap-2 pt-1">
                   <span className="text-[11px] text-slate-500 font-semibold uppercase">Quick Add:</span>
                   {[
@@ -375,7 +514,7 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
 
           {/* Right Column: Live Fair Valuation Card & Photo Proof (5 cols) */}
           <div className="lg:col-span-5 space-y-6">
-            {/* Live Pricing / Valuation Card */}
+            {/* Valuation Card */}
             <div className="bg-gradient-to-br from-slate-900 via-surface-900 to-slate-900 border-2 border-brand-500/40 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -386,6 +525,11 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
                 </div>
                 {isValuing && (
                   <span className="w-4 h-4 border-2 border-brand-400 border-t-transparent rounded-full animate-spin"></span>
+                )}
+                {valuation?.is_offline_estimate && (
+                  <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-mono font-bold">
+                    OFFLINE BENCHMARK
+                  </span>
                 )}
               </div>
 
@@ -467,7 +611,12 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
                 {submitting ? (
                   <>
                     <span className="w-4 h-4 border-2 border-surface-950 border-t-transparent rounded-full animate-spin"></span>
-                    <span>{t('form.submitting')}</span>
+                    <span>{isOfflineMode ? 'Saving to IndexedDB...' : t('form.submitting')}</span>
+                  </>
+                ) : isOfflineMode ? (
+                  <>
+                    <span>💾</span>
+                    <span>Save Lot Offline (Queue Sync)</span>
                   </>
                 ) : (
                   <>

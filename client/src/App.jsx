@@ -35,9 +35,14 @@ export default function App() {
     loadCollectors();
   }, []);
 
-  const handleLotCreated = (lotId) => {
-    setConfirmedLotId(lotId);
-    setActiveTab('confirmation');
+  const handleLotCreated = (lotId, meta = {}) => {
+    if (meta.isOffline) {
+      // If created offline, redirect to my-lots to view the queued offline lot
+      setActiveTab('my-lots');
+    } else {
+      setConfirmedLotId(lotId);
+      setActiveTab('confirmation');
+    }
   };
 
   const handleSelectLotFromList = (lotId) => {

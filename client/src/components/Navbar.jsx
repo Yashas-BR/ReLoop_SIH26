@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { COLLECTOR_PROFILES, getLocalizedMaterial } from '../i18n';
+import SyncIndicator from './SyncIndicator';
 
 export default function Navbar({ activeTab, setActiveTab, activeCollector, setActiveCollector, collectors = [] }) {
   const { t, i18n } = useTranslation();
@@ -112,8 +113,11 @@ export default function Navbar({ activeTab, setActiveTab, activeCollector, setAc
               </button>
             </nav>
 
-            {/* Right Section: Language Switcher + Collector Persona Button */}
-            <div className="flex items-center gap-3">
+            {/* Right Section: Sync Indicator + Language Switcher + Collector Persona Button */}
+            <div className="flex items-center gap-2.5">
+              {/* Real-time Connectivity & Sync Status Indicator */}
+              <SyncIndicator />
+
               {/* Language Switcher */}
               <div className="flex items-center bg-slate-900 border border-slate-700/80 rounded-xl p-1 shadow-inner">
                 <span className="text-xs px-1.5 text-slate-400 font-bold hidden xl:inline">🌐</span>
