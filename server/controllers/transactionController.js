@@ -2,16 +2,156 @@ const db = require('../db/database');
 const { randomUUID } = require('crypto');
 
 /**
+ * GET /api/transactions?collector_id=:id
+ * Fetch all transactions for a given collector, along with live calculated totals directly from SQLite.
+ */
+function getTransactions(req, res) {
+  try {
+    const { collector_id } = req.query;
+
+    let query = `
+      SELECT 
+        tx.*,
+        l.lot_ref,
+        l.status AS lot_status,
+        r.name AS recycler_name,
+        r.phone AS recycler_phone,
+        r.authorization_number AS recycler_auth,
+        c.name AS collector_name,
+        tr.handover_ref,
+        tr.status AS traceability_status,
+        tr.recycler_confirmed_at
+      FROM transactions tx
+      JOIN lots l ON l.id = tx.lot_id
+      JOIN recyclers r ON r.id = tx.recycler_id
+      JOIN collectors c ON c.id = tx.collector_id
+      LEFT JOIN traceability tr ON tr.transaction_id = tx.id
+    `;
+
+    const params = [];
+    if (collector_id) {
+      query += ` WHERE tx.collector_id = ? `;
+      params.push(parseInt(collector_id, 10));
+    }
+    query += ` ORDER BY tx.created_at DESC `;
+
+    const transactions = db.prepare(query).all(...params);
+
+    // Run real DB aggregation queries to calculate actual totals directly in SQLite
+    let totalsQuery = `
+      SELECT 
+        COUNT(*) AS total_transactions,
+        COALESCE(SUM(total_weight_kg), 0) AS total_weight_kg,
+        COALESCE(SUM(CASE WHEN payment_status IN ('paid', 'completed') THEN COALESCE(final_price, quoted_price, 0) ELSE 0 END), 0) AS total_earned,
+        COALESCE(SUM(CASE WHEN payment_status = 'pending' THEN COALESCE(final_price, quoted_price, 0) ELSE 0 END), 0) AS pending_dues,
+        COALESCE(SUM(COALESCE(final_price, quoted_price, 0)), 0) AS total_gross_value,
+        COUNT(CASE WHEN payment_status IN ('paid', 'completed') THEN 1 END) AS paid_count,
+        COUNT(CASE WHEN payment_status = 'pending' THEN 1 END) AS pending_count
+      FROM transactions
+    `;
+
+    const totalsParams = [];
+    if (collector_id) {
+      totalsQuery += ` WHERE collector_id = ? `;
+      totalsParams.push(parseInt(collector_id, 10));
+    }
+
+    const summary = db.prepare(totalsQuery).get(...totalsParams);
+
+    res.json({
+      status: 'ok',
+      collector_id: collector_id ? parseInt(collector_id, 10) : null,
+      count: transactions.length,
+      summary: {
+        total_earned: Math.round(summary.total_earned * 100) / 100,
+        pending_dues: Math.round(summary.pending_dues * 100) / 100,
+        total_gross_value: Math.round(summary.total_gross_value * 100) / 100,
+        total_weight_kg: Math.round(summary.total_weight_kg * 100) / 100,
+        total_transactions: summary.total_transactions,
+        paid_count: summary.paid_count,
+        pending_count: summary.pending_count,
+      },
+      data: transactions,
+    });
+  } catch (error) {
+    console.error('Error fetching transactions:', error);
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+}
+
+/**
+ * PUT /api/transactions/:id/payment
+ * Update payment_status for a transaction (e.g. mark as 'paid' or 'pending').
+ */
+function updatePaymentStatus(req, res) {
+  try {
+    const { id } = req.params;
+    const { payment_status, payment_method } = req.body;
+
+    if (!payment_status) {
+      return res.status(400).json({ status: 'error', message: 'payment_status is required' });
+    }
+
+    const validStatuses = ['paid', 'pending', 'completed', 'disputed'];
+    if (!validStatuses.includes(payment_status)) {
+      return res.status(400).json({
+        status: 'error',
+        message: `Invalid payment_status. Must be one of: ${validStatuses.join(', ')}`,
+      });
+    }
+
+    const tx = db.prepare('SELECT * FROM transactions WHERE id = ?').get(id);
+    if (!tx) {
+      return res.status(404).json({ status: 'error', message: 'Transaction not found' });
+    }
+
+    const updateQuery = db.prepare(`
+      UPDATE transactions 
+      SET 
+        payment_status = @payment_status,
+        payment_method = COALESCE(@payment_method, payment_method),
+        updated_at = datetime('now')
+      WHERE id = @id
+    `);
+
+    updateQuery.run({
+      id: parseInt(id, 10),
+      payment_status,
+      payment_method: payment_method || null,
+    });
+
+    const updatedTx = db.prepare(`
+      SELECT 
+        tx.*,
+        l.lot_ref,
+        r.name AS recycler_name,
+        c.name AS collector_name
+      FROM transactions tx
+      JOIN lots l ON l.id = tx.lot_id
+      JOIN recyclers r ON r.id = tx.recycler_id
+      JOIN collectors c ON c.id = tx.collector_id
+      WHERE tx.id = ?
+    `).get(id);
+
+    res.json({
+      status: 'ok',
+      message: `Transaction payment status updated to '${payment_status}'`,
+      data: updatedTx,
+    });
+  } catch (error) {
+    console.error('Error updating payment status:', error);
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+}
+
+/**
  * POST /api/transactions/handover
  *
  * Initiates a handover:
  *   - Lot status → 'pending_confirmation'  (not yet 'completed')
- *   - Creates a transaction row
+ *   - Creates a transaction row with payment_status = 'pending'
  *   - Creates a traceability row with status = 'pending_confirmation'
  *   - Records GPS coords (from client) and weight at time of handover
- *
- * The recycler must separately call PUT /api/traceability/:id/confirm
- * to finalize the handover — at which point lot → 'completed'.
  */
 function recordHandover(req, res) {
   try {
@@ -20,7 +160,6 @@ function recordHandover(req, res) {
       recycler_id,
       final_agreed_value,
       notes,
-      // GPS from browser Geolocation API or manual entry
       collector_lat,
       collector_lon,
       collector_gps_accuracy,
@@ -51,12 +190,12 @@ function recordHandover(req, res) {
     }
 
     // ── Generate unique, verifiable refs ─────────────────────────────────────
-    const uuid = randomUUID(); // crypto-grade UUID e.g. 550e8400-e29b-41d4-a716-446655440000
+    const uuid = randomUUID();
     const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
 
-    const txnRef      = `TXN-${todayStr}-${randomSuffix}`;  // human-readable transaction ref
-    const handoverRef = `HDO-${uuid.toUpperCase()}`;         // UUID-backed, globally unique handover ref
+    const txnRef      = `TXN-${todayStr}-${randomSuffix}`;
+    const handoverRef = `HDO-${uuid.toUpperCase()}`;
 
     // ── Build material summary ────────────────────────────────────────────────
     const items = db.prepare(`
@@ -89,14 +228,14 @@ function recordHandover(req, res) {
 
     // ── Atomic DB transaction ─────────────────────────────────────────────────
     const performHandover = db.transaction(() => {
-      // 1. Lot → pending_confirmation (NOT yet completed — recycler must confirm)
+      // 1. Lot → pending_confirmation
       db.prepare(`
         UPDATE lots
         SET status = 'pending_confirmation', updated_at = datetime('now')
         WHERE id = ?
       `).run(lot_id);
 
-      // 2. Insert transaction row
+      // 2. Insert transaction row (default payment_status is 'pending')
       const txnResult = db.prepare(`
         INSERT INTO transactions (
           lot_id, collector_id, recycler_id, material_summary,
@@ -155,7 +294,6 @@ function recordHandover(req, res) {
 
     const result = performHandover();
 
-    // Fetch the freshly-created traceability record to return its id
     const traceRecord = db.prepare(
       'SELECT id FROM traceability WHERE handover_ref = ?'
     ).get(result.handoverRef);
@@ -183,4 +321,8 @@ function recordHandover(req, res) {
   }
 }
 
-module.exports = { recordHandover };
+module.exports = {
+  getTransactions,
+  updatePaymentStatus,
+  recordHandover,
+};

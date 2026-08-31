@@ -6,9 +6,10 @@ import LotConfirmation from './components/LotConfirmation';
 import MyLotsList from './components/MyLotsList';
 import PriceDiscoveryBoard from './components/PriceDiscoveryBoard';
 import RecyclerPortal from './components/RecyclerPortal';
+import EarningsLedger from './components/EarningsLedger';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('create-lot'); // 'create-lot' | 'confirmation' | 'my-lots' | 'rates'
+  const [activeTab, setActiveTab] = useState('create-lot'); // 'create-lot' | 'confirmation' | 'my-lots' | 'rates' | 'ledger' | 'recycler-portal'
   const [confirmedLotId, setConfirmedLotId] = useState(null);
   const [collectors, setCollectors] = useState([]);
   const [activeCollector, setActiveCollector] = useState(null);
@@ -97,6 +98,12 @@ export default function App() {
             onSelectMaterialForLot={(mat) => {
               setActiveTab('create-lot');
             }}
+          />
+        )}
+
+        {activeTab === 'ledger' && (
+          <EarningsLedger
+            activeCollector={activeCollector}
           />
         )}
 

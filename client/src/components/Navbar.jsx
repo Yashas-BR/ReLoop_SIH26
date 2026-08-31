@@ -64,6 +64,18 @@ export default function Navbar({ activeTab, setActiveTab, activeCollector, setAc
             </button>
 
             <button
+              onClick={() => setActiveTab('ledger')}
+              className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 ${
+                activeTab === 'ledger'
+                  ? 'bg-brand-500 text-surface-950 shadow-md shadow-brand-500/20'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+              }`}
+            >
+              <span>💰</span>
+              <span>Earnings Ledger</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('recycler-portal')}
               className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 ${
                 activeTab === 'recycler-portal'
