@@ -101,6 +101,18 @@ export default function Navbar({ activeTab, setActiveTab, activeCollector, setAc
               </button>
 
               <button
+                onClick={() => setActiveTab('safety')}
+                className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === 'safety'
+                    ? 'bg-amber-500 text-surface-950 shadow-md shadow-amber-500/20 font-black'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                }`}
+              >
+                <span>🦺</span>
+                <span>{t('nav.safety')}</span>
+              </button>
+
+              <button
                 onClick={() => setActiveTab('recycler-portal')}
                 className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'recycler-portal'

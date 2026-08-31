@@ -7,6 +7,7 @@ import MyLotsList from './components/MyLotsList';
 import PriceDiscoveryBoard from './components/PriceDiscoveryBoard';
 import RecyclerPortal from './components/RecyclerPortal';
 import EarningsLedger from './components/EarningsLedger';
+import SafetyGuidance from './components/SafetyGuidance';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('create-lot'); // 'create-lot' | 'confirmation' | 'my-lots' | 'rates' | 'ledger' | 'recycler-portal'
@@ -110,6 +111,10 @@ export default function App() {
           <EarningsLedger
             activeCollector={activeCollector}
           />
+        )}
+
+        {activeTab === 'safety' && (
+          <SafetyGuidance />
         )}
 
         {activeTab === 'recycler-portal' && (
