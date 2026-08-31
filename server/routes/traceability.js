@@ -1,10 +1,22 @@
 const express = require('express');
 const router = express.Router();
-// GET    /api/traceability/:lotId       - get traceability record for a lot
-// POST   /api/traceability              - create traceability record (at handover)
-// PUT    /api/traceability/:id/confirm  - recycler confirms receipt
+const {
+  getByLot,
+  getPendingForRecycler,
+  confirmReceipt,
+  getAllForRecycler,
+} = require('../controllers/traceabilityController');
 
-router.get('/:lotId', (req, res) => res.json({ message: 'get traceability by lot – coming soon' }));
-router.post('/', (req, res) => res.json({ message: 'create traceability record – coming soon' }));
+// GET /api/traceability/pending?recycler_id=N  — must come BEFORE /:lotId
+router.get('/pending', getPendingForRecycler);
+
+// GET /api/traceability/all?recycler_id=N
+router.get('/all', getAllForRecycler);
+
+// GET /api/traceability/lot/:lotId  — collector polling their lot's status
+router.get('/lot/:lotId', getByLot);
+
+// PUT /api/traceability/:id/confirm  — recycler confirms receipt
+router.put('/:id/confirm', confirmReceipt);
 
 module.exports = router;

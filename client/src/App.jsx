@@ -5,6 +5,7 @@ import CreateLotForm from './components/CreateLotForm';
 import LotConfirmation from './components/LotConfirmation';
 import MyLotsList from './components/MyLotsList';
 import PriceDiscoveryBoard from './components/PriceDiscoveryBoard';
+import RecyclerPortal from './components/RecyclerPortal';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('create-lot'); // 'create-lot' | 'confirmation' | 'my-lots' | 'rates'
@@ -97,6 +98,10 @@ export default function App() {
               setActiveTab('create-lot');
             }}
           />
+        )}
+
+        {activeTab === 'recycler-portal' && (
+          <RecyclerPortal />
         )}
       </main>
 

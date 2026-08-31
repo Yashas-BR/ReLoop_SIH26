@@ -1,19 +1,31 @@
 const db = require('../db/database');
+const { randomUUID } = require('crypto');
 
 /**
  * POST /api/transactions/handover
- * Records a handover of a lot to a recycler, mapping to the ACTUAL schema.
  *
- * transactions table columns: id, lot_id, collector_id, recycler_id, material_summary,
- *   total_weight_kg, quoted_price, final_price, payment_status, payment_method,
- *   pickup_scheduled, pickup_location, latitude, longitude, created_at, updated_at
+ * Initiates a handover:
+ *   - Lot status → 'pending_confirmation'  (not yet 'completed')
+ *   - Creates a transaction row
+ *   - Creates a traceability row with status = 'pending_confirmation'
+ *   - Records GPS coords (from client) and weight at time of handover
  *
- * traceability table columns: id, lot_id, transaction_id, handover_ref, status,
- *   collector_confirmed_at, recycler_confirmed_at, notes, created_at, updated_at
+ * The recycler must separately call PUT /api/traceability/:id/confirm
+ * to finalize the handover — at which point lot → 'completed'.
  */
 function recordHandover(req, res) {
   try {
-    const { lot_id, recycler_id, final_agreed_value, notes } = req.body;
+    const {
+      lot_id,
+      recycler_id,
+      final_agreed_value,
+      notes,
+      // GPS from browser Geolocation API or manual entry
+      collector_lat,
+      collector_lon,
+      collector_gps_accuracy,
+      weight_at_handover,
+    } = req.body;
 
     if (!lot_id || !recycler_id || !final_agreed_value) {
       return res.status(400).json({
@@ -29,7 +41,7 @@ function recordHandover(req, res) {
     if (lot.status !== 'submitted') {
       return res.status(400).json({
         status: 'error',
-        message: `Lot is in status '${lot.status}' — only 'submitted' lots can be handed over.`,
+        message: `Lot status is '${lot.status}' — only 'submitted' lots can be handed over.`,
       });
     }
 
@@ -38,79 +50,130 @@ function recordHandover(req, res) {
       return res.status(404).json({ status: 'error', message: 'Recycler not found.' });
     }
 
-    // Generate human-readable refs
+    // ── Generate unique, verifiable refs ─────────────────────────────────────
+    const uuid = randomUUID(); // crypto-grade UUID e.g. 550e8400-e29b-41d4-a716-446655440000
     const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const txnRef = `TXN-${todayStr}-${randomSuffix}`;
-    const handoverRef = `HDO-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
-    // Build material summary from lot items
+    const txnRef      = `TXN-${todayStr}-${randomSuffix}`;  // human-readable transaction ref
+    const handoverRef = `HDO-${uuid.toUpperCase()}`;         // UUID-backed, globally unique handover ref
+
+    // ── Build material summary ────────────────────────────────────────────────
     const items = db.prepare(`
       SELECT li.weight_kg, m.sub_category, m.category
       FROM lot_items li JOIN materials m ON m.id = li.material_id
       WHERE li.lot_id = ?
     `).all(lot_id);
-    const materialSummary = items.map((i) => `${i.sub_category}(${i.weight_kg}kg)`).join(', ');
+    const materialSummary = items.length
+      ? items.map((i) => `${i.sub_category}(${i.weight_kg}kg)`).join(', ')
+      : `Lot ${lot.lot_ref}`;
 
-    // Atomic update: update lot + insert transaction + insert traceability
+    // ── GPS payload (JSON string for DB storage) ──────────────────────────────
+    const gpsCollectionJson = (collector_lat && collector_lon)
+      ? JSON.stringify({
+          lat: parseFloat(collector_lat),
+          lon: parseFloat(collector_lon),
+          accuracy: collector_gps_accuracy ? parseFloat(collector_gps_accuracy) : null,
+          source: collector_gps_accuracy ? 'browser_geolocation' : 'manual_entry',
+          captured_at: new Date().toISOString(),
+        })
+      : null;
+
+    const actualWeight = weight_at_handover
+      ? parseFloat(weight_at_handover)
+      : lot.total_weight_kg;
+
+    const weightVariancePct = lot.total_weight_kg > 0
+      ? parseFloat((((actualWeight - lot.total_weight_kg) / lot.total_weight_kg) * 100).toFixed(2))
+      : 0;
+
+    // ── Atomic DB transaction ─────────────────────────────────────────────────
     const performHandover = db.transaction(() => {
-      // 1. Mark lot as completed
-      db.prepare(`UPDATE lots SET status = 'completed', updated_at = datetime('now') WHERE id = ?`).run(lot_id);
+      // 1. Lot → pending_confirmation (NOT yet completed — recycler must confirm)
+      db.prepare(`
+        UPDATE lots
+        SET status = 'pending_confirmation', updated_at = datetime('now')
+        WHERE id = ?
+      `).run(lot_id);
 
-      // 2. Insert transaction row (using actual column names)
+      // 2. Insert transaction row
       const txnResult = db.prepare(`
         INSERT INTO transactions (
           lot_id, collector_id, recycler_id, material_summary,
           total_weight_kg, quoted_price, final_price,
-          payment_status, payment_method
+          payment_status, payment_method,
+          latitude, longitude
         ) VALUES (
           @lot_id, @collector_id, @recycler_id, @material_summary,
           @total_weight_kg, @quoted_price, @final_price,
-          'completed', 'cash'
+          'pending', 'cash',
+          @latitude, @longitude
         )
       `).run({
         lot_id,
         collector_id: lot.collector_id,
         recycler_id,
-        material_summary: materialSummary || `Lot ${lot.lot_ref}`,
+        material_summary: materialSummary,
         total_weight_kg: lot.total_weight_kg,
         quoted_price: lot.estimated_value,
         final_price: final_agreed_value,
+        latitude: collector_lat ? parseFloat(collector_lat) : null,
+        longitude: collector_lon ? parseFloat(collector_lon) : null,
       });
 
       const txnId = txnResult.lastInsertRowid;
 
-      // 3. Insert traceability record (using actual column names)
+      // 3. Insert traceability row — status = 'pending_confirmation'
       db.prepare(`
         INSERT INTO traceability (
-          lot_id, transaction_id, handover_ref, status,
-          collector_confirmed_at, recycler_confirmed_at, notes
+          lot_id, transaction_id, handover_ref,
+          status,
+          collector_confirmed_at,
+          gps_collection,
+          weight_at_handover, weight_variance_pct,
+          notes
         ) VALUES (
-          @lot_id, @transaction_id, @handover_ref, 'received',
-          datetime('now'), datetime('now'), @notes
+          @lot_id, @transaction_id, @handover_ref,
+          'pending_confirmation',
+          datetime('now'),
+          @gps_collection,
+          @weight_at_handover, @weight_variance_pct,
+          @notes
         )
       `).run({
         lot_id,
         transaction_id: txnId,
         handover_ref: handoverRef,
-        notes: notes || `Handover to ${recycler.name} — authorized recycler`,
+        gps_collection: gpsCollectionJson,
+        weight_at_handover: actualWeight,
+        weight_variance_pct: weightVariancePct,
+        notes: notes || `Collector initiated handover to ${recycler.name}`,
       });
 
-      return txnId;
+      return { txnId, handoverRef, txnRef };
     });
 
-    const txnId = performHandover();
+    const result = performHandover();
 
-    res.json({
+    // Fetch the freshly-created traceability record to return its id
+    const traceRecord = db.prepare(
+      'SELECT id FROM traceability WHERE handover_ref = ?'
+    ).get(result.handoverRef);
+
+    res.status(201).json({
       status: 'ok',
-      message: 'Handover recorded successfully.',
+      message: 'Handover initiated — awaiting recycler confirmation.',
       transaction: {
-        id: txnId,
-        ref: txnRef,
+        id: result.txnId,
+        ref: result.txnRef,
+        handover_ref: result.handoverRef,
+        traceability_id: traceRecord?.id,
         amount: final_agreed_value,
-        trace_id: handoverRef,
         recycler_name: recycler.name,
         recycler_auth: recycler.authorization_number,
+        lot_status: 'pending_confirmation',
+        gps_captured: !!gpsCollectionJson,
+        weight_at_handover: actualWeight,
         date: new Date().toISOString(),
       },
     });

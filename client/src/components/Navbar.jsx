@@ -62,6 +62,18 @@ export default function Navbar({ activeTab, setActiveTab, activeCollector, setAc
               <span>📊</span>
               <span className="hidden sm:inline">Market</span> Rates
             </button>
+
+            <button
+              onClick={() => setActiveTab('recycler-portal')}
+              className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 ${
+                activeTab === 'recycler-portal'
+                  ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+              }`}
+            >
+              <span>♻️</span>
+              <span className="hidden sm:inline">Recycler</span> Portal
+            </button>
           </nav>
 
           {/* Demo Collector Persona Switcher */}
