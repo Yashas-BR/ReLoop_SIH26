@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { announcer } from '../utils/speech';
+import { getLocalizedMaterial } from '../i18n';
 import PriceChartModal from './PriceChartModal';
 
 const CATEGORY_ICONS = {
@@ -18,7 +19,7 @@ const CATEGORY_ICONS = {
   'Mixed E-Scrap': '🗑️',
 };
 
-// Lightweight inline SVG Sparkline Component (Real SQLite data points)
+// Lightweight inline SVG Sparkline Component
 function Sparkline({ points = [], color = '#22c55e' }) {
   if (!points || points.length < 2) return <span className="text-slate-600 text-xs">—</span>;
 
@@ -63,6 +64,8 @@ function Sparkline({ points = [], color = '#22c55e' }) {
 
 export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
   const { t, i18n } = useTranslation();
+  const currentLang = i18n.language || 'en';
+
   const [prices, setPrices] = useState([]);
   const [locations, setLocations] = useState(['Bengaluru', 'Mumbai', 'Chennai']);
   const [selectedLocation, setSelectedLocation] = useState('Bengaluru');
@@ -74,7 +77,7 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
 
   // Audio Speech state
   const [speakingId, setSpeakingId] = useState(null);
-  const speechLanguage = i18n.language === 'mr' ? 'mr-IN' : i18n.language === 'hi' ? 'hi-IN' : 'en-IN';
+  const speechLanguage = currentLang === 'mr' ? 'mr-IN' : currentLang === 'hi' ? 'hi-IN' : 'en-IN';
 
   // Modal Detailed Trend Chart state
   const [selectedMaterialForChart, setSelectedMaterialForChart] = useState(null);
@@ -147,6 +150,9 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
   const highValueItem = [...prices].sort((a, b) => b.current_buying_price - a.current_buying_price)[0];
   const topGainer = [...prices].sort((a, b) => b.pct_change - a.pct_change)[0];
 
+  const localizedLocation = getLocalizedMaterial(selectedLocation, currentLang);
+  const unitLabel = currentLang === 'mr' ? 'किग्रॅ' : currentLang === 'hi' ? 'किग्रा' : 'kg';
+
   return (
     <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-6">
       {/* Page Header */}
@@ -158,7 +164,7 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
               <span>{t('rates.title')}</span>
             </h1>
             <span className="px-2.5 py-0.5 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-400 text-xs font-mono font-bold">
-              Live SQLite Feed
+              {t('nav.liveFeed')}
             </span>
           </div>
           <p className="text-slate-400 text-sm mt-1">
@@ -172,7 +178,7 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
           <div className="flex items-center bg-slate-900 border border-slate-800 rounded-2xl p-1 shadow-inner">
             <span className="text-xs text-slate-400 px-2 font-semibold flex items-center gap-1">
               <span>📍</span>
-              <span>City:</span>
+              <span>{t('nav.city')}</span>
             </span>
             {locations.map(loc => (
               <button
@@ -184,7 +190,7 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
                     : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
                 }`}
               >
-                {loc}
+                {getLocalizedMaterial(loc, currentLang)}
               </button>
             ))}
           </div>
@@ -204,9 +210,9 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
         <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between">
           <div>
-            <p className="text-[10px] text-slate-400 uppercase font-semibold">Tracked Scrap Materials</p>
-            <p className="text-2xl font-black text-white font-mono mt-0.5">{prices.length} Types</p>
-            <p className="text-[11px] text-brand-400 mt-0.5">Updated live from SQLite</p>
+            <p className="text-[10px] text-slate-400 uppercase font-semibold">{t('rates.trackedMaterials')}</p>
+            <p className="text-2xl font-black text-white font-mono mt-0.5">{prices.length} {t('rates.types')}</p>
+            <p className="text-[11px] text-brand-400 mt-0.5">{t('rates.updatedLive')}</p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-400 flex items-center justify-center text-xl">
             📦
@@ -215,12 +221,14 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
 
         <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between">
           <div>
-            <p className="text-[10px] text-slate-400 uppercase font-semibold">Highest Value Item ({selectedLocation})</p>
+            <p className="text-[10px] text-slate-400 uppercase font-semibold">
+              {t('rates.highestValue')} ({localizedLocation})
+            </p>
             <p className="text-lg font-black text-amber-300 font-mono mt-0.5 truncate max-w-[180px]">
-              {highValueItem ? highValueItem.sub_category : '—'}
+              {highValueItem ? getLocalizedMaterial(highValueItem.sub_category, currentLang) : '—'}
             </p>
             <p className="text-xs font-mono font-bold text-brand-400">
-              ₹{highValueItem?.current_buying_price || 0} / {highValueItem?.unit || 'kg'}
+              ₹{highValueItem?.current_buying_price || 0} / {unitLabel}
             </p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl">
@@ -230,9 +238,9 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
 
         <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between">
           <div>
-            <p className="text-[10px] text-slate-400 uppercase font-semibold">Top 14-Day Momentum</p>
+            <p className="text-[10px] text-slate-400 uppercase font-semibold">{t('rates.topMomentum')}</p>
             <p className="text-lg font-black text-emerald-300 font-mono mt-0.5 truncate max-w-[180px]">
-              {topGainer ? topGainer.sub_category : '—'}
+              {topGainer ? getLocalizedMaterial(topGainer.sub_category, currentLang) : '—'}
             </p>
             <p className="text-xs font-mono font-bold text-emerald-400">
               {topGainer?.pct_change >= 0 ? `+${topGainer?.pct_change}%` : `${topGainer?.pct_change}%`} 📈
@@ -258,7 +266,7 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
               }`}
             >
               <span>{CATEGORY_ICONS[cat] || '♻️'}</span>
-              <span>{cat === 'All' ? t('categories.all') : cat}</span>
+              <span>{getLocalizedMaterial(cat, currentLang)}</span>
             </button>
           ))}
         </div>
@@ -286,7 +294,7 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
         </div>
       ) : prices.length === 0 ? (
         <div className="py-16 text-center text-slate-500 text-sm">
-          No price records found for "{search}" in {selectedLocation}.
+          No price records found for "{search}" in {localizedLocation}.
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -298,6 +306,9 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
                 : item.price_trend === 'falling'
                 ? '#f43f5e'
                 : '#38bdf8';
+
+            const localizedTitle = getLocalizedMaterial(item.sub_category, currentLang);
+            const localizedCat = getLocalizedMaterial(item.category, currentLang);
 
             return (
               <div
@@ -313,18 +324,18 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
                   {/* Top Row: Category + Regulated Badge */}
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded border border-brand-500/20">
-                      {item.category}
+                      {localizedCat}
                     </span>
                     {item.hazardous && (
                       <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
-                        ⚠️ Regulated E-Waste
+                        {t('rates.regulatedEWaste')}
                       </span>
                     )}
                   </div>
 
                   {/* Material Name */}
                   <h3 className="text-base font-bold text-white group-hover:text-brand-300 transition-colors">
-                    {item.sub_category}
+                    {localizedTitle}
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{item.description}</p>
 
@@ -336,7 +347,7 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
                           key={rm}
                           className="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800 text-[10px] font-mono text-amber-300"
                         >
-                          ✦ {rm}
+                          ✦ {getLocalizedMaterial(rm, currentLang)}
                         </span>
                       ))}
                     </div>
@@ -348,7 +359,7 @@ export default function PriceDiscoveryBoard({ onSelectMaterialForLot }) {
                       <p className="text-[10px] text-slate-400 uppercase font-semibold">{t('rates.buyingPrice')}</p>
                       <div className="text-2xl font-black text-brand-400 font-mono tracking-tight">
                         ₹{item.current_buying_price}
-                        <span className="text-xs font-normal text-slate-400">/{item.unit || 'kg'}</span>
+                        <span className="text-xs font-normal text-slate-400">/{unitLabel}</span>
                       </div>
                       <p className="text-[10px] text-slate-500 font-mono">
                         {t('rates.quotedPrice')}: ₹{item.current_quoted_price}

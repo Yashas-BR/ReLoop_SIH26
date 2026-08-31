@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
+import { getLocalizedMaterial } from '../i18n';
 
 const CATEGORY_ICONS = {
   'E-Waste': '💻',
@@ -16,7 +17,8 @@ const CATEGORY_ICONS = {
 };
 
 export default function CreateLotForm({ onLotCreated, activeCollector }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language || 'en';
   const [materials, setMaterials] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('E-Waste');
@@ -225,7 +227,7 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
                     }`}
                   >
                     <span className="text-2xl">{CATEGORY_ICONS[cat] || '♻️'}</span>
-                    <span className="truncate leading-snug">{cat}</span>
+                    <span className="truncate leading-snug">{getLocalizedMaterial(cat, currentLang)}</span>
                   </button>
                 ))}
               </div>
@@ -243,7 +245,7 @@ export default function CreateLotForm({ onLotCreated, activeCollector }) {
                 >
                   {filteredMaterials.map(m => (
                     <option key={m.id} value={m.id}>
-                      {m.sub_category} ({m.unit ? `₹/${m.unit}` : 'kg'})
+                      {getLocalizedMaterial(m.sub_category, currentLang)} ({m.unit ? `₹/${m.unit}` : 'kg'})
                     </option>
                   ))}
                 </select>
