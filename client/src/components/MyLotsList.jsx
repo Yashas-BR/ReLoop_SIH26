@@ -63,7 +63,7 @@ export default function MyLotsList({ onSelectLot, onLogNew }) {
             <span>{t('nav.myLots')}</span>
           </h1>
           <p className="text-slate-400 text-sm mt-1">
-            Real-time synchronization of local IndexedDB lots and SQLite server database.
+            {t('lots.subtitle')}
           </p>
         </div>
 
@@ -75,7 +75,7 @@ export default function MyLotsList({ onSelectLot, onLogNew }) {
               className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm shadow-emerald-900/30 cursor-pointer disabled:opacity-50"
             >
               <span className={isSyncing ? 'animate-spin' : ''}>🔄</span>
-              <span>Sync {pendingOfflineLots.length} Offline Lots</span>
+              <span>{t('lots.syncBtn', { count: pendingOfflineLots.length })}</span>
             </button>
           )}
 
@@ -84,7 +84,7 @@ export default function MyLotsList({ onSelectLot, onLogNew }) {
             className="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs font-semibold text-slate-300 transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <span>↻</span>
-            <span>Refresh</span>
+            <span>{t('sync.syncNow')}</span>
           </button>
 
           <button
@@ -116,7 +116,7 @@ export default function MyLotsList({ onSelectLot, onLogNew }) {
               onClick={triggerSync}
               className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-surface-950 font-black text-xs rounded-xl transition-all cursor-pointer whitespace-nowrap"
             >
-              Sync Now ↻
+              {t('sync.syncNow')}
             </button>
           )}
         </div>
@@ -130,7 +130,7 @@ export default function MyLotsList({ onSelectLot, onLogNew }) {
       ) : allDisplayCount === 0 ? (
         <div className="rounded-3xl border border-dashed border-slate-800 bg-slate-900/30 p-12 text-center max-w-lg mx-auto space-y-4">
           <span className="text-5xl">📦</span>
-          <h2 className="text-lg font-bold text-white">No Lots Logged Yet</h2>
+          <h2 className="text-lg font-bold text-white">{t('lots.noLots')}</h2>
           <p className="text-xs text-slate-400 leading-relaxed">
             Start by logging your first batch of collected scrap or e-waste. It works offline and online!
           </p>
@@ -138,7 +138,7 @@ export default function MyLotsList({ onSelectLot, onLogNew }) {
             onClick={onLogNew}
             className="px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-surface-950 font-bold text-xs transition-all cursor-pointer"
           >
-            Log First Material Lot
+            {t('lots.logFirstBtn')}
           </button>
         </div>
       ) : (

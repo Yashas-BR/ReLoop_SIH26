@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
+import { getLocalizedMaterial } from '../i18n';
 
 export default function MarketRatesView({ onSelectMaterialForLot }) {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language || 'en';
   const [materials, setMaterials] = useState([]);
   const [search, setSearch] = useState('');
   const [selectedCat, setSelectedCat] = useState('All');
@@ -28,9 +32,10 @@ export default function MarketRatesView({ onSelectMaterialForLot }) {
 
   const filtered = materials.filter(m => {
     const matchCat = selectedCat === 'All' || m.category === selectedCat;
-    const matchSearch = m.sub_category.toLowerCase().includes(search.toLowerCase()) ||
-                        m.category.toLowerCase().includes(search.toLowerCase()) ||
-                        (m.description && m.description.toLowerCase().includes(search.toLowerCase()));
+    const matchSearch =
+      m.sub_category.toLowerCase().includes(search.toLowerCase()) ||
+      m.category.toLowerCase().includes(search.toLowerCase()) ||
+      (m.description && m.description.toLowerCase().includes(search.toLowerCase()));
     return matchCat && matchSearch;
   });
 
@@ -40,10 +45,10 @@ export default function MarketRatesView({ onSelectMaterialForLot }) {
       <div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-['Outfit'] flex items-center gap-2.5">
           <span>📊</span>
-          <span>Live Fair Market Rates Catalog</span>
+          <span>{t('catalog.title')}</span>
         </h1>
         <p className="text-slate-400 text-sm mt-1">
-          Authorized buying and quoted rates compiled across verified recyclers in Karnataka/India.
+          {t('catalog.subtitle')}
         </p>
       </div>
 
@@ -60,7 +65,7 @@ export default function MarketRatesView({ onSelectMaterialForLot }) {
                   : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800'
               }`}
             >
-              {cat}
+              {getLocalizedMaterial(cat, lang)}
             </button>
           ))}
         </div>
@@ -69,7 +74,7 @@ export default function MarketRatesView({ onSelectMaterialForLot }) {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search material / mineral…"
+            placeholder={t('catalog.searchPlaceholder')}
             className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-1.5 text-xs text-white focus:outline-none focus:border-brand-400"
           />
         </div>
@@ -78,7 +83,7 @@ export default function MarketRatesView({ onSelectMaterialForLot }) {
       {loading ? (
         <div className="py-20 text-center">
           <div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-slate-400 text-sm font-mono">Loading rates from database…</p>
+          <p className="text-slate-400 text-sm font-mono">{t('catalog.loadingText')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -90,16 +95,18 @@ export default function MarketRatesView({ onSelectMaterialForLot }) {
               <div>
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <span className="text-[11px] font-semibold text-brand-400 uppercase tracking-wider bg-brand-500/10 px-2 py-0.5 rounded border border-brand-500/20">
-                    {mat.category}
+                    {getLocalizedMaterial(mat.category, lang)}
                   </span>
                   {mat.hazardous && (
                     <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
-                      ⚠️ E-Waste Regulated
+                      {t('catalog.eWasteRegulated')}
                     </span>
                   )}
                 </div>
 
-                <h3 className="text-base font-bold text-white mb-1">{mat.sub_category}</h3>
+                <h3 className="text-base font-bold text-white mb-1">
+                  {getLocalizedMaterial(mat.sub_category, lang)}
+                </h3>
                 <p className="text-xs text-slate-400 line-clamp-2 mb-3">{mat.description}</p>
 
                 {mat.recoverable_materials?.length > 0 && (
@@ -109,7 +116,7 @@ export default function MarketRatesView({ onSelectMaterialForLot }) {
                         key={rm}
                         className="px-1.5 py-0.5 bg-slate-950 border border-slate-800 rounded text-[10px] font-mono text-amber-300"
                       >
-                        ✦ {rm}
+                        ✦ {getLocalizedMaterial(rm, lang)}
                       </span>
                     ))}
                   </div>
@@ -118,7 +125,7 @@ export default function MarketRatesView({ onSelectMaterialForLot }) {
 
               <div className="border-t border-slate-800/80 pt-3 flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] text-slate-500 uppercase font-semibold">Authorized Rate</p>
+                  <p className="text-[10px] text-slate-500 uppercase font-semibold">{t('catalog.authorizedRate')}</p>
                   <p className="text-lg font-black text-brand-400 font-mono">
                     ₹{mat.latest_buying_price || '—'}
                     <span className="text-xs font-normal text-slate-400">/{mat.unit || 'kg'}</span>
@@ -128,7 +135,7 @@ export default function MarketRatesView({ onSelectMaterialForLot }) {
                   onClick={() => onSelectMaterialForLot(mat)}
                   className="px-3 py-1.5 bg-brand-500/10 hover:bg-brand-500/20 text-brand-300 border border-brand-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer"
                 >
-                  Log This Lot →
+                  {t('catalog.logLot')}
                 </button>
               </div>
             </div>
