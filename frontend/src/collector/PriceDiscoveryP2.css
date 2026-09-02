@@ -1,0 +1,220 @@
+/* ============================================================
+   PHASE 2 — PriceDiscovery additional styles
+   ============================================================ */
+
+/* Top controls row */
+.p2-pd-controls {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-8);
+}
+
+/* Section header row */
+.p2-section-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+
+/* ── Material Price Cards Grid ── */
+.p2-price-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--space-3);
+  margin-bottom: var(--space-8);
+}
+
+@media (max-width: 1100px) { .p2-price-cards-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 700px)  { .p2-price-cards-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 480px)  { .p2-price-cards-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.p2-price-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-2);
+  background: var(--color-card);
+  border: 1.5px solid var(--color-card-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  text-align: center;
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+  min-height: var(--touch-min);
+}
+
+.p2-price-card:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+.p2-price-card--active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  box-shadow: 0 0 0 3px rgba(124,58,237,0.15);
+}
+
+.p2-price-card--nodata {
+  opacity: 0.6;
+}
+
+.p2-price-card__icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.p2-price-card__label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  line-height: var(--leading-tight);
+}
+
+.p2-price-card--active .p2-price-card__label {
+  color: var(--color-primary);
+}
+
+.p2-price-card__price {
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  color: var(--color-accent);
+  line-height: 1;
+}
+
+.p2-price-card--nodata .p2-price-card__price {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  font-weight: var(--weight-medium);
+}
+
+.p2-price-card__range {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  line-height: var(--leading-tight);
+}
+
+.p2-price-card__active-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--color-primary);
+  border-radius: 0;
+}
+
+/* ── Hero row ── */
+.p2-hero-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+/* Price change indicator */
+.p2-price-change {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.p2-price-change--up { color: var(--color-success); }
+.p2-price-change--down { color: var(--color-destructive); }
+
+/* ── Stat chips row ── */
+.p2-stat-chips {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-6);
+}
+
+.p2-stat-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  min-width: 80px;
+  text-align: center;
+}
+
+.p2-stat-chip--accent {
+  background: var(--color-primary-light);
+  border-color: var(--color-border-strong);
+}
+
+.p2-stat-chip--up {
+  background: var(--color-success-light);
+  border-color: #86efac;
+}
+
+.p2-stat-chip--down {
+  background: var(--color-destructive-light);
+  border-color: #fca5a5;
+}
+
+.p2-stat-chip__label {
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.p2-stat-chip__value {
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-primary);
+}
+
+.p2-stat-chip--accent .p2-stat-chip__value { color: var(--color-primary); }
+.p2-stat-chip--up    .p2-stat-chip__value { color: var(--color-success); }
+.p2-stat-chip--down  .p2-stat-chip__value { color: var(--color-destructive); }
+
+/* ── Recycler table extras ── */
+.p2-best-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: #FCD34D;
+  color: #92400E;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.p2-vs-market {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+}
+
+.p2-vs-market--up {
+  background: var(--color-success-light);
+  color: var(--color-success);
+}
+
+.p2-vs-market--down {
+  background: var(--color-destructive-light);
+  color: var(--color-destructive);
+}
