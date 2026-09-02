@@ -1,0 +1,165 @@
+.dash-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+  flex-wrap: wrap;
+}
+
+/* Alert Banner */
+.alert-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-6);
+}
+
+.alert-banner--warn {
+  background: var(--color-warning-light);
+  color: var(--color-warning);
+  border: 1.5px solid #FCD34D;
+}
+
+.alert-banner--error {
+  background: var(--color-destructive-light);
+  color: var(--color-destructive);
+  border: 1.5px solid #FCA5A5;
+}
+
+.alert-banner--success {
+  background: var(--color-success-light);
+  color: var(--color-success);
+  border: 1.5px solid #86EFAC;
+}
+
+/* Quick Actions */
+.quick-actions {
+  margin-bottom: var(--space-8);
+}
+
+.quick-actions__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+}
+
+@media (max-width: 640px) {
+  .quick-actions__grid { grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
+}
+
+.quick-action-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  background: var(--color-card);
+  border: 1.5px solid var(--color-card-border);
+  border-radius: var(--radius-lg);
+  text-decoration: none;
+  color: var(--color-text-primary);
+  transition: all var(--transition-base);
+  text-align: center;
+  cursor: pointer;
+  min-height: var(--touch-min);
+}
+
+.quick-action-card:hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+  text-decoration: none;
+  color: var(--color-primary);
+}
+
+.quick-action-card__icon { font-size: 32px; }
+.quick-action-card__label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+}
+.quick-action-card__desc {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  line-height: var(--leading-normal);
+}
+
+@media (max-width: 480px) {
+  .quick-action-card__desc { display: none; }
+  .quick-action-card { padding: var(--space-4) var(--space-2); }
+}
+
+/* Lots List */
+.lots-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.lot-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+}
+
+.lot-row__cat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 0;
+}
+
+.lot-row__cat-badge {
+  font-size: 24px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-light);
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.lot-row__id {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.lot-row__category {
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-base);
+}
+
+.lot-row__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.lot-row__value {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-accent);
+  min-width: 80px;
+  text-align: right;
+}
+
+/* Recycler dashboard specifics */
+.rdash-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+  flex-wrap: wrap;
+}

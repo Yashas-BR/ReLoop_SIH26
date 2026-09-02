@@ -1,0 +1,9 @@
+/* Recycler Dashboard specific - Collector Dashboard.css already provides shared styles */
+.rdash-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+  flex-wrap: wrap;
+}
