@@ -14,11 +14,12 @@ const sqlDir = path.join(__dirname, '..', 'sql');
 const seedFiles = [
   '02_seed_recyclers_prices.sql',
   '03_seed_transactions.sql',
+  '05_seed_recycler_rates.sql',
 ];
 
 const expectedCounts = {
   recyclers: 10,
-  prices: 49,
+  prices: 77,
   collectors: 2,
   materials: 6,
   transactions: 6,

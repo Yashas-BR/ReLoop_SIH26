@@ -5,6 +5,11 @@
 - **Vedanth** — Backend (APIs & Business Logic)
 - **Tanush** — Frontend (Collector-facing + Recycler-facing, full UI)
 
+**Getting started (run the backend + connect a frontend):** see
+[`backend/docs/RUNNING.md`](backend/docs/RUNNING.md) — exact Postgres +
+migrate + seed + start steps, the `/v1` base URL, CORS, and a Vite proxy snippet.
+API reference: [`backend/docs/API.md`](backend/docs/API.md).
+
 ---
 
 ## YASHAS — Database & Datasets + PPT
@@ -87,6 +92,11 @@ Design and implement all 6 required datasets as real tables:
 ---
 
 ## TANUSH — Frontend (Full UI — Collector + Recycler)
+
+> **Before writing any UI code:** get the backend running and confirm you can hit
+> the `/v1` endpoints (valuation, trends, matching). Follow
+> [`backend/docs/RUNNING.md`](backend/docs/RUNNING.md). All responses wrap data
+> in `{ success, data }`; see [`backend/docs/API.md`](backend/docs/API.md).
 
 **Heads up before the list:** this is now the entire frontend scope for one person — collector app, recycler interface, traceability UI, multilingual support, and offline-first architecture. That's meaningfully more than what was previously split across two people. Flagging this now so you can prioritize deliberately rather than discover the crunch late. Suggested priority order is at the bottom.
 

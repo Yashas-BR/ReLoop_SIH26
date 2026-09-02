@@ -63,7 +63,12 @@ CREATE TABLE prices (
     unit VARCHAR(20) DEFAULT 'per_kg',
     recycler_id INTEGER REFERENCES recyclers(id),
     market_range_low NUMERIC(10,2),
-    market_range_high NUMERIC(10,2)
+    market_range_high NUMERIC(10,2),
+    -- Enables idempotent bulk upsert of recycler/market rates. NULL recycler_id
+    -- is treated as distinct in Postgres UNIQUE, so market rows (recycler_id NULL)
+    -- and per-recycler rows do not collide with each other.
+    CONSTRAINT prices_category_location_date_recycler_unique
+        UNIQUE (material_category, location, price_date, recycler_id)
 );
 
 -- TRANSACTIONS
@@ -107,3 +112,14 @@ CREATE INDEX idx_recyclers_auth_status ON recyclers(authorization_status);
 CREATE INDEX idx_transactions_collector ON transactions(collector_id);
 CREATE INDEX idx_transactions_status ON transactions(transaction_status);
 CREATE INDEX idx_traceability_lot ON traceability(lot_id);
+
+-- SYNC LOG (for offline-sync duplicate detection)
+DROP TABLE IF EXISTS sync_log CASCADE;
+CREATE TABLE sync_log (
+    id SERIAL PRIMARY KEY,
+    client_id VARCHAR(100) UNIQUE NOT NULL,
+    record_type VARCHAR(20) NOT NULL,
+    server_lot_id VARCHAR(30),
+    synced_at TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX idx_sync_log_client ON sync_log(client_id);
