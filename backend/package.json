@@ -1,0 +1,17 @@
+{
+  "name": "kabadiwala-connect-db",
+  "version": "1.0.0",
+  "description": "PostgreSQL schema, seed data, and connection layer for Kabadiwala Connect (SIH26229)",
+  "main": "src/db.js",
+  "type": "module",
+  "scripts": {
+    "test-connection": "node src/test-connection.js",
+    "migrate": "node src/migrate.js",
+    "seed": "node src/seed.js",
+    "reset": "node src/reset.js"
+  },
+  "dependencies": {
+    "pg": "^8.11.3",
+    "dotenv": "^16.4.5"
+  }
+}
