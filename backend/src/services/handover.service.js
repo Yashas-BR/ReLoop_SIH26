@@ -191,19 +191,35 @@ export const getHandoverByReference = async (reference) => {
  * @returns {Promise<Array>}
  */
 export const getHandoversByLot = async (lotId) => {
-  const result = await query(
-    `SELECT t.*, r.name AS recycler_name
-     FROM traceability t
-     LEFT JOIN recyclers r ON r.id = (
-       SELECT recycler_id FROM transactions WHERE lot_id = t.lot_id AND recycler_id IS NOT NULL LIMIT 1
-     )
-     WHERE t.lot_id = $1
-     ORDER BY t.event_timestamp DESC`,
-    [lotId]
-  );
+    const result = await query(
+      `SELECT
+         t.id AS handover_id,
+         t.handover_reference_number AS handover_reference,
+         t.status,
+         t.lot_id,
+         t.photo_refs,
+         t.weight_kg,
+         t.gps_lat,
+         t.gps_lng,
+         t.event_timestamp AS created_at,
+         t.confirmation_timestamp AS confirmed_at,
+         m.category,
+         m.sub_category,
+         m.approx_weight_kg,
+         m.estimated_value,
+         r.name AS recycler_name
+       FROM traceability t
+       JOIN materials m ON t.lot_id = m.lot_id
+       LEFT JOIN recyclers r ON r.id = (
+         SELECT recycler_id FROM transactions WHERE lot_id = t.lot_id AND recycler_id IS NOT NULL LIMIT 1
+       )
+       WHERE t.lot_id = $1
+       ORDER BY t.event_timestamp DESC`,
+      [lotId]
+    );
 
-  return result.rows;
-};
+    return result.rows;
+  };
 
 /**
  * Get all lots for a collector.

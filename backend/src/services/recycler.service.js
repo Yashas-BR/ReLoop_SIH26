@@ -59,6 +59,7 @@ export const matchAuthorizedRecyclers = async (category, lat, lng, maxDistanceKm
       WHERE distance_km <= $4
     )
     SELECT 
+      id AS recycler_id,
       id,
       name,
       facility_location,

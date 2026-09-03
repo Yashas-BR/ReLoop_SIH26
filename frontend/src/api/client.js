@@ -3,6 +3,43 @@
 
 const BASE = '/v1';
 
+// Keys that hold identifiers / human-readable codes and must NEVER be coerced
+// to numbers, even if they happen to look numeric.
+const SKIP_KEYS = new Set([
+  'lot_id',
+  'handover_reference_number',
+  'handover_reference',
+  'reference',
+  'client_id',
+  'category',
+]);
+
+function toNumberIfNumeric(value) {
+  if (value === null || value === undefined || value === '') return value;
+  const num = Number(value);
+  return Number.isNaN(num) ? value : num;
+}
+
+// pg returns NUMERIC/DECIMAL columns as strings ("5.20", "140.00"). Recursively
+// coerce float-looking strings to numbers so components can use .toFixed(),
+// comparisons, etc. Skipped keys are identifiers / codes that must stay strings.
+function normalize(value, key) {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalize(item));
+  }
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) {
+      out[k] = SKIP_KEYS.has(k) ? v : normalize(v, k);
+    }
+    return out;
+  }
+  if (typeof value === 'string' && key && !SKIP_KEYS.has(key)) {
+    return toNumberIfNumeric(value);
+  }
+  return value;
+}
+
 async function request(path, options = {}) {
   try {
     const res = await fetch(`${BASE}${path}`, {
@@ -13,7 +50,7 @@ async function request(path, options = {}) {
     if (!res.ok) {
       throw new Error(json.message || `HTTP ${res.status}`);
     }
-    return json;
+    return normalize(json);
   } catch (err) {
     console.error(`[API] ${path}`, err.message);
     throw err;
