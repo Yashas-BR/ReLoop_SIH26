@@ -16,15 +16,15 @@ export function Navbar({ portal, onPortalSwitch }) {
     { to: '/collector', label: t('nav.dashboard'), icon: '' },
     { to: '/collector/create-lot', label: t('nav.createLot'), icon: '+' },
     { to: '/collector/prices', label: t('nav.prices'), icon: '₹' },
-    { to: '/collector/earnings', label: t('nav.earnings'), icon: '💰' },
-    { to: '/safety', label: t('nav.safety'), icon: '🦺' },
+    { to: '/collector/earnings', label: t('nav.earnings'), icon: '' },
+    { to: '/safety', label: t('nav.safety'), icon: '' },
   ];
 
   const RECYCLER_NAV = [
     { to: '/recycler', label: t('nav.dashboard'), icon: '⊞' },
-    { to: '/recycler/lots', label: t('nav.lots'), icon: '📦' },
-    { to: '/recycler/profile', label: t('nav.profile'), icon: '👤' },
-    { to: '/safety', label: t('nav.safety'), icon: '🦺' },
+    { to: '/recycler/lots', label: t('nav.lots'), icon: '' },
+    { to: '/recycler/profile', label: t('nav.profile'), icon: '' },
+    { to: '/safety', label: t('nav.safety'), icon: '' },
   ];
 
   const navItems = portal === 'collector' ? COLLECTOR_NAV : RECYCLER_NAV;
@@ -34,7 +34,7 @@ export function Navbar({ portal, onPortalSwitch }) {
       <div className="navbar__inner container">
         {/* Logo */}
         <Link to={`/${portal}`} className="navbar__logo" aria-label={t('nav.homeLabel')}>
-          <span className="navbar__logo-icon" aria-hidden="true">♻</span>
+          
           <div className="navbar__logo-text">
             <span className="navbar__logo-name">Kabadiwala</span>
             <span className="navbar__logo-sub">Connect</span>
@@ -59,18 +59,18 @@ export function Navbar({ portal, onPortalSwitch }) {
         <div className="navbar__right">
           {/* Language Switcher */}
           <div className="lang-switcher" role="group" aria-label="Language / भाषा">
-            {LANG_OPTIONS.map((opt) => (
-              <button
-                key={opt.code}
-                className={`lang-btn ${lang === opt.code ? 'lang-btn--active' : ''}`}
-                onClick={() => setLang(opt.code)}
-                aria-pressed={lang === opt.code}
-                aria-label={`Switch to ${opt.label}`}
-                lang={opt.code}
-              >
-                {opt.label}
-              </button>
-            ))}
+            <select
+              className="lang-dropdown"
+              value={lang}
+              onChange={(e) => setLang(e.target.value)}
+              aria-label="Select Language"
+            >
+              {LANG_OPTIONS.map((opt) => (
+                <option key={opt.code} value={opt.code}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Portal Switcher */}
@@ -80,7 +80,7 @@ export function Navbar({ portal, onPortalSwitch }) {
               onClick={() => onPortalSwitch('collector')}
               aria-pressed={portal === 'collector'}
             >
-              <span aria-hidden="true">🧑</span>
+              
               {t('nav.collector')}
             </button>
             <button
@@ -88,7 +88,7 @@ export function Navbar({ portal, onPortalSwitch }) {
               onClick={() => onPortalSwitch('recycler')}
               aria-pressed={portal === 'recycler'}
             >
-              <span aria-hidden="true">🏭</span>
+              
               {t('nav.recycler')}
             </button>
           </div>
@@ -112,17 +112,18 @@ export function Navbar({ portal, onPortalSwitch }) {
 
       {/* Mobile lang row — shown below logo area on small screens */}
       <div className="mobile-lang-row show-mobile-only" role="group" aria-label="Language / भाषा">
-        {LANG_OPTIONS.map((opt) => (
-          <button
-            key={opt.code}
-            className={`mobile-lang-btn ${lang === opt.code ? 'mobile-lang-btn--active' : ''}`}
-            onClick={() => setLang(opt.code)}
-            aria-pressed={lang === opt.code}
-            lang={opt.code}
-          >
-            {opt.label}
-          </button>
-        ))}
+        <select
+          className="mobile-lang-dropdown"
+          value={lang}
+          onChange={(e) => setLang(e.target.value)}
+          aria-label="Select Language"
+        >
+          {LANG_OPTIONS.map((opt) => (
+            <option key={opt.code} value={opt.code}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
       </div>
     </header>
   );
