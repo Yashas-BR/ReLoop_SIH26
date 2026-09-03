@@ -1,43 +1,43 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import {
   getMatchedRecyclers, initiateHandover,
   DEFAULT_LAT, DEFAULT_LNG, DEMO_COLLECTOR_ID,
 } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
-import { PageLoader } from '../components/LoadingSpinner';
-import { LoadingSpinner } from '../components/LoadingSpinner';
+import { PageLoader, LoadingSpinner } from '../components/LoadingSpinner';
 import './MatchedRecyclers.css';
 
 export default function MatchedRecyclers() {
   const { state } = useLocation();
-  const navigate = useNavigate();
 
-  const category = state?.category || 'PCB';
-  const lotId = state?.lotId;
-  const valuation = state?.valuation;
+  const category    = state?.category || 'PCB';
+  const lotId       = state?.lotId;
+  const valuation   = state?.valuation;
 
   const [recyclers, setRecyclers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [handingOver, setHandingOver] = useState(null);
-  const [successMsg, setSuccessMsg] = useState('');
+  const [handingOver, setHandingOver] = useState(null); // recycler_id being processed
+  const [handoverResult, setHandoverResult] = useState(null); // { reference, recyclerName }
 
-  // Try to get user location, fall back to Bengaluru
   const [lat, setLat] = useState(DEFAULT_LAT);
   const [lng, setLng] = useState(DEFAULT_LNG);
 
+  // Try to get user location, fall back to Bengaluru
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         pos => { setLat(pos.coords.latitude); setLng(pos.coords.longitude); },
-        () => {}
+        () => {} // silent fallback
       );
     }
   }, []);
 
   useEffect(() => {
     setLoading(true);
+    // GET /v1/recyclers/match?category=&lat=&lng=
+    // Returns: [{ id, name, distance_km, match_score, offered_rate, materials_accepted, service_area, pickup_availability }]
     getMatchedRecyclers({ category, lat, lng })
       .then(r => setRecyclers(Array.isArray(r.data) ? r.data : []))
       .catch(() => setError('Could not load recyclers. Backend may be offline.'))
@@ -49,21 +49,29 @@ export default function MatchedRecyclers() {
       setError('No lot ID found. Please create a lot first.');
       return;
     }
-    setHandingOver(recycler.recycler_id);
+    // The recycler_id from the matching endpoint is returned as `id`
+    const recyclerId = recycler.id ?? recycler.recycler_id;
+    setHandingOver(recyclerId);
     setError('');
     try {
-      await initiateHandover({
+      // POST /v1/handover/initiate
+      // Returns: { traceability, handover_reference_number, recycler: { id, name, facility_location } }
+      const result = await initiateHandover({
         lot_id: lotId,
         collector_id: DEMO_COLLECTOR_ID,
-        recycler_id: recycler.recycler_id,
+        recycler_id: recyclerId,
         photo_refs: [],
         weight_kg: valuation?.lot?.approx_weight_kg || 1,
         gps_lat: lat,
         gps_lng: lng,
         handover_location: state?.location || 'Bengaluru',
       });
-      setSuccessMsg(`Handover initiated with ${recycler.name}!`);
-      setTimeout(() => navigate('/collector'), 2000);
+      // Show the backend-generated reference — never invented on the frontend
+      const ref = result?.data?.handover_reference_number;
+      setHandoverResult({
+        reference: ref,
+        recyclerName: recycler.name,
+      });
     } catch (err) {
       setError(err.message || 'Failed to initiate handover.');
     } finally {
@@ -71,9 +79,54 @@ export default function MatchedRecyclers() {
     }
   }
 
+  // Lower score = better match. Invert for % display.
   function scoreToPercent(score) {
-    // Lower score = better match. Invert for display.
-    return Math.max(0, Math.round((1 - Math.min(score, 1)) * 100));
+    return Math.max(0, Math.round((1 - Math.min(score ?? 0.5, 1)) * 100));
+  }
+
+  // Handover success panel — shown after successful initiation
+  if (handoverResult) {
+    return (
+      <div className="container">
+        <div className="handover-success animate-scale-in">
+          <div className="handover-success__icon" aria-hidden="true">🎉</div>
+          <h1 className="section-title" style={{ textAlign: 'center' }}>Handover Initiated!</h1>
+          <p className="section-subtitle" style={{ textAlign: 'center' }}>
+            Lot <strong>{lotId}</strong> has been handed over to <strong>{handoverResult.recyclerName}</strong>.
+          </p>
+
+          {handoverResult.reference && (
+            <div className="handover-success__ref-card">
+              <p className="handover-success__ref-label">Unique Reference Number</p>
+              <p className="handover-success__ref font-mono" aria-label={`Reference: ${handoverResult.reference}`}>
+                {handoverResult.reference}
+              </p>
+              <p className="handover-success__ref-hint">
+                Share this reference with the recycler to confirm receipt.
+              </p>
+            </div>
+          )}
+
+          <div className="handover-success__status-row">
+            <StatusBadge status="pending_confirmation" size="md" />
+            <span className="text-muted text-sm">Awaiting recycler confirmation</span>
+          </div>
+
+          <div className="handover-success__actions">
+            <Link
+              to={`/collector/lots/${lotId}`}
+              className="btn btn-primary"
+              id="view-lot-detail-btn"
+            >
+              <span aria-hidden="true">📋</span> View Lot Detail &amp; Timeline
+            </Link>
+            <Link to="/collector" className="btn btn-outline" id="go-dashboard-btn">
+              Back to Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -101,14 +154,8 @@ export default function MatchedRecyclers() {
       )}
 
       {error && (
-        <div className="alert-banner alert-banner--error animate-fade-in">
+        <div className="alert-banner alert-banner--error animate-fade-in" role="alert">
           <span aria-hidden="true">⚠</span> {error}
-        </div>
-      )}
-
-      {successMsg && (
-        <div className="alert-banner alert-banner--success animate-fade-in">
-          <span aria-hidden="true">✓</span> {successMsg} Redirecting…
         </div>
       )}
 
@@ -124,76 +171,104 @@ export default function MatchedRecyclers() {
         </div>
       ) : (
         <div className="recycler-list">
-          {recyclers.map((r, i) => (
-            <div key={r.recycler_id} className="recycler-card card card-clickable stagger-item" style={{ animationDelay: `${i * 70}ms` }}>
-              <div className="recycler-card__header">
-                <div className="recycler-card__name-wrap">
-                  <div className="recycler-card__avatar" aria-hidden="true">🏭</div>
-                  <div>
-                    <h2 className="recycler-card__name">{r.name}</h2>
-                    <p className="recycler-card__area">{r.service_area}</p>
-                  </div>
-                </div>
-                <StatusBadge status="authorized" />
-              </div>
+          {recyclers.map((r, i) => {
+            // Matching API returns `id` as the recycler primary key
+            const recyclerId = r.id ?? r.recycler_id;
+            const isHandingOver = handingOver === recyclerId;
+            const pct = scoreToPercent(r.match_score);
 
-              {/* Match Score Bar */}
-              <div className="match-score" aria-label={`Match score: ${scoreToPercent(r.match_score)}%`}>
-                <div className="match-score__label">
-                  <span>Match Score</span>
-                  <span className="match-score__pct">{scoreToPercent(r.match_score)}%</span>
+            return (
+              <div
+                key={recyclerId}
+                className="recycler-card card card-clickable stagger-item"
+                style={{ animationDelay: `${i * 70}ms` }}
+              >
+                <div className="recycler-card__header">
+                  <div className="recycler-card__name-wrap">
+                    <div className="recycler-card__avatar" aria-hidden="true">🏭</div>
+                    <div>
+                      <h2 className="recycler-card__name">{r.name}</h2>
+                      <p className="recycler-card__area">{r.service_area || r.facility_location}</p>
+                    </div>
+                  </div>
+                  <StatusBadge status="authorized" />
                 </div>
-                <div className="match-score__bar" role="progressbar"
-                  aria-valuenow={scoreToPercent(r.match_score)} aria-valuemin={0} aria-valuemax={100}>
+
+                {/* Match Score Bar */}
+                <div className="match-score" aria-label={`Match score: ${pct}%`}>
+                  <div className="match-score__label">
+                    <span>Match Score</span>
+                    <span className="match-score__pct">{pct}%</span>
+                  </div>
                   <div
-                    className="match-score__fill"
-                    style={{ width: `${scoreToPercent(r.match_score)}%` }}
-                  />
+                    className="match-score__bar"
+                    role="progressbar"
+                    aria-valuenow={pct}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                  >
+                    <div className="match-score__fill" style={{ width: `${pct}%` }} />
+                  </div>
                 </div>
-              </div>
 
-              {/* Stats */}
-              <div className="recycler-card__stats">
-                <div className="recycler-stat">
-                  <span className="recycler-stat__icon" aria-hidden="true">📍</span>
-                  <div>
-                    <p className="recycler-stat__label">Distance</p>
-                    <p className="recycler-stat__value">{r.distance_km?.toFixed(1)} km</p>
+                {/* Stats */}
+                <div className="recycler-card__stats">
+                  <div className="recycler-stat">
+                    <span className="recycler-stat__icon" aria-hidden="true">📍</span>
+                    <div>
+                      <p className="recycler-stat__label">Distance</p>
+                      <p className="recycler-stat__value">
+                        {r.distance_km != null ? `${Number(r.distance_km).toFixed(1)} km` : '—'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="recycler-stat">
+                    <span className="recycler-stat__icon" aria-hidden="true">₹</span>
+                    <div>
+                      <p className="recycler-stat__label">Offered Rate</p>
+                      <p className="recycler-stat__value">
+                        {r.offered_rate ? `₹${r.offered_rate}/kg` : '—'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="recycler-stat">
+                    <span className="recycler-stat__icon" aria-hidden="true">♻</span>
+                    <div>
+                      <p className="recycler-stat__label">Pickup</p>
+                      <p className="recycler-stat__value">
+                        {r.pickup_availability || '—'}
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div className="recycler-stat">
-                  <span className="recycler-stat__icon" aria-hidden="true">₹</span>
-                  <div>
-                    <p className="recycler-stat__label">Offered Rate</p>
-                    <p className="recycler-stat__value">₹{r.offered_rate}/kg</p>
-                  </div>
-                </div>
-                <div className="recycler-stat">
-                  <span className="recycler-stat__icon" aria-hidden="true">♻</span>
-                  <div>
-                    <p className="recycler-stat__label">Accepts</p>
-                    <p className="recycler-stat__value truncate">
-                      {(r.materials_accepted || [category]).join(', ')}
-                    </p>
-                  </div>
-                </div>
-              </div>
 
-              {lotId && (
-                <button
-                  className="btn btn-accent btn-full"
-                  onClick={() => handleSelectRecycler(r)}
-                  disabled={handingOver === r.recycler_id}
-                  aria-busy={handingOver === r.recycler_id}
-                >
-                  {handingOver === r.recycler_id
-                    ? <><LoadingSpinner size="sm" /> Initiating Handover…</>
-                    : <><span aria-hidden="true">🤝</span> Select This Recycler</>
-                  }
-                </button>
-              )}
-            </div>
-          ))}
+                {/* Accepted materials */}
+                {Array.isArray(r.materials_accepted) && r.materials_accepted.length > 0 && (
+                  <div className="recycler-card__materials">
+                    {r.materials_accepted.map(m => (
+                      <span key={m} className="material-chip">{m}</span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Initiate Handover — only shown if a lot exists */}
+                {lotId && (
+                  <button
+                    className="btn btn-accent btn-full"
+                    onClick={() => handleSelectRecycler(r)}
+                    disabled={!!handingOver}
+                    aria-busy={isHandingOver}
+                    id={`select-recycler-${recyclerId}`}
+                  >
+                    {isHandingOver
+                      ? <><LoadingSpinner size="sm" /> Initiating Handover…</>
+                      : <><span aria-hidden="true">🤝</span> Select This Recycler</>
+                    }
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
