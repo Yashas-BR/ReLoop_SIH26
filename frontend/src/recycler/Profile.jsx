@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { getRecycler, updateRecycler, DEMO_RECYCLER_ID, MATERIAL_CATEGORIES } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
 import { PageLoader, LoadingSpinner } from '../components/LoadingSpinner';
+import { useTranslation } from '../i18n/config.js';
 import './Profile.css';
 
 export default function RecyclerProfile() {
+  const { t } = useTranslation();
   const [recycler, setRecycler] = useState(null);
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,7 +19,7 @@ export default function RecyclerProfile() {
   useEffect(() => {
     getRecycler(DEMO_RECYCLER_ID)
       .then(r => { setRecycler(r.data); setForm(r.data); })
-      .catch(() => setError('Could not load profile. Is the backend running?'))
+      .catch(() => setError(t('recyclerDash.profileError')))
       .finally(() => setLoading(false));
   }, []);
 
@@ -50,10 +52,10 @@ export default function RecyclerProfile() {
       const r = await updateRecycler(DEMO_RECYCLER_ID, payload);
       setRecycler(r.data);
       setForm(r.data);
-      setSuccess('Profile updated successfully!');
+      setSuccess(t('recyclerDash.profileUpdated'));
       setEditing(false);
     } catch (err) {
-      setError(err.message || 'Failed to save profile.');
+      setError(err.message || t('recyclerDash.profileUpdateFail'));
     } finally {
       setSaving(false);
     }
@@ -70,18 +72,18 @@ export default function RecyclerProfile() {
   return (
     <div className="container">
       <div className="animate-fade-in" style={{ marginBottom: 'var(--space-6)' }}>
-        <Link to="/recycler" className="back-link">← Back to Dashboard</Link>
+        <Link to="/recycler" className="back-link">{t('common.back')}</Link>
         <div className="profile-header">
           <div className="profile-avatar" aria-hidden="true">🏭</div>
           <div>
-            <h1 className="section-title">{recycler?.name || 'My Profile'}</h1>
+            <h1 className="section-title">{recycler?.name || t('recyclerDash.myProfile')}</h1>
             <p className="section-subtitle">
               {recycler?.facility_location} · <StatusBadge status={recycler?.authorization_status} />
             </p>
           </div>
           {!editing && (
             <button className="btn btn-outline" onClick={() => setEditing(true)}>
-              <span aria-hidden="true">✎</span> Edit Profile
+              <span aria-hidden="true">✎</span> {t('recyclerDash.editProfile')}
             </button>
           )}
         </div>
@@ -102,10 +104,10 @@ export default function RecyclerProfile() {
       <div className="profile-layout">
         {/* Basic Info */}
         <section className="card animate-scale-in" aria-labelledby="profile-info-heading">
-          <h2 id="profile-info-heading" className="detail-section-title">Basic Information</h2>
+          <h2 id="profile-info-heading" className="detail-section-title">{t('recyclerDash.basicInfo')}</h2>
           <div className="profile-form">
             <div className="form-group">
-              <label className="form-label" htmlFor="p-name">Facility Name</label>
+              <label className="form-label" htmlFor="p-name">{t('recyclerDash.facilityName')}</label>
               {editing ? (
                 <input
                   id="p-name"
@@ -119,7 +121,7 @@ export default function RecyclerProfile() {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="p-location">Facility Location</label>
+              <label className="form-label" htmlFor="p-location">{t('recyclerDash.facilityLocation')}</label>
               {editing ? (
                 <input
                   id="p-location"
@@ -133,7 +135,7 @@ export default function RecyclerProfile() {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="p-service">Service Area</label>
+              <label className="form-label" htmlFor="p-service">{t('recyclerDash.serviceArea')}</label>
               {editing ? (
                 <input
                   id="p-service"
@@ -147,7 +149,7 @@ export default function RecyclerProfile() {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="p-contact">Contact</label>
+              <label className="form-label" htmlFor="p-contact">{t('recyclerDash.contact')}</label>
               {editing ? (
                 <input
                   id="p-contact"
@@ -162,7 +164,7 @@ export default function RecyclerProfile() {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="p-rate">Offered Rate (₹/kg)</label>
+              <label className="form-label" htmlFor="p-rate">{t('recyclerDash.offeredRate')}</label>
               {editing ? (
                 <input
                   id="p-rate"
@@ -181,7 +183,7 @@ export default function RecyclerProfile() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Pickup Available</label>
+              <label className="form-label">{t('recyclerDash.pickupAvailable')}</label>
               {editing ? (
                 <div className="toggle-wrap">
                   <button
@@ -192,11 +194,11 @@ export default function RecyclerProfile() {
                   >
                     <span className="toggle-thumb" />
                   </button>
-                  <span>{form?.pickup_available ? 'Yes, I offer pickup' : 'No pickup'}</span>
+                  <span>{form?.pickup_available ? t('recyclerDash.pickupYes') : t('recyclerDash.pickupNo')}</span>
                 </div>
               ) : (
                 <p className="profile-value">
-                  {recycler?.pickup_available ? '✓ Yes, pickup available' : '✗ No pickup'}
+                  {recycler?.pickup_available ? `✓ ${t('recyclerDash.pickupYes')}` : `✗ ${t('recyclerDash.pickupNo')}`}
                 </p>
               )}
             </div>
@@ -205,7 +207,7 @@ export default function RecyclerProfile() {
 
         {/* Materials Accepted */}
         <section className="card animate-scale-in" aria-labelledby="profile-mats-heading">
-          <h2 id="profile-mats-heading" className="detail-section-title">Materials Accepted</h2>
+          <h2 id="profile-mats-heading" className="detail-section-title">{t('createLot.category.heading')}</h2>
 
           {editing ? (
             <div className="materials-grid" role="group" aria-label="Select accepted materials">
@@ -228,7 +230,7 @@ export default function RecyclerProfile() {
           ) : (
             <div className="materials-pills">
               {(recycler?.materials_accepted || []).length === 0 ? (
-                <p className="text-muted">No materials listed.</p>
+                <p className="text-muted">{t('common.noData')}</p>
               ) : (
                 (recycler?.materials_accepted || []).map(m => {
                   const cat = MATERIAL_CATEGORIES.find(c => c.id === m);
@@ -247,7 +249,7 @@ export default function RecyclerProfile() {
           <div className="divider" style={{ margin: 'var(--space-5) 0' }} />
           <div className="auth-info">
             <div>
-              <p className="detail-item__label">Authorization Status</p>
+              <p className="detail-item__label">{t('status.confirmed').replace('Confirmed', 'Authorization Status')}</p>
               <StatusBadge status={recycler?.authorization_status} size="md" />
             </div>
             {recycler?.authorization_details && (
@@ -264,11 +266,11 @@ export default function RecyclerProfile() {
       {editing && (
         <div className="profile-actions animate-fade-in">
           <button className="btn btn-outline" onClick={handleCancel} disabled={saving}>
-            Cancel
+            {t('common.cancel')}
           </button>
           <button className="btn btn-accent btn-lg" onClick={handleSave} disabled={saving}>
             {saving ? <LoadingSpinner size="sm" /> : null}
-            {saving ? 'Saving…' : '💾 Save Changes'}
+            {saving ? `${t('recyclerDash.profileUpdated').replace('!', '...').replace('updated successfully', 'Saving')}` : `💾 ${t('common.save') || 'Save Changes'}`}
           </button>
         </div>
       )}

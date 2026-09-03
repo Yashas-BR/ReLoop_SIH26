@@ -384,6 +384,11 @@ textarea.form-input {
   color: var(--color-destructive);
   border: 1.5px solid var(--color-destructive);
 }
+.alert-banner--success {
+  background: var(--color-success-light);
+  color: var(--color-success);
+  border: 1.5px solid var(--color-success);
+}
 
 /* Back link — used on detail pages */
 .back-link {
