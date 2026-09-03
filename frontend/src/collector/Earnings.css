@@ -161,7 +161,6 @@
 .earnings-filter-btn--active {
   background: var(--color-primary);
   color: var(--color-on-primary);
-  box-shadow: 0 2px 8px rgba(124,58,237,0.25);
 }
 
 .earnings-filter-btn:not(.earnings-filter-btn--active):hover {

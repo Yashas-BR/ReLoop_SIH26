@@ -17,7 +17,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { getEarningsSummary, getPaymentHistory, DEMO_COLLECTOR_ID } from '../api/client';
-import { StatCard } from '../components/StatCard';
 import { StatusBadge } from '../components/StatusBadge';
 import { PageLoader, SkeletonCard } from '../components/LoadingSpinner';
 import { useTranslation } from '../i18n/config.js';
@@ -90,7 +89,7 @@ export default function CollectorEarnings() {
   return (
     <div className="container">
       {/* ── Header ── */}
-      <div className="earnings-header animate-fade-in">
+      <div className="earnings-header">
         <div>
           <h1 className="section-title">{t('earnings.title')}</h1>
           <p className="section-subtitle">{t('earnings.subtitle')}</p>
@@ -102,16 +101,16 @@ export default function CollectorEarnings() {
 
       {/* ── Offline / cache notice ── */}
       {fromCache && (
-        <div className="earnings-cache-notice animate-fade-in" role="note">
-          <span aria-hidden="true">📶</span>
+        <div className="earnings-cache-notice" role="note">
+          
           {t('earnings.cachedNotice')}
         </div>
       )}
 
       {/* ── Error banner ── */}
       {error && (
-        <div className="alert-banner alert-banner--warn animate-fade-in" role="alert">
-          <span aria-hidden="true">⚠</span> {error}
+        <div className="alert-banner alert-banner--warn" role="alert">
+           {error}
           <button className="btn btn-ghost btn-sm" onClick={load} style={{ marginLeft: 'auto' }}>
             {t('common.retry')}
           </button>
@@ -126,7 +125,7 @@ export default function CollectorEarnings() {
             {[0, 1, 2, 3].map((i) => <SkeletonCard key={i} />)}
           </div>
         ) : (
-          <div className="earnings-cards-grid animate-fade-in">
+          <div className="earnings-cards-grid">
             <div className="earnings-card">
               <div className="earnings-card__icon" aria-hidden="true">₹</div>
               <div className="earnings-card__body">
@@ -137,7 +136,7 @@ export default function CollectorEarnings() {
             </div>
 
             <div className="earnings-card earnings-card--green">
-              <div className="earnings-card__icon" aria-hidden="true">✓</div>
+              <div className="earnings-card__icon" aria-hidden="true"></div>
               <div className="earnings-card__body">
                 <p className="earnings-card__label">{t('earnings.paidOut')}</p>
                 <p className="earnings-card__value">{fmt(summary?.total_paid)}</p>
@@ -146,7 +145,7 @@ export default function CollectorEarnings() {
             </div>
 
             <div className="earnings-card earnings-card--amber">
-              <div className="earnings-card__icon" aria-hidden="true">⏳</div>
+              <div className="earnings-card__icon" aria-hidden="true"></div>
               <div className="earnings-card__body">
                 <p className="earnings-card__label">{t('earnings.pending')}</p>
                 <p className="earnings-card__value">{fmt(summary?.total_pending)}</p>
@@ -155,7 +154,7 @@ export default function CollectorEarnings() {
             </div>
 
             <div className="earnings-card earnings-card--purple">
-              <div className="earnings-card__icon" aria-hidden="true">📦</div>
+              <div className="earnings-card__icon" aria-hidden="true"></div>
               <div className="earnings-card__body">
                 <p className="earnings-card__label">{t('earnings.totalTransactions')}</p>
                 <p className="earnings-card__value">{summary?.total_transactions ?? '—'}</p>
@@ -196,8 +195,8 @@ export default function CollectorEarnings() {
 
         {/* Note: in-flight lots without final_price are excluded — backend limitation */}
         {!loadingR && rows.length === 0 && (
-          <div className="empty-state card animate-fade-in">
-            <span style={{ fontSize: 48 }} aria-hidden="true">📒</span>
+          <div className="empty-state card">
+            
             <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)' }}>
               {t('earnings.noTransactions')}
             </p>
@@ -211,8 +210,8 @@ export default function CollectorEarnings() {
         )}
 
         {!loadingR && rows.length > 0 && filtered.length === 0 && (
-          <div className="empty-state card animate-fade-in">
-            <span style={{ fontSize: 48 }} aria-hidden="true">🔍</span>
+          <div className="empty-state card">
+            
             <p>{t('earnings.noFilteredResults')}</p>
             <button className="btn btn-ghost btn-sm" onClick={() => setFilter('all')}>
               {t('earnings.filterAll')}
@@ -277,7 +276,7 @@ export default function CollectorEarnings() {
               {filtered.map((row, i) => (
                 <div
                   key={row.lot_id}
-                  className="ledger-card card stagger-item"
+                  className="ledger-card card"
                   style={{ animationDelay: `${i * 60}ms` }}
                 >
                   <div className="ledger-card__top">
@@ -320,7 +319,7 @@ export default function CollectorEarnings() {
             </div>
 
             {/* Totals footer */}
-            <div className="ledger-footer animate-fade-in">
+            <div className="ledger-footer">
               <span className="text-muted text-sm">
                 {filtered.length} / {rows.length} {t('earnings.totalTransactions').toLowerCase()}
               </span>

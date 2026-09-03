@@ -17,7 +17,7 @@ import {
 } from '../services/offline/cache.js';
 import { enqueue } from '../services/offline/syncQueue.js';
 
-const BASE = '/v1';
+const BASE = import.meta.env.VITE_API_BASE_URL || '/v1';
 
 async function request(path, options = {}) {
   try {
@@ -25,13 +25,18 @@ async function request(path, options = {}) {
       headers: { 'Content-Type': 'application/json', ...options.headers },
       ...options,
     });
-    const json = await res.json();
+    
+    let json = null;
+    const isJson = res.headers.get('content-type')?.includes('application/json');
+    if (isJson) {
+      json = await res.json();
+    }
+    
     if (!res.ok) {
-      throw new Error(json.message || `HTTP ${res.status}`);
+      throw new Error(json?.message || `HTTP ${res.status}`);
     }
     return json;
   } catch (err) {
-    console.error(`[API] ${path}`, err.message);
     throw err;
   }
 }
@@ -50,7 +55,10 @@ export const getMatchedRecyclers = ({ category, lat, lng, maxDistanceKm }) => {
   return request(url);
 };
 
-export const getAllRecyclers = () => request('/recyclers');
+export const getAllRecyclers = () => request('/recyclers').then(r => ({
+  ...r,
+  data: r.data ?? r.recyclers ?? [],
+}));
 export const getRecycler = (id) => request(`/recyclers/${id}`);
 export const updateRecycler = (id, data) =>
   request(`/recyclers/${id}`, { method: 'PUT', body: JSON.stringify(data) });
@@ -182,11 +190,11 @@ export const DEFAULT_LAT = 12.9716;
 export const DEFAULT_LNG = 77.5946;
 
 export const MATERIAL_CATEGORIES = [
-  { id: 'CRT',    label: 'CRTs',      icon: '📺', sub: ['Color CRT', 'Monochrome CRT'] },
-  { id: 'LCD',    label: 'LCD Panels', icon: '🖥️', sub: ['LED Monitor', 'LCD TV', 'Flat Panel'] },
-  { id: 'PCB',    label: 'PCBs',      icon: '🔌', sub: ['Motherboard', 'Graphics Card', 'RAM', 'Mixed PCB'] },
-  { id: 'Cable',  label: 'Cables',    icon: '🔋', sub: ['Power Cable', 'Data Cable', 'Mixed Cables'] },
-  { id: 'Battery', label: 'Batteries', icon: '🔋', sub: ['Li-Ion', 'Lead-Acid', 'NiMH', 'Mixed'] },
-  { id: 'Motor',  label: 'Motors',    icon: '⚙️', sub: ['Electric Motor', 'Transformer', 'Magnet Assembly'] },
-  { id: 'Plastic', label: 'Mixed Plastics', icon: '♻️', sub: ['ABS Plastic', 'PC Plastic', 'Mixed E-Plastic'] },
+  { id: 'CRT',    label: 'CRTs',      icon: '', sub: ['Color CRT', 'Monochrome CRT'] },
+  { id: 'LCD',    label: 'LCD Panels', icon: '', sub: ['LED Monitor', 'LCD TV', 'Flat Panel'] },
+  { id: 'PCB',    label: 'PCBs',      icon: '', sub: ['Motherboard', 'Graphics Card', 'RAM', 'Mixed PCB'] },
+  { id: 'Cable',  label: 'Cables',    icon: '', sub: ['Power Cable', 'Data Cable', 'Mixed Cables'] },
+  { id: 'Battery', label: 'Batteries', icon: '', sub: ['Li-Ion', 'Lead-Acid', 'NiMH', 'Mixed'] },
+  { id: 'Motor',  label: 'Motors',    icon: '', sub: ['Electric Motor', 'Transformer', 'Magnet Assembly'] },
+  { id: 'Plastic', label: 'Mixed Plastics', icon: '', sub: ['ABS Plastic', 'PC Plastic', 'Mixed E-Plastic'] },
 ];
