@@ -7,6 +7,8 @@ import CollectorDashboard from './collector/Dashboard';
 import CreateLot from './collector/CreateLot';
 import MatchedRecyclers from './collector/MatchedRecyclers';
 import PriceDiscovery from './collector/PriceDiscovery';
+import CollectorLotDetail from './collector/LotDetail';
+import CollectorTraceability from './collector/Traceability';
 
 // Recycler pages
 import RecyclerDashboard from './recycler/Dashboard';
@@ -36,6 +38,9 @@ function AppInner() {
           <Route path="/collector/create-lot" element={<CreateLot />} />
           <Route path="/collector/matched-recyclers" element={<MatchedRecyclers />} />
           <Route path="/collector/prices" element={<PriceDiscovery />} />
+          {/* Phase 3: collector lot detail and traceability */}
+          <Route path="/collector/lots/:lotId" element={<CollectorLotDetail />} />
+          <Route path="/collector/lots/:lotId/trace" element={<CollectorTraceability />} />
 
           {/* Recycler routes */}
           <Route path="/recycler" element={<RecyclerDashboard />} />

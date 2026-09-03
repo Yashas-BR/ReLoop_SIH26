@@ -32,8 +32,9 @@ export default function RecyclerDashboard() {
       .finally(() => setLoadingR(false));
   }, []);
 
-  const pending = lots.filter(l => !l.payment_status || l.payment_status === 'pending').length;
-  const confirmed = lots.filter(l => l.payment_status === 'paid').length;
+  // Use transaction_status (the real backend enum: quoted | matched | handed_over | confirmed)
+  const pending   = lots.filter(l => l.transaction_status === 'matched').length;
+  const confirmed = lots.filter(l => l.transaction_status === 'confirmed' || l.transaction_status === 'handed_over').length;
 
   return (
     <div className="container">
@@ -117,12 +118,13 @@ export default function RecyclerDashboard() {
         ) : (
           <div className="lots-list">
             {lots.slice(0, 5).map((lot, i) => (
-              <Link
-                key={lot.lot_id}
-                to={`/recycler/lots/${lot.lot_id}`}
-                className="lot-row card card-clickable stagger-item"
-                style={{ animationDelay: `${i * 60}ms`, textDecoration: 'none', color: 'inherit' }}
-              >
+                  <Link
+                    key={lot.lot_id}
+                    to={`/recycler/lots/${lot.lot_id}`}
+                    className="lot-row card card-clickable stagger-item"
+                    style={{ animationDelay: `${i * 60}ms`, textDecoration: 'none', color: 'inherit' }}
+                    aria-label={`Lot ${lot.lot_id} — ${lot.category}`}
+                  >
                 <div className="lot-row__cat">
                   <span className="lot-row__cat-badge" aria-hidden="true">📦</span>
                   <div>
@@ -139,9 +141,9 @@ export default function RecyclerDashboard() {
                     ? `₹${Number(lot.estimated_value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
                     : '—'}
                 </div>
-                <StatusBadge status={lot.payment_status || 'pending'} />
-                <span className="hide-mobile" style={{ color: 'var(--color-text-muted)' }}>›</span>
-              </Link>
+                  <StatusBadge status={lot.transaction_status || 'quoted'} />
+                  <span className="hide-mobile" style={{ color: 'var(--color-text-muted)' }}>›</span>
+                </Link>
             ))}
           </div>
         )}
