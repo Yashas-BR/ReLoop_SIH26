@@ -118,6 +118,16 @@ export default function CollectorDashboard() {
             <span className="quick-action-card__label">Find Recyclers</span>
             <span className="quick-action-card__desc">Nearby authorized buyers</span>
           </Link>
+          <Link to="/collector/earnings" className="quick-action-card">
+            <span className="quick-action-card__icon" aria-hidden="true">💰</span>
+            <span className="quick-action-card__label">Earnings Ledger</span>
+            <span className="quick-action-card__desc">Payment history &amp; totals</span>
+          </Link>
+          <Link to="/safety" className="quick-action-card">
+            <span className="quick-action-card__icon" aria-hidden="true">🦺</span>
+            <span className="quick-action-card__label">Safety Guidance</span>
+            <span className="quick-action-card__desc">Handling &amp; field safety</span>
+          </Link>
         </div>
       </section>
 

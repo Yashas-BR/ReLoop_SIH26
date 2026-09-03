@@ -5,12 +5,15 @@ const COLLECTOR_NAV = [
   { to: '/collector',               label: 'Dashboard', icon: '⊞' },
   { to: '/collector/create-lot',    label: 'Create Lot', icon: '+' },
   { to: '/collector/prices',        label: 'Prices',    icon: '₹' },
+  { to: '/collector/earnings',      label: 'Earnings',  icon: '💰' },
+  { to: '/safety',                  label: 'Safety',    icon: '🦺' },
 ];
 
 const RECYCLER_NAV = [
   { to: '/recycler',               label: 'Dashboard', icon: '⊞' },
   { to: '/recycler/lots',          label: 'Lots',      icon: '📦' },
   { to: '/recycler/profile',       label: 'Profile',   icon: '👤' },
+  { to: '/safety',                 label: 'Safety',    icon: '🦺' },
 ];
 
 export function Navbar({ portal, onPortalSwitch }) {
