@@ -159,7 +159,7 @@ Given one person now owns all frontend, build in this order so that if time runs
 8. Spoken price/audio polish, device-size optimization
 
 ## Cross-Team Dependencies
-| Tanush needs from Vedanth | Vedanth needs from Yashas |
+| Tanush needs help from Vedanth | Vedanth needs from Yashas |
 |---|---|
 | Valuation, price-trend, matching, handover, recycler-CRUD, offline-sync APIs | Finalized schema + seeded data to build real logic against |
 
