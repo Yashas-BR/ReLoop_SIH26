@@ -17,8 +17,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { getEarningsSummary, getPaymentHistory, DEMO_COLLECTOR_ID } from '../api/client';
+import { StatCard } from '../components/StatCard';
 import { StatusBadge } from '../components/StatusBadge';
-import { SkeletonCard, PageLoader } from '../components/LoadingSpinner';
+import { PageLoader, SkeletonCard } from '../components/LoadingSpinner';
+import { useTranslation } from '../i18n/config.js';
 import './Earnings.css';
 
 // ── Formatters ─────────────────────────────────────────────────────────────
@@ -27,19 +29,16 @@ function fmt(n) {
   return `₹${Number(n).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 }
 
-function fmtDate(d) {
+function fmtDate(d, lang) {
   if (!d) return '—';
-  return new Date(d).toLocaleDateString('en-IN', {
+  const locale = lang === 'hi' ? 'hi-IN' : lang === 'mr' ? 'mr-IN' : 'en-IN';
+  return new Date(d).toLocaleString(locale, {
     day: 'numeric', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
   });
 }
 
 // ── Filter helpers ──────────────────────────────────────────────────────────
-const FILTER_OPTIONS = [
-  { value: 'all',     label: 'All' },
-  { value: 'paid',    label: 'Paid' },
-  { value: 'pending', label: 'Pending' },
-];
 
 function applyFilter(rows, filter) {
   if (filter === 'all') return rows;
@@ -47,7 +46,13 @@ function applyFilter(rows, filter) {
 }
 
 // ── Component ───────────────────────────────────────────────────────────────
-export default function EarningsLedger() {
+export default function CollectorEarnings() {
+  const { t, lang } = useTranslation();
+  const FILTER_OPTIONS = [
+    { value: 'all',     label: t('earnings.filterAll') },
+    { value: 'paid',    label: t('earnings.filterPaid') },
+    { value: 'pending', label: t('earnings.filterPending') },
+  ];
   const [summary, setSummary] = useState(null);
   const [rows, setRows] = useState([]);
   const [fromCache, setFromCache] = useState(false);
@@ -71,7 +76,7 @@ export default function EarningsLedger() {
       setRows(Array.isArray(histRes.data) ? histRes.data : []);
       setFromCache(sumRes.fromCache || histRes.fromCache);
     } catch (err) {
-      setError('Could not load earnings data. ' + (err.message || ''));
+      setError(t('earnings.loadError') + ' ' + (err.message || ''));
     } finally {
       setLoadingS(false);
       setLoadingR(false);
@@ -87,13 +92,11 @@ export default function EarningsLedger() {
       {/* ── Header ── */}
       <div className="earnings-header animate-fade-in">
         <div>
-          <h1 className="section-title">Earnings Ledger</h1>
-          <p className="section-subtitle">
-            Your complete payment history and earnings summary
-          </p>
+          <h1 className="section-title">{t('earnings.title')}</h1>
+          <p className="section-subtitle">{t('earnings.subtitle')}</p>
         </div>
         <Link to="/collector" className="btn btn-ghost btn-sm">
-          ← Dashboard
+          {t('common.back')}
         </Link>
       </div>
 
@@ -101,7 +104,7 @@ export default function EarningsLedger() {
       {fromCache && (
         <div className="earnings-cache-notice animate-fade-in" role="note">
           <span aria-hidden="true">📶</span>
-          Showing cached data from your last session — connect to refresh
+          {t('earnings.cachedNotice')}
         </div>
       )}
 
@@ -110,14 +113,14 @@ export default function EarningsLedger() {
         <div className="alert-banner alert-banner--warn animate-fade-in" role="alert">
           <span aria-hidden="true">⚠</span> {error}
           <button className="btn btn-ghost btn-sm" onClick={load} style={{ marginLeft: 'auto' }}>
-            Retry
+            {t('common.retry')}
           </button>
         </div>
       )}
 
       {/* ── Summary cards ── */}
       <section aria-labelledby="summary-heading" className="earnings-summary-section">
-        <h2 id="summary-heading" className="sr-only">Earnings Summary</h2>
+        <h2 id="summary-heading" className="sr-only">{t('earnings.title')}</h2>
         {loadingS ? (
           <div className="grid-4">
             {[0, 1, 2, 3].map((i) => <SkeletonCard key={i} />)}
@@ -127,36 +130,36 @@ export default function EarningsLedger() {
             <div className="earnings-card">
               <div className="earnings-card__icon" aria-hidden="true">₹</div>
               <div className="earnings-card__body">
-                <p className="earnings-card__label">Total Earned</p>
+                <p className="earnings-card__label">{t('earnings.totalEarned')}</p>
                 <p className="earnings-card__value">{fmt(summary?.total_earned)}</p>
-                <p className="earnings-card__sub">All time (paid lots only)</p>
+                <p className="earnings-card__sub">{t('common.allTime')}</p>
               </div>
             </div>
 
             <div className="earnings-card earnings-card--green">
               <div className="earnings-card__icon" aria-hidden="true">✓</div>
               <div className="earnings-card__body">
-                <p className="earnings-card__label">Paid Out</p>
+                <p className="earnings-card__label">{t('earnings.paidOut')}</p>
                 <p className="earnings-card__value">{fmt(summary?.total_paid)}</p>
-                <p className="earnings-card__sub">{summary?.paid_transactions ?? 0} transaction{summary?.paid_transactions !== 1 ? 's' : ''}</p>
+                <p className="earnings-card__sub">{summary?.paid_transactions ?? 0} {t('earnings.totalTransactions').toLowerCase()}</p>
               </div>
             </div>
 
             <div className="earnings-card earnings-card--amber">
               <div className="earnings-card__icon" aria-hidden="true">⏳</div>
               <div className="earnings-card__body">
-                <p className="earnings-card__label">Pending</p>
+                <p className="earnings-card__label">{t('earnings.pending')}</p>
                 <p className="earnings-card__value">{fmt(summary?.total_pending)}</p>
-                <p className="earnings-card__sub">{summary?.pending_transactions ?? 0} awaiting payment</p>
+                <p className="earnings-card__sub">{summary?.pending_transactions ?? 0} {t('common.pendingPayment').toLowerCase()}</p>
               </div>
             </div>
 
             <div className="earnings-card earnings-card--purple">
               <div className="earnings-card__icon" aria-hidden="true">📦</div>
               <div className="earnings-card__body">
-                <p className="earnings-card__label">Transactions</p>
+                <p className="earnings-card__label">{t('earnings.totalTransactions')}</p>
                 <p className="earnings-card__value">{summary?.total_transactions ?? '—'}</p>
-                <p className="earnings-card__sub">With final price recorded</p>
+                <p className="earnings-card__sub">{t('earnings.filteredTotal')}</p>
               </div>
             </div>
           </div>
@@ -167,7 +170,7 @@ export default function EarningsLedger() {
       <section aria-labelledby="ledger-heading" className="earnings-ledger-section">
         <div className="earnings-ledger-header">
           <h2 id="ledger-heading" className="section-title" style={{ fontSize: 'var(--text-xl)' }}>
-            Transaction History
+            {t('earnings.title')}
           </h2>
 
           {/* Filter tabs */}
@@ -196,14 +199,13 @@ export default function EarningsLedger() {
           <div className="empty-state card animate-fade-in">
             <span style={{ fontSize: 48 }} aria-hidden="true">📒</span>
             <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)' }}>
-              No payment records yet
+              {t('earnings.noTransactions')}
             </p>
             <p className="text-muted text-sm">
-              Payment records appear here once a lot has been valued and a final price is recorded.
-              In-progress lots are visible on your Dashboard.
+              {t('earnings.noTransactionsDesc')}
             </p>
             <Link to="/collector/create-lot" className="btn btn-primary">
-              Create a Lot
+              {t('dashboard.createLot')}
             </Link>
           </div>
         )}
@@ -211,9 +213,9 @@ export default function EarningsLedger() {
         {!loadingR && rows.length > 0 && filtered.length === 0 && (
           <div className="empty-state card animate-fade-in">
             <span style={{ fontSize: 48 }} aria-hidden="true">🔍</span>
-            <p>No {filter} transactions</p>
+            <p>{t('earnings.noFilteredResults')}</p>
             <button className="btn btn-ghost btn-sm" onClick={() => setFilter('all')}>
-              Show all
+              {t('earnings.filterAll')}
             </button>
           </div>
         )}
@@ -227,14 +229,14 @@ export default function EarningsLedger() {
               <table className="ledger-table">
                 <thead>
                   <tr>
-                    <th scope="col">Lot / Reference</th>
-                    <th scope="col">Material</th>
-                    <th scope="col">Weight</th>
-                    <th scope="col">Recycler</th>
-                    <th scope="col">Final Price</th>
-                    <th scope="col">Payment</th>
-                    <th scope="col">Date</th>
-                    <th scope="col" className="sr-only">Actions</th>
+                    <th scope="col">{t('earnings.table.lot')}</th>
+                    <th scope="col">{t('earnings.table.material')}</th>
+                    <th scope="col">{t('earnings.table.weight')}</th>
+                    <th scope="col">{t('earnings.table.recycler')}</th>
+                    <th scope="col">{t('earnings.table.amount')}</th>
+                    <th scope="col">{t('earnings.table.status')}</th>
+                    <th scope="col">{t('earnings.table.date')}</th>
+                    <th scope="col" className="sr-only">{t('earnings.table.view')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -249,11 +251,11 @@ export default function EarningsLedger() {
                         <span className="ledger-lot-id font-mono">{row.lot_id}</span>
                       </td>
                       <td>{row.material_category}</td>
-                      <td>{row.quantity_weight_kg ?? '—'} kg</td>
+                      <td>{row.quantity_weight_kg ?? '—'} {t('common.kg')}</td>
                       <td>{row.recycler_name ?? '—'}</td>
                       <td className="ledger-price">{fmt(row.final_price)}</td>
                       <td><StatusBadge status={row.payment_status || 'pending'} /></td>
-                      <td className="ledger-date">{fmtDate(row.txn_datetime)}</td>
+                      <td className="ledger-date">{fmtDate(row.txn_datetime, lang)}</td>
                       <td>
                         <Link
                           to={`/collector/lots/${row.lot_id}`}
@@ -261,7 +263,7 @@ export default function EarningsLedger() {
                           onClick={(e) => e.stopPropagation()}
                           aria-label={`View lot ${row.lot_id}`}
                         >
-                          View →
+                          {t('common.view')}
                         </Link>
                       </td>
                     </tr>
@@ -287,22 +289,22 @@ export default function EarningsLedger() {
                   </div>
 
                   <div className="ledger-card__row">
-                    <span className="ledger-card__label">Weight</span>
-                    <span>{row.quantity_weight_kg ?? '—'} kg</span>
+                    <span className="ledger-card__label">{t('earnings.table.weight')}</span>
+                    <span>{row.quantity_weight_kg ?? '—'} {t('common.kg')}</span>
                   </div>
 
                   <div className="ledger-card__row">
-                    <span className="ledger-card__label">Recycler</span>
+                    <span className="ledger-card__label">{t('earnings.table.recycler')}</span>
                     <span>{row.recycler_name ?? '—'}</span>
                   </div>
 
                   <div className="ledger-card__row">
-                    <span className="ledger-card__label">Date</span>
-                    <span>{fmtDate(row.txn_datetime)}</span>
+                    <span className="ledger-card__label">{t('earnings.table.date')}</span>
+                    <span>{fmtDate(row.txn_datetime, lang)}</span>
                   </div>
 
                   <div className="ledger-card__row">
-                    <span className="ledger-card__label">Final Price</span>
+                    <span className="ledger-card__label">{t('earnings.table.amount')}</span>
                     <span className="ledger-price">{fmt(row.final_price)}</span>
                   </div>
 
@@ -311,7 +313,7 @@ export default function EarningsLedger() {
                     className="btn btn-outline btn-sm btn-full"
                     style={{ marginTop: 'var(--space-3)' }}
                   >
-                    View Lot Detail →
+                    {t('common.view')}
                   </Link>
                 </div>
               ))}
@@ -320,10 +322,10 @@ export default function EarningsLedger() {
             {/* Totals footer */}
             <div className="ledger-footer animate-fade-in">
               <span className="text-muted text-sm">
-                Showing {filtered.length} of {rows.length} transaction{rows.length !== 1 ? 's' : ''}
+                {filtered.length} / {rows.length} {t('earnings.totalTransactions').toLowerCase()}
               </span>
               <span className="ledger-footer__total">
-                Filtered total:{' '}
+                {t('earnings.filteredTotal')}:{' '}
                 <strong>
                   {fmt(filtered.reduce((acc, r) => acc + (Number(r.final_price) || 0), 0))}
                 </strong>

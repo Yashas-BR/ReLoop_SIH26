@@ -7,6 +7,7 @@ import {
 } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
 import { PageLoader } from '../components/LoadingSpinner';
+import { useTranslation } from '../i18n/config.js';
 import './LotDetail.css';
 
 function fmtDate(d) {
@@ -24,6 +25,7 @@ function fmt(n) {
 
 export default function CollectorLotDetail() {
   const { lotId } = useParams();
+  const { t } = useTranslation();
 
   // Lot metadata comes from the collector lots endpoint
   const [lot, setLot] = useState(null);
@@ -35,8 +37,6 @@ export default function CollectorLotDetail() {
     setLoading(true);
     setError('');
     try {
-      // Fetch collector lots to get lot metadata (category, weight, estimated_value, transaction_status)
-      // GET /v1/handover/lots/collector/:id
       const [lotsRes, handoversRes] = await Promise.all([
         getLotsByCollector(DEMO_COLLECTOR_ID),
         getHandoversByLot(lotId),
@@ -45,11 +45,9 @@ export default function CollectorLotDetail() {
       const allLots = Array.isArray(lotsRes.data) ? lotsRes.data : [];
       const foundLot = allLots.find(l => l.lot_id === lotId) ?? null;
       setLot(foundLot);
-
-      // GET /v1/handover/lot/:lotId — returns traceability records with recycler_name
       setHandovers(Array.isArray(handoversRes.data) ? handoversRes.data : []);
     } catch {
-      setError('Could not load lot details. Is the backend running?');
+      setError(t('lotDetail.loadError'));
     } finally {
       setLoading(false);
     }
@@ -57,11 +55,8 @@ export default function CollectorLotDetail() {
 
   useEffect(() => { load(); }, [load]);
 
-  // The most recent handover record is the primary one
   const latestHandover = handovers[0] ?? null;
 
-  // Determine the lifecycle step from available data
-  // Steps: 0=created, 1=valued, 2=matched, 3=handover_initiated, 4=confirmed
   function getCurrentStep() {
     if (latestHandover?.status === 'confirmed') return 4;
     if (latestHandover?.handover_reference_number) return 3;
@@ -74,32 +69,32 @@ export default function CollectorLotDetail() {
 
   const TIMELINE_STEPS = [
     {
-      label: 'Lot Created',
+      label: t('traceability.created'),
       sub: lot ? `${fmtDate(lot.created_at)}` : '',
       icon: '📦',
     },
     {
-      label: 'Valued',
-      sub: lot?.estimated_value ? `Est. ${fmt(lot.estimated_value)}` : 'No valuation data',
+      label: t('createLot.valuation.instantEstimate'),
+      sub: lot?.estimated_value ? `${t('lotDetail.estimatedValue')}: ${fmt(lot.estimated_value)}` : t('common.noData'),
       icon: '₹',
     },
     {
-      label: 'Matched to Recycler',
-      sub: latestHandover?.recycler_name || lot?.recycler_name || 'Pending match',
+      label: t('traceability.matched'),
+      sub: latestHandover?.recycler_name || lot?.recycler_name || t('status.pending'),
       icon: '🤝',
     },
     {
-      label: 'Handover Initiated',
+      label: t('traceability.handoverInitiated'),
       sub: latestHandover?.handover_reference_number
-        ? `Ref: ${latestHandover.handover_reference_number}`
-        : 'Not yet initiated',
+        ? `${t('lotDetail.handoverRef')}: ${latestHandover.handover_reference_number}`
+        : t('lotDetail.noHandover'),
       icon: '🔄',
     },
     {
-      label: 'Recycler Confirmed',
+      label: t('traceability.handoverConfirmed'),
       sub: latestHandover?.confirmation_timestamp
         ? fmtDate(latestHandover.confirmation_timestamp)
-        : 'Awaiting confirmation',
+        : t('status.pending'),
       icon: '✓',
     },
   ];
@@ -110,10 +105,10 @@ export default function CollectorLotDetail() {
     <div className="container">
       {/* Header */}
       <div className="animate-fade-in" style={{ marginBottom: 'var(--space-6)' }}>
-        <Link to="/collector" className="back-link">← Back to Dashboard</Link>
+        <Link to="/collector" className="back-link">{t('common.back')}</Link>
         <div style={{ marginTop: 'var(--space-3)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
           <div>
-            <h1 className="section-title">Lot Detail</h1>
+            <h1 className="section-title">{t('lotDetail.title')}</h1>
             <p className="section-subtitle font-mono">{lotId}</p>
           </div>
           {lot?.transaction_status && (
@@ -126,7 +121,7 @@ export default function CollectorLotDetail() {
         <div className="alert-banner alert-banner--warn animate-fade-in" role="alert">
           <span aria-hidden="true">⚠</span> {error}
           <button className="btn btn-ghost btn-sm" onClick={load} style={{ marginLeft: 'auto' }}>
-            Retry
+            {t('common.retry')}
           </button>
         </div>
       )}
@@ -135,54 +130,54 @@ export default function CollectorLotDetail() {
         <div className="empty-state card">
           <span style={{ fontSize: 48 }} aria-hidden="true">🔍</span>
           <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)' }}>
-            Lot not found
+            {t('lotDetail.loadError')}
           </p>
-          <p>This lot doesn't exist or hasn't been created yet.</p>
-          <Link to="/collector/create-lot" className="btn btn-primary">Create a New Lot</Link>
+          <p>{t('common.noData')}</p>
+          <Link to="/collector/create-lot" className="btn btn-primary">{t('dashboard.createFirstLot')}</Link>
         </div>
       ) : lot ? (
         <div className="cdash-layout">
 
           {/* Lot Info Card */}
           <section className="card animate-scale-in" aria-labelledby="lot-info-heading">
-            <h2 id="lot-info-heading" className="detail-section-title">Lot Information</h2>
+            <h2 id="lot-info-heading" className="detail-section-title">{t('lotDetail.title')}</h2>
             <div className="detail-grid">
               <div className="detail-item">
-                <p className="detail-item__label">Category</p>
+                <p className="detail-item__label">{t('lotDetail.category')}</p>
                 <p className="detail-item__value">{lot.category}</p>
               </div>
               {lot.sub_category && (
                 <div className="detail-item">
-                  <p className="detail-item__label">Sub-Category</p>
+                <p className="detail-item__label">{t('lotDetail.subCategory')}</p>
                   <p className="detail-item__value">{lot.sub_category}</p>
                 </div>
               )}
               <div className="detail-item">
-                <p className="detail-item__label">Weight</p>
-                <p className="detail-item__value">{lot.approx_weight_kg ?? '—'} kg</p>
+                <p className="detail-item__label">{t('lotDetail.weight')}</p>
+                <p className="detail-item__value">{lot.approx_weight_kg ?? '—'} {t('common.kg')}</p>
               </div>
               <div className="detail-item">
-                <p className="detail-item__label">Estimated Value</p>
+                <p className="detail-item__label">{t('lotDetail.estimatedValue')}</p>
                 <p className="detail-item__value" style={{ color: 'var(--color-accent)' }}>
                   {fmt(lot.estimated_value)}
                 </p>
               </div>
               <div className="detail-item">
-                <p className="detail-item__label">Transaction Status</p>
+                <p className="detail-item__label">{t('lotDetail.status')}</p>
                 <StatusBadge status={lot.transaction_status || 'quoted'} />
               </div>
               <div className="detail-item">
-                <p className="detail-item__label">Payment Status</p>
+                <p className="detail-item__label">{t('earnings.filterPaid')}</p>
                 <StatusBadge status={lot.payment_status || 'pending'} />
               </div>
               {lot.recycler_name && (
                 <div className="detail-item">
-                  <p className="detail-item__label">Assigned Recycler</p>
+                  <p className="detail-item__label">{t('recyclerDash.incomingLots')}</p>
                   <p className="detail-item__value">{lot.recycler_name}</p>
                 </div>
               )}
               <div className="detail-item">
-                <p className="detail-item__label">Created</p>
+                <p className="detail-item__label">{t('lotDetail.createdAt')}</p>
                 <p className="detail-item__value" style={{ fontSize: 'var(--text-sm)' }}>
                   {fmtDate(lot.created_at)}
                 </p>
@@ -194,14 +189,14 @@ export default function CollectorLotDetail() {
           <section className="card animate-scale-in" aria-labelledby="trace-heading">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-5)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
               <h2 id="trace-heading" className="detail-section-title" style={{ marginBottom: 0 }}>
-                Traceability Timeline
+                {t('traceability.title')}
               </h2>
               <Link
                 to={`/collector/lots/${lotId}/trace`}
                 className="btn btn-outline btn-sm"
                 id={`trace-detail-${lotId}`}
               >
-                Full Trace →
+                {t('lotDetail.viewTraceability')} →
               </Link>
             </div>
 
@@ -231,30 +226,27 @@ export default function CollectorLotDetail() {
           {/* Handover Reference Card — shown when a handover exists */}
           {latestHandover?.handover_reference_number && (
             <section className="card animate-fade-in" aria-labelledby="handover-ref-heading">
-              <h2 id="handover-ref-heading" className="detail-section-title">Handover Reference</h2>
+              <h2 id="handover-ref-heading" className="detail-section-title">{t('lotDetail.handoverRef')}</h2>
               <div className="ref-display">
-                <p className="ref-display__label">Unique Reference Number</p>
+                <p className="ref-display__label">{t('lotDetail.handoverRef')}</p>
                 <p className="ref-display__value font-mono">
                   {latestHandover.handover_reference_number}
-                </p>
-                <p className="ref-display__hint">
-                  Share this with the recycler to confirm receipt.
                 </p>
               </div>
               <div className="detail-grid" style={{ marginTop: 'var(--space-5)' }}>
                 <div className="detail-item">
-                  <p className="detail-item__label">Handover Status</p>
+                  <p className="detail-item__label">{t('lotDetail.handoverStatus')}</p>
                   <StatusBadge status={latestHandover.status || 'pending_confirmation'} size="md" />
                 </div>
                 <div className="detail-item">
-                  <p className="detail-item__label">Initiated</p>
+                  <p className="detail-item__label">{t('traceability.handoverInitiated')}</p>
                   <p className="detail-item__value" style={{ fontSize: 'var(--text-sm)' }}>
                     {fmtDate(latestHandover.event_timestamp)}
                   </p>
                 </div>
                 {latestHandover.confirmation_timestamp && (
                   <div className="detail-item">
-                    <p className="detail-item__label">Confirmed</p>
+                    <p className="detail-item__label">{t('traceability.handoverConfirmed')}</p>
                     <p className="detail-item__value" style={{ fontSize: 'var(--text-sm)' }}>
                       {fmtDate(latestHandover.confirmation_timestamp)}
                     </p>
@@ -262,8 +254,8 @@ export default function CollectorLotDetail() {
                 )}
                 {latestHandover.weight_kg != null && (
                   <div className="detail-item">
-                    <p className="detail-item__label">Weight (confirmed)</p>
-                    <p className="detail-item__value">{latestHandover.weight_kg} kg</p>
+                    <p className="detail-item__label">{t('lotDetail.weight')}</p>
+                    <p className="detail-item__value">{latestHandover.weight_kg} {t('common.kg')}</p>
                   </div>
                 )}
               </div>
@@ -275,15 +267,15 @@ export default function CollectorLotDetail() {
             <div className="empty-state card animate-fade-in">
               <span style={{ fontSize: 48 }} aria-hidden="true">🤝</span>
               <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)' }}>
-                Handover not initiated yet
+                {t('lotDetail.noHandover')}
               </p>
-              <p>Select a matched recycler to initiate the handover for this lot.</p>
+              <p>{t('recyclers.noMatchDesc')}</p>
               <Link
                 to="/collector/matched-recyclers"
                 state={{ category: lot.category, lotId: lot.lot_id }}
                 className="btn btn-primary"
               >
-                Find Matched Recyclers
+                {t('recyclers.title')}
               </Link>
             </div>
           )}
