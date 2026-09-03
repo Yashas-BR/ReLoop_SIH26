@@ -43,7 +43,9 @@
     "photos": "फोटो",
     "photo": "फोटो",
     "tryAgain": "कृपया पुन्हा प्रयत्न करा.",
-    "noData": "कोणताही डेटा उपलब्ध नाही."
+    "noData": "कोणताही डेटा उपलब्ध नाही.",
+    "summary": "सारांश",
+    "lotId": "लॉट आयडी"
   },
 
   "status": {
@@ -51,6 +53,7 @@
     "matched": "जुळवलेले",
     "pending": "प्रलंबित",
     "initiated": "सुरू केले",
+    "inProgress": "प्रगतीत",
     "handed_over": "सुपूर्द केले",
     "confirmed": "पुष्टी झाली",
     "paid": "पैसे मिळाले",
@@ -92,6 +95,10 @@
       "statusSyncing": "सिंक होत आहे",
       "statusFailed": "अयशस्वी"
     }
+  },
+
+  "sync": {
+    "confirmReceipt": "प्राप्तीची पुष्टी करा"
   },
 
   "dashboard": {
@@ -264,6 +271,18 @@
     "priceCard": "{{category}} — {{location}}"
   },
 
+  "priceDiscovery": {
+    "subtitle": "थेट बाजार दर, कल आणि पुनर्वापरकर्ता माहिती",
+    "regionalPrices": "सध्याचे बाजार दर",
+    "unitPrice": "प्रति किलो मूल्य",
+    "marketRange": "बाजार श्रेणी",
+    "buyingPrice": "खरेदी किंमत",
+    "speakPrice": "किंमती एका",
+    "stopAudio": "थांबवा",
+    "marketHigh": "बाजार कमाल",
+    "marketLow": "बाजार किमान"
+  },
+
   "recyclers": {
     "title": "जुळलेले पुनर्वापरकर्ते",
     "subtitle": "तुमच्या लॉटशी जुळलेले अधिकृत पुनर्वापरकर्ते",
@@ -275,6 +294,8 @@
     "rate": "दर",
     "pickup": "पिकअप उपलब्ध",
     "authorized": "अधिकृत",
+    "matchScore": "जुळणी गुण",
+    "handingOver": "सुरू होत आहे…",
     "selectRecycler": "हा पुनर्वापरकर्ता निवडा",
     "initiateHandover": "हस्तांतरण सुरू करा",
     "handoverInitiated": "हस्तांतरण सुरू झाले",
@@ -323,6 +344,7 @@
   "traceability": {
     "title": "ट्रेसेबिलिटी",
     "subtitle": "या लॉटचा संपूर्ण ऑडिट मार्ग",
+    "lifecycle": "लॉट जीवनचक्र",
     "lotId": "लॉट आयडी",
     "timeline": "कालरेखा",
     "created": "लॉट तयार केला",
@@ -337,7 +359,25 @@
     "recycler": "पुनर्वापरकर्ता",
     "weight": "वजन",
     "noTraceability": "अजून कोणताही ट्रेसेबिलिटी डेटा नाही.",
-    "loadError": "ट्रेसेबिलिटी डेटा लोड होऊ शकला नाही."
+    "loadError": "ट्रेसेबिलिटी डेटा लोड होऊ शकला नाही.",
+    "events": {
+      "created": "लॉट तयार केला",
+      "valued": "मूल्यांकन पूर्ण",
+      "matched": "पुनर्वापरकर्ता जुळवला",
+      "handoverInit": "हस्तांतरण सुरू झाले",
+      "confirmed": "हस्तांतरणाची पुष्टी झाली",
+      "awaitingMatch": "पुनर्वापरकर्ता जुळण्याची प्रतीक्षा",
+      "notInitiated": "अजून सुरू झाले नाही",
+      "awaitingConfirm": "पुनर्वापरकर्त्याच्या पुष्टीची प्रतीक्षा",
+      "txComplete": "प्राप्तीची पुष्टी झाली"
+    },
+    "details": {
+      "ref": "संदर्भ क्रमांक",
+      "gps": "GPS ठिकाण",
+      "timestamp": "वेळ",
+      "recycler": "पुनर्वापरकर्ता",
+      "weight": "वजन"
+    }
   },
 
   "earnings": {
@@ -374,7 +414,7 @@
     "offlineNotice": "हे पृष्ठ एकदा लोड झाल्यावर ऑफलाइन उपलब्ध आहे. इंटरनेट आवश्यक नाही.",
     "jumpNavLabel": "सुरक्षा विभागावर जा",
     "footer": "संशय असल्यास साहित्य हाताळू नका. तुमच्या सुपरवायझरशी किंवा ReLoop सहाय्य संघाशी संपर्क साधा. तुमची सुरक्षा कोणत्याही संग्रहापेक्षा महत्त्वाची आहे.",
-    "warningBadge": "⚠ सावधान",
+    "warningBadge": " सावधान",
     "doNot": "हे करू नका:",
     "sections": {
       "general": {
@@ -480,14 +520,33 @@
     "totalPending": "प्रलंबित",
     "totalLots": "एकूण लॉट",
     "loadError": "पुनर्वापरकर्ता डेटा लोड होऊ शकला नाही.",
-    "viewAll": "सर्व पाहा"
+    "viewAll": "सर्व पाहा",
+    "editProfile": "प्रोफाइल संपादित करा",
+    "basicInfo": "मूलभूत माहिती",
+    "facilityName": "सुविधेचे नाव",
+    "facilityLocation": "सुविधेचे ठिकाण",
+    "serviceArea": "सेवा क्षेत्र",
+    "contact": "संपर्क तपशील",
+    "contactPlaceholder": "फोन / ईमेल",
+    "offeredRate": "दिलेला दर (₹/किलो)",
+    "pickupAvailable": "पिकअप उपलब्ध",
+    "pickupYes": "होय — पिकअप उपलब्ध",
+    "pickupNo": "पिकअप नाही",
+    "authStatus": "प्राधिकरण स्थिती",
+    "authDetails": "प्राधिकरण तपशील",
+    "saveChanges": "बदल जतन करा",
+    "profileUpdated": "प्रोफाइल यशस्वीरीत्या अपडेट झाली.",
+    "profileUpdateFail": "प्रोफाइल जतन होऊ शकली नाही. कृपया पुन्हा प्रयत्न करा.",
+    "profileError": "प्रोफाइल लोड होऊ शकली नाही."
   },
 
   "incomingLots": {
     "title": "येणारे लॉट",
     "subtitle": "जुळलेले लॉट जे हस्तांतरण पुष्टीची वाट पाहत आहेत",
-    "noLots": "कोणतेही येणारे लॉट नाहीत.",
-    "noLotsDesc": "तुमच्याशी जुळलेले लॉट येथे दिसतील.",
+    "noLots": "अजून कोणतेही जुळलेले लॉट नाहीत",
+    "noLotsDesc": "संग्राहक तुमच्या क्षेत्रात लॉट तयार करतील तेव्हा ते तुमच्याशी जुळवले जातील.",
+    "noFilteredLots": "या फिल्टरशी जुळणारे कोणतेही लॉट नाहीत",
+    "noFilteredLotsDesc": "वर वेगळा स्थिती फिल्टर निवडून पाहा.",
     "loadError": "येणारे लॉट लोड होऊ शकले नाहीत.",
     "collector": "संग्राहक",
     "category": "श्रेणी",
@@ -500,9 +559,10 @@
     "confirmTitle": "हस्तांतरणाची पुष्टी करा",
     "confirmDesc": "पुष्टी करा की तुम्ही लॉट {{lotId}} प्राप्त केला.",
     "confirmed": "पुष्टी झाली",
-    "filterAll": "सर्व",
+    "filterAll": "सर्व जुळलेले",
     "filterPending": "प्रलंबित",
-    "filterConfirmed": "पुष्टी झाले"
+    "filterConfirmed": "पुष्टी झाले",
+    "estimated": "अंदा."
   },
 
   "recyclerLotDetail": {

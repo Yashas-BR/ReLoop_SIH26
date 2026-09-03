@@ -43,7 +43,9 @@
     "photos": "photos",
     "photo": "photo",
     "tryAgain": "Please try again.",
-    "noData": "No data available."
+    "noData": "No data available.",
+    "summary": "Summary",
+    "lotId": "Lot ID"
   },
 
   "status": {
@@ -51,6 +53,7 @@
     "matched": "Matched",
     "pending": "Pending",
     "initiated": "Initiated",
+    "inProgress": "In Progress",
     "handed_over": "Handed Over",
     "confirmed": "Confirmed",
     "paid": "Paid",
@@ -92,6 +95,10 @@
       "statusSyncing": "Syncing",
       "statusFailed": "Failed"
     }
+  },
+
+  "sync": {
+    "confirmReceipt": "Confirm Receipt"
   },
 
   "dashboard": {
@@ -264,6 +271,18 @@
     "priceCard": "{{category}} — {{location}}"
   },
 
+  "priceDiscovery": {
+    "subtitle": "Live market rates, trends & recycler information",
+    "regionalPrices": "Current Market Rates",
+    "unitPrice": "Unit Price",
+    "marketRange": "Market Range",
+    "buyingPrice": "Buying Price",
+    "speakPrice": "Speak Prices",
+    "stopAudio": "Stop Speaking",
+    "marketHigh": "Market High",
+    "marketLow": "Market Low"
+  },
+
   "recyclers": {
     "title": "Matched Recyclers",
     "subtitle": "Authorized recyclers matched to your lot",
@@ -275,6 +294,8 @@
     "rate": "Rate",
     "pickup": "Pickup Available",
     "authorized": "Authorized",
+    "matchScore": "Match Score",
+    "handingOver": "Initiating…",
     "selectRecycler": "Select this Recycler",
     "initiateHandover": "Initiate Handover",
     "handoverInitiated": "Handover Initiated",
@@ -323,6 +344,7 @@
   "traceability": {
     "title": "Traceability",
     "subtitle": "Full audit trail for this lot",
+    "lifecycle": "Lot Lifecycle",
     "lotId": "Lot ID",
     "timeline": "Timeline",
     "created": "Lot Created",
@@ -337,7 +359,25 @@
     "recycler": "Recycler",
     "weight": "Weight",
     "noTraceability": "No traceability data yet.",
-    "loadError": "Could not load traceability data."
+    "loadError": "Could not load traceability data.",
+    "events": {
+      "created": "Lot Created",
+      "valued": "Valuation Completed",
+      "matched": "Recycler Matched",
+      "handoverInit": "Handover Initiated",
+      "confirmed": "Handover Confirmed",
+      "awaitingMatch": "Awaiting recycler match",
+      "notInitiated": "Not yet initiated",
+      "awaitingConfirm": "Awaiting recycler confirmation",
+      "txComplete": "Receipt confirmed"
+    },
+    "details": {
+      "ref": "Reference Number",
+      "gps": "GPS Location",
+      "timestamp": "Timestamp",
+      "recycler": "Recycler",
+      "weight": "Weight"
+    }
   },
 
   "earnings": {
@@ -480,14 +520,33 @@
     "totalPending": "Pending",
     "totalLots": "Total Lots",
     "loadError": "Could not load recycler data.",
-    "viewAll": "View All"
+    "viewAll": "View All",
+    "editProfile": "Edit Profile",
+    "basicInfo": "Basic Information",
+    "facilityName": "Facility Name",
+    "facilityLocation": "Facility Location",
+    "serviceArea": "Service Area",
+    "contact": "Contact Details",
+    "contactPlaceholder": "Phone / email",
+    "offeredRate": "Offered Rate (₹/kg)",
+    "pickupAvailable": "Pickup Available",
+    "pickupYes": "Yes — Pickup available",
+    "pickupNo": "No pickup",
+    "authStatus": "Authorization Status",
+    "authDetails": "Authorization Details",
+    "saveChanges": "Save Changes",
+    "profileUpdated": "Profile updated successfully.",
+    "profileUpdateFail": "Could not save profile. Please try again.",
+    "profileError": "Could not load profile."
   },
 
   "incomingLots": {
     "title": "Incoming Lots",
     "subtitle": "Lots matched and awaiting handover confirmation",
-    "noLots": "No incoming lots.",
-    "noLotsDesc": "Lots matched to you will appear here.",
+    "noLots": "No matched lots yet",
+    "noLotsDesc": "Collectors will be matched to your facility once they create lots in your area.",
+    "noFilteredLots": "No lots match this filter",
+    "noFilteredLotsDesc": "Try selecting a different status filter above.",
     "loadError": "Could not load incoming lots.",
     "collector": "Collector",
     "category": "Category",
@@ -500,9 +559,10 @@
     "confirmTitle": "Confirm Handover",
     "confirmDesc": "Confirm that you have received lot {{lotId}}.",
     "confirmed": "Confirmed",
-    "filterAll": "All",
+    "filterAll": "All Matched",
     "filterPending": "Pending",
-    "filterConfirmed": "Confirmed"
+    "filterConfirmed": "Confirmed",
+    "estimated": "est."
   },
 
   "recyclerLotDetail": {
