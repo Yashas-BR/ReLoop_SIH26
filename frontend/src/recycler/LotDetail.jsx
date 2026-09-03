@@ -3,11 +3,13 @@ import { useParams, Link } from 'react-router-dom';
 import { getHandoversByLot, confirmHandover, DEMO_RECYCLER_ID } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
 import { PageLoader, LoadingSpinner } from '../components/LoadingSpinner';
+import { useTranslation } from '../i18n/config.js';
 import './LotDetail.css';
 
-function fmtDate(d) {
+function fmtDate(d, lang) {
   if (!d) return '—';
-  return new Date(d).toLocaleString('en-IN', {
+  const locale = lang === 'hi' ? 'hi-IN' : lang === 'mr' ? 'mr-IN' : 'en-IN';
+  return new Date(d).toLocaleString(locale, {
     day: 'numeric', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
@@ -22,6 +24,7 @@ function statusToStep(status) {
 
 export default function LotDetail() {
   const { lotId } = useParams();
+  const { t, lang } = useTranslation();
   const [handovers, setHandovers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState(null); // reference being confirmed
@@ -35,7 +38,7 @@ export default function LotDetail() {
     // Returns array of traceability records joined with recycler name
     getHandoversByLot(lotId)
       .then(r => setHandovers(Array.isArray(r.data) ? r.data : []))
-      .catch(() => setError('Could not load lot details. Is the backend running?'))
+      .catch(() => setError(t('lotDetail.loadError')))
       .finally(() => setLoading(false));
   }, [lotId]);
 
@@ -48,10 +51,10 @@ export default function LotDetail() {
     try {
       // Backend: POST /v1/handover/confirm/:reference { recycler_id }
       await confirmHandover(reference, DEMO_RECYCLER_ID);
-      setSuccess(`Handover ${reference} confirmed. Status updated.`);
+      setSuccess(t('traceability.events.txComplete').replace('Receipt confirmed', `Handover ${reference} confirmed`));
       load(); // refresh to show confirmed state
     } catch (err) {
-      setError(err.message || 'Failed to confirm handover.');
+      setError(err.message || t('recyclerDash.profileUpdateFail').replace('save profile', 'confirm handover'));
     } finally {
       setConfirming(null);
     }
@@ -63,9 +66,9 @@ export default function LotDetail() {
   return (
     <div className="container">
       <div className="animate-fade-in" style={{ marginBottom: 'var(--space-6)' }}>
-        <Link to="/recycler/lots" className="back-link">← Back to Lots</Link>
+        <Link to="/recycler/lots" className="back-link">{t('common.back')}</Link>
         <h1 className="section-title" style={{ marginTop: 'var(--space-3)' }}>
-          Lot Detail
+          {t('lotDetail.title')}
         </h1>
         <p className="section-subtitle font-mono">{lotId}</p>
       </div>
@@ -87,29 +90,29 @@ export default function LotDetail() {
         <div className="empty-state card">
           <span style={{ fontSize: 48 }} aria-hidden="true">📭</span>
           <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)' }}>
-            No handover records yet
+            {t('common.noData')}
           </p>
-          <p>This lot hasn't been handed over to your facility yet.</p>
+          <p>{t('traceability.events.awaitingMatch')}</p>
         </div>
       ) : (
         <div className="lot-detail-layout">
           {/* Lot Summary Card */}
           <section className="card animate-scale-in" aria-labelledby="lot-sum-heading">
-            <h2 id="lot-sum-heading" className="detail-section-title">Lot Summary</h2>
+            <h2 id="lot-sum-heading" className="detail-section-title">{t('common.summary')}</h2>
             <div className="detail-grid">
               <div className="detail-item">
-                <p className="detail-item__label">Lot ID</p>
+                <p className="detail-item__label">{t('common.lotId')}</p>
                 <p className="detail-item__value font-mono">{lotId}</p>
               </div>
               <div className="detail-item">
-                <p className="detail-item__label">Weight (at handover)</p>
+                <p className="detail-item__label">{t('lotDetail.weight')}</p>
                 <p className="detail-item__value">
-                  {firstHandover?.weight_kg != null ? `${firstHandover.weight_kg} kg` : '—'}
+                  {firstHandover?.weight_kg != null ? `${firstHandover.weight_kg} ${t('common.kg')}` : '—'}
                 </p>
               </div>
               {firstHandover?.recycler_name && (
                 <div className="detail-item">
-                  <p className="detail-item__label">Your Facility</p>
+                  <p className="detail-item__label">{t('recyclerDash.facilityName')}</p>
                   <p className="detail-item__value">{firstHandover.recycler_name}</p>
                 </div>
               )}
@@ -122,9 +125,9 @@ export default function LotDetail() {
                 </div>
               )}
               <div className="detail-item">
-                <p className="detail-item__label">Received</p>
+                <p className="detail-item__label">{t('status.handed_over')}</p>
                 <p className="detail-item__value" style={{ fontSize: 'var(--text-sm)' }}>
-                  {fmtDate(firstHandover?.event_timestamp)}
+                  {fmtDate(firstHandover?.event_timestamp, lang)}
                 </p>
               </div>
             </div>
@@ -137,7 +140,7 @@ export default function LotDetail() {
               className="section-title"
               style={{ marginBottom: 'var(--space-4)', fontSize: 'var(--text-xl)' }}
             >
-              Handover Records
+              {t('traceability.lifecycle')}
             </h2>
 
             {handovers.map((h, i) => {
@@ -156,7 +159,7 @@ export default function LotDetail() {
                   {/* Reference + Status */}
                   <div className="handover-card__header">
                     <div>
-                      <p className="handover-card__ref-label">Reference Number</p>
+                      <p className="handover-card__ref-label">{t('traceability.details.ref')}</p>
                       <p className="handover-card__ref font-mono">{ref || '—'}</p>
                     </div>
                     <StatusBadge status={h.status || 'pending_confirmation'} size="md" />
@@ -165,25 +168,25 @@ export default function LotDetail() {
                   {/* Meta grid */}
                   <div className="detail-grid" style={{ marginTop: 'var(--space-4)' }}>
                     <div className="detail-item">
-                      <p className="detail-item__label">Initiated</p>
+                      <p className="detail-item__label">{t('traceability.events.handoverInit')}</p>
                       {/* event_timestamp is the correct field on traceability table */}
                       <p className="detail-item__value" style={{ fontSize: 'var(--text-sm)' }}>
-                        {fmtDate(h.event_timestamp)}
+                        {fmtDate(h.event_timestamp, lang)}
                       </p>
                     </div>
                     {isConfirmed && (
                       <div className="detail-item">
-                        <p className="detail-item__label">Confirmed At</p>
+                        <p className="detail-item__label">{t('traceability.events.confirmed')}</p>
                         {/* confirmation_timestamp is the correct field */}
                         <p className="detail-item__value" style={{ fontSize: 'var(--text-sm)' }}>
-                          {fmtDate(h.confirmation_timestamp)}
+                          {fmtDate(h.confirmation_timestamp, lang)}
                         </p>
                       </div>
                     )}
                     {h.weight_kg != null && (
                       <div className="detail-item">
-                        <p className="detail-item__label">Weight</p>
-                        <p className="detail-item__value">{h.weight_kg} kg</p>
+                        <p className="detail-item__label">{t('lotDetail.weight')}</p>
+                        <p className="detail-item__value">{h.weight_kg} {t('common.kg')}</p>
                       </div>
                     )}
                   </div>
@@ -193,27 +196,27 @@ export default function LotDetail() {
                     <div className={`timeline-step ${step >= 0 ? 'timeline-step--done' : ''}`}>
                       <div className="timeline-step__dot" />
                       <div>
-                        <span className="timeline-step__label">Lot Created & Valued</span>
-                        <span className="timeline-step__sub">Collector submitted lot</span>
+                        <span className="timeline-step__label">{t('traceability.events.created')}</span>
+                        <span className="timeline-step__sub">{t('status.quoted')}</span>
                       </div>
                     </div>
                     <div className={`timeline-step ${step >= 1 ? 'timeline-step--done' : 'timeline-step--pending'}`}>
                       <div className="timeline-step__dot" />
                       <div>
-                        <span className="timeline-step__label">Handover Initiated</span>
+                        <span className="timeline-step__label">{t('traceability.events.handoverInit')}</span>
                         <span className="timeline-step__sub">
-                          Ref: <span className="font-mono" style={{ fontSize: 'var(--text-xs)' }}>{ref}</span>
+                          {t('traceability.details.ref')}: <span className="font-mono" style={{ fontSize: 'var(--text-xs)' }}>{ref}</span>
                         </span>
                       </div>
                     </div>
                     <div className={`timeline-step ${step >= 2 ? 'timeline-step--done' : 'timeline-step--pending'}`}>
                       <div className="timeline-step__dot" />
                       <div>
-                        <span className="timeline-step__label">Recycler Confirmed</span>
+                        <span className="timeline-step__label">{t('traceability.events.confirmed')}</span>
                         <span className="timeline-step__sub">
                           {isConfirmed
-                            ? `Confirmed ${fmtDate(h.confirmation_timestamp)}`
-                            : 'Awaiting your confirmation'}
+                            ? `${t('status.confirmed')} ${fmtDate(h.confirmation_timestamp, lang)}`
+                            : t('traceability.events.awaitingConfirm')}
                         </span>
                       </div>
                     </div>
@@ -229,8 +232,8 @@ export default function LotDetail() {
                       id={`confirm-btn-${ref}`}
                     >
                       {isConfirming
-                        ? <><LoadingSpinner size="sm" /> Confirming Receipt…</>
-                        : <><span aria-hidden="true">✓</span> Confirm Receipt of Lot</>
+                        ? <><LoadingSpinner size="sm" /> {t('common.loading')}…</>
+                        : <><span aria-hidden="true">✓</span> {t('sync.confirmReceipt')}</>
                       }
                     </button>
                   )}
@@ -238,7 +241,7 @@ export default function LotDetail() {
                   {isConfirmed && (
                     <div className="confirmed-banner" role="status">
                       <span aria-hidden="true">✓</span>
-                      Receipt confirmed — transaction complete
+                      {t('traceability.events.txComplete')}
                     </div>
                   )}
                 </div>

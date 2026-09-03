@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getLotsByCollector, DEMO_COLLECTOR_ID } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
 import { PageLoader } from '../components/LoadingSpinner';
+import { useTranslation } from '../i18n/config.js';
 import './IncomingLots.css';
 
 // BACKEND BLOCKER (documented):
@@ -21,9 +22,10 @@ const STATUS_FILTERS = [
   { key: 'confirmed',    label: 'Confirmed' },
 ];
 
-function fmtDate(d) {
+function fmtDate(d, lang) {
   if (!d) return '';
-  return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  const locale = lang === 'hi' ? 'hi-IN' : lang === 'mr' ? 'mr-IN' : 'en-IN';
+  return new Date(d).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function fmt(n) {
@@ -32,6 +34,13 @@ function fmt(n) {
 }
 
 export default function IncomingLots() {
+  const { t, lang } = useTranslation();
+  const STATUS_FILTERS = [
+    { key: ALL_FILTER,    label: t('incomingLots.filterAll') },
+    { key: 'matched',     label: t('status.matched') },
+    { key: 'handed_over', label: t('status.handed_over') },
+    { key: 'confirmed',   label: t('status.confirmed') },
+  ];
   const [lots, setLots] = useState([]);
   const [filter, setFilter] = useState(ALL_FILTER);
   const [loading, setLoading] = useState(true);
@@ -52,7 +61,7 @@ export default function IncomingLots() {
         );
         setLots(matched);
       })
-      .catch(() => setError('Could not load lots. Is the backend running?'))
+      .catch(() => setError(t('incomingLots.loadError')))
       .finally(() => setLoading(false));
   }, []);
 
@@ -71,9 +80,9 @@ export default function IncomingLots() {
   return (
     <div className="container">
       <div className="animate-fade-in" style={{ marginBottom: 'var(--space-6)' }}>
-        <Link to="/recycler" className="back-link">← Back to Dashboard</Link>
-        <h1 className="section-title" style={{ marginTop: 'var(--space-3)' }}>Incoming Lots</h1>
-        <p className="section-subtitle">Lots matched and assigned to your facility</p>
+        <Link to="/recycler" className="back-link">{t('common.back')}</Link>
+        <h1 className="section-title" style={{ marginTop: 'var(--space-3)' }}>{t('incomingLots.title')}</h1>
+        <p className="section-subtitle">{t('incomingLots.subtitle')}</p>
       </div>
 
       {/* Filter Tabs — keyed on actual transaction_status values */}
