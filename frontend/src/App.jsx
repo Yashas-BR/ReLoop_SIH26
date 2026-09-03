@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { I18nProvider } from './i18n/I18nProvider';
 import { Navbar } from './components/Navbar';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { initSyncManager } from './services/offline/syncManager';
@@ -77,8 +78,10 @@ function AppInner() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AppInner />
-    </BrowserRouter>
+    <I18nProvider>
+      <BrowserRouter>
+        <AppInner />
+      </BrowserRouter>
+    </I18nProvider>
   );
 }
