@@ -4,50 +4,66 @@
 // traceability.status: pending_confirmation | confirmed
 // payment_status: pending | paid
 // authorization_status: authorized | unauthorized | pending
-const STATUS_MAP = {
-  // Transaction statuses
-  quoted:              { label: 'Quoted',             bg: 'var(--color-info-light)',      fg: 'var(--color-info)',          icon: '💬' },
-  matched:             { label: 'Matched',            bg: 'var(--status-in-progress-bg)', fg: 'var(--status-in-progress)',   icon: '🤝' },
-  handed_over:         { label: 'Handed Over',        bg: 'var(--color-warning-light)',   fg: 'var(--color-warning)',        icon: '📦' },
+//
+// Phase 5: labels are now resolved from the i18n system.
+// The STATUS_MAP keys must remain as backend enum values (never translated).
 
-  // Traceability statuses
-  pending_confirmation:{ label: 'Awaiting Confirm',   bg: 'var(--color-warning-light)',   fg: 'var(--color-warning)',        icon: '⏳' },
+import { useTranslation } from '../i18n/config.js';
 
-  // Shared confirmed
-  confirmed:           { label: 'Confirmed',          bg: 'var(--status-confirmed-bg)',   fg: 'var(--status-confirmed)',     icon: '✓' },
+// Visual config (bg/fg/icon) — purely presentational, not translated
+const STATUS_VISUAL = {
+  quoted:               { bg: 'var(--color-info-light)',        fg: 'var(--color-info)',          icon: '💬' },
+  matched:              { bg: 'var(--status-in-progress-bg)',   fg: 'var(--status-in-progress)',   icon: '🤝' },
+  handed_over:          { bg: 'var(--color-warning-light)',     fg: 'var(--color-warning)',        icon: '📦' },
+  pending_confirmation: { bg: 'var(--color-warning-light)',     fg: 'var(--color-warning)',        icon: '⏳' },
+  confirmed:            { bg: 'var(--status-confirmed-bg)',     fg: 'var(--status-confirmed)',     icon: '✓' },
+  pending:              { bg: 'var(--status-pending-bg)',       fg: 'var(--status-pending)',       icon: '⏳' },
+  paid:                 { bg: 'var(--status-confirmed-bg)',     fg: 'var(--status-confirmed)',     icon: '₹' },
+  partially_paid:       { bg: 'var(--color-warning-light)',     fg: 'var(--color-warning)',        icon: '◑' },
+  authorized:           { bg: 'var(--status-confirmed-bg)',     fg: 'var(--status-confirmed)',     icon: '✓' },
+  unauthorized:         { bg: 'var(--color-destructive-light)', fg: 'var(--color-destructive)',    icon: '✗' },
+  in_progress:          { bg: 'var(--status-in-progress-bg)',   fg: 'var(--status-in-progress)',   icon: '↻' },
+  default:              { bg: 'var(--color-muted)',             fg: 'var(--color-text-muted)',     icon: '?' },
+};
 
-  // Payment statuses
-  pending:             { label: 'Pending',            bg: 'var(--status-pending-bg)',     fg: 'var(--status-pending)',       icon: '⏳' },
-  paid:                { label: 'Paid',               bg: 'var(--status-confirmed-bg)',   fg: 'var(--status-confirmed)',     icon: '₹' },
-  partially_paid:      { label: 'Partial',            bg: 'var(--color-warning-light)',   fg: 'var(--color-warning)',        icon: '◑' },
-
-  // Authorization statuses
-  authorized:          { label: 'Authorized',         bg: 'var(--status-confirmed-bg)',   fg: 'var(--status-confirmed)',     icon: '✓' },
-  unauthorized:        { label: 'Unauthorized',       bg: 'var(--color-destructive-light)', fg: 'var(--color-destructive)', icon: '✗' },
-
-  // Misc
-  in_progress:         { label: 'In Progress',        bg: 'var(--status-in-progress-bg)', fg: 'var(--status-in-progress)',  icon: '↻' },
-
-  // Fallback
-  default:             { label: 'Unknown',            bg: 'var(--color-muted)',           fg: 'var(--color-text-muted)',    icon: '?' },
+// Map status keys → translation keys in the 'status' namespace
+const STATUS_LABEL_KEYS = {
+  quoted:               'status.quoted',
+  matched:              'status.matched',
+  handed_over:          'status.handed_over',
+  pending_confirmation: 'status.pending',
+  confirmed:            'status.confirmed',
+  pending:              'status.pending',
+  paid:                 'status.paid',
+  partially_paid:       'status.pending',
+  authorized:           'recyclerProfile.authorizedYes',
+  unauthorized:         'recyclerProfile.authorizedNo',
+  in_progress:          'status.initiated',
+  default:              'common.noData',
 };
 
 export function StatusBadge({ status, size = 'sm' }) {
-  const cfg = STATUS_MAP[status?.toLowerCase()] || STATUS_MAP.default;
+  const { t } = useTranslation();
+  const key = status?.toLowerCase();
+  const visual = STATUS_VISUAL[key] || STATUS_VISUAL.default;
+  const labelKey = STATUS_LABEL_KEYS[key] || STATUS_LABEL_KEYS.default;
+  const label = t(labelKey);
+
   const fontSize = size === 'sm' ? 'var(--text-xs)' : 'var(--text-sm)';
   return (
     <span
       className="pill"
       style={{
-        background: cfg.bg,
-        color: cfg.fg,
+        background: visual.bg,
+        color: visual.fg,
         fontSize,
         fontWeight: 'var(--weight-semibold)',
+        lineHeight: '1.6', // Devanagari glyph safety
       }}
-      aria-label={`Status: ${cfg.label}`}
+      aria-label={`Status: ${label}`}
     >
-      <span aria-hidden="true">{cfg.icon}</span>
-      {cfg.label}
+      <span aria-hidden="true">{visual.icon}</span>
+      {label}
     </span>
   );
 }

@@ -4,6 +4,7 @@ import { getEarningsSummary, getLotsByCollector, DEMO_COLLECTOR_ID } from '../ap
 import { StatCard } from '../components/StatCard';
 import { StatusBadge } from '../components/StatusBadge';
 import { PageLoader, SkeletonCard } from '../components/LoadingSpinner';
+import { useTranslation } from '../i18n/config.js';
 import './Dashboard.css';
 
 function fmt(n) {
@@ -11,12 +12,14 @@ function fmt(n) {
   return `₹${Number(n).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 }
 
-function fmtDate(d) {
+function fmtDate(d, lang) {
   if (!d) return '';
-  return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  const locale = lang === 'hi' ? 'hi-IN' : lang === 'mr' ? 'mr-IN' : 'en-IN';
+  return new Date(d).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 export default function CollectorDashboard() {
+  const { t, lang } = useTranslation();
   const [earnings, setEarnings] = useState(null);
   const [lots, setLots] = useState([]);
   const [loadingE, setLoadingE] = useState(true);
@@ -26,26 +29,26 @@ export default function CollectorDashboard() {
   useEffect(() => {
     getEarningsSummary(DEMO_COLLECTOR_ID)
       .then(r => setEarnings(r.data))
-      .catch(() => setError('Could not load earnings. Is the backend running?'))
+      .catch(() => setError(t('dashboard.backendError')))
       .finally(() => setLoadingE(false));
 
     getLotsByCollector(DEMO_COLLECTOR_ID)
       .then(r => setLots(Array.isArray(r.data) ? r.data.slice(0, 6) : []))
       .catch(() => {})
       .finally(() => setLoadingL(false));
-  }, []);
+  }, []); // eslint-disable-line
 
   return (
     <div className="container">
       {/* Page Header */}
       <div className="dash-header animate-fade-in">
         <div>
-          <h1 className="section-title">My Dashboard</h1>
-          <p className="section-subtitle">Track your earnings and recent lots</p>
+          <h1 className="section-title">{t('dashboard.title')}</h1>
+          <p className="section-subtitle">{t('dashboard.subtitle')}</p>
         </div>
         <Link to="/collector/create-lot" className="btn btn-accent btn-lg">
           <span aria-hidden="true">+</span>
-          Create New Lot
+          {t('dashboard.createNewLot')}
         </Link>
       </div>
 
@@ -57,7 +60,7 @@ export default function CollectorDashboard() {
 
       {/* Earnings Cards */}
       <section aria-labelledby="earnings-heading">
-        <h2 id="earnings-heading" className="sr-only">Earnings Summary</h2>
+        <h2 id="earnings-heading" className="sr-only">{t('dashboard.earnings')}</h2>
         <div className="grid-4" style={{ marginBottom: 'var(--space-8)' }}>
           {loadingE ? (
             [0,1,2,3].map(i => <SkeletonCard key={i} />)
@@ -65,30 +68,30 @@ export default function CollectorDashboard() {
             <>
               <StatCard
                 icon="₹"
-                label="Total Earned"
+                label={t('dashboard.totalEarned')}
                 value={fmt(earnings?.total_earned)}
-                sub="All time"
+                sub={t('common.allTime')}
                 delay={0}
               />
               <StatCard
                 icon="✓"
-                label="Paid Out"
+                label={t('dashboard.paidOut')}
                 value={fmt(earnings?.total_paid)}
-                sub="Completed"
+                sub={t('common.completed')}
                 delay={60}
               />
               <StatCard
                 icon="⏳"
-                label="Pending"
+                label={t('dashboard.pending')}
                 value={fmt(earnings?.total_pending)}
-                sub="Awaiting payment"
+                sub={t('common.pendingPayment')}
                 delay={120}
               />
               <StatCard
                 icon="📦"
-                label="Total Lots"
+                label={t('dashboard.totalLots')}
                 value={earnings?.total_transactions ?? '—'}
-                sub="Created so far"
+                sub={t('common.createdSoFar')}
                 accent
                 delay={180}
               />
@@ -100,33 +103,33 @@ export default function CollectorDashboard() {
       {/* Quick Actions */}
       <section className="quick-actions animate-fade-in" aria-labelledby="actions-heading">
         <h2 id="actions-heading" className="section-title" style={{ marginBottom: 'var(--space-4)' }}>
-          Quick Actions
+          {t('dashboard.quickActions')}
         </h2>
         <div className="quick-actions__grid">
           <Link to="/collector/create-lot" className="quick-action-card">
             <span className="quick-action-card__icon" aria-hidden="true">📦</span>
-            <span className="quick-action-card__label">Create Lot</span>
-            <span className="quick-action-card__desc">Photo, weigh & value your scrap</span>
+            <span className="quick-action-card__label">{t('dashboard.createLot')}</span>
+            <span className="quick-action-card__desc">{t('dashboard.createLotDesc')}</span>
           </Link>
           <Link to="/collector/prices" className="quick-action-card">
             <span className="quick-action-card__icon" aria-hidden="true">📈</span>
-            <span className="quick-action-card__label">Price Board</span>
-            <span className="quick-action-card__desc">Today's rates & trends</span>
+            <span className="quick-action-card__label">{t('dashboard.priceBoard')}</span>
+            <span className="quick-action-card__desc">{t('dashboard.priceBoardDesc')}</span>
           </Link>
           <Link to="/collector/matched-recyclers" className="quick-action-card">
             <span className="quick-action-card__icon" aria-hidden="true">🏭</span>
-            <span className="quick-action-card__label">Find Recyclers</span>
-            <span className="quick-action-card__desc">Nearby authorized buyers</span>
+            <span className="quick-action-card__label">{t('dashboard.findRecyclers')}</span>
+            <span className="quick-action-card__desc">{t('dashboard.findRecyclersDesc')}</span>
           </Link>
           <Link to="/collector/earnings" className="quick-action-card">
             <span className="quick-action-card__icon" aria-hidden="true">💰</span>
-            <span className="quick-action-card__label">Earnings Ledger</span>
-            <span className="quick-action-card__desc">Payment history &amp; totals</span>
+            <span className="quick-action-card__label">{t('dashboard.earningsLedger')}</span>
+            <span className="quick-action-card__desc">{t('dashboard.earningsLedgerDesc')}</span>
           </Link>
           <Link to="/safety" className="quick-action-card">
             <span className="quick-action-card__icon" aria-hidden="true">🦺</span>
-            <span className="quick-action-card__label">Safety Guidance</span>
-            <span className="quick-action-card__desc">Handling &amp; field safety</span>
+            <span className="quick-action-card__label">{t('dashboard.safetyGuidance')}</span>
+            <span className="quick-action-card__desc">{t('dashboard.safetyGuidanceDesc')}</span>
           </Link>
         </div>
       </section>
@@ -134,7 +137,7 @@ export default function CollectorDashboard() {
       {/* Recent Lots */}
       <section className="animate-fade-in" aria-labelledby="recent-lots-heading">
         <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-4)' }}>
-          <h2 id="recent-lots-heading" className="section-title">Recent Lots</h2>
+          <h2 id="recent-lots-heading" className="section-title">{t('dashboard.recentLots')}</h2>
         </div>
 
         {loadingL ? (
@@ -142,10 +145,10 @@ export default function CollectorDashboard() {
         ) : lots.length === 0 ? (
           <div className="empty-state card">
             <span style={{ fontSize: 48 }} aria-hidden="true">📭</span>
-            <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)' }}>No lots yet</p>
-            <p>Create your first lot to start earning.</p>
+            <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)' }}>{t('dashboard.noLots')}</p>
+            <p>{t('dashboard.noLotsDesc')}</p>
             <Link to="/collector/create-lot" className="btn btn-primary">
-              Create Your First Lot
+              {t('dashboard.createFirstLot')}
             </Link>
           </div>
         ) : (
@@ -166,8 +169,8 @@ export default function CollectorDashboard() {
                   </div>
                 </div>
                 <div className="lot-row__meta hide-mobile">
-                  <span>{lot.approx_weight_kg ?? lot.weight_kg ?? '?'} kg</span>
-                  <span>{fmtDate(lot.created_at)}</span>
+                  <span>{lot.approx_weight_kg ?? lot.weight_kg ?? '?'} {t('common.kg')}</span>
+                  <span>{fmtDate(lot.created_at, lang)}</span>
                 </div>
                 <div className="lot-row__value">
                   {fmt(lot.estimated_value)}
