@@ -141,7 +141,13 @@ export default function CollectorDashboard() {
         ) : (
           <div className="lots-list">
             {lots.map((lot, i) => (
-              <div key={lot.lot_id} className="lot-row card stagger-item" style={{ animationDelay: `${i * 60}ms` }}>
+              <Link
+                key={lot.lot_id}
+                to={`/collector/lots/${lot.lot_id}`}
+                className="lot-row card card-clickable stagger-item"
+                style={{ animationDelay: `${i * 60}ms`, textDecoration: 'none', color: 'inherit' }}
+                aria-label={`Lot ${lot.lot_id} — ${lot.category}`}
+              >
                 <div className="lot-row__cat">
                   <span className="lot-row__cat-badge" aria-hidden="true">📦</span>
                   <div>
@@ -156,8 +162,9 @@ export default function CollectorDashboard() {
                 <div className="lot-row__value">
                   {fmt(lot.estimated_value)}
                 </div>
-                <StatusBadge status={lot.payment_status || 'pending'} />
-              </div>
+                <StatusBadge status={lot.transaction_status || lot.payment_status || 'quoted'} />
+                <span className="hide-mobile" style={{ color: 'var(--color-text-muted)' }}>›</span>
+              </Link>
             ))}
           </div>
         )}
