@@ -186,7 +186,7 @@ export default function CreateLot() {
             aria-current={i === step ? 'step' : undefined}
           >
             <div className="stepper__dot">
-              {i < step ? <span aria-hidden="true">✓</span> : <span>{i + 1}</span>}
+              {i < step ? <span>✓</span> : <span>{i + 1}</span>}
             </div>
             <span className="stepper__label hide-mobile">{s}</span>
           </div>
@@ -195,7 +195,7 @@ export default function CreateLot() {
 
       {error && (
         <div className="alert-banner alert-banner--error animate-fade-in" role="alert">
-          <span aria-hidden="true">⚠</span> {error}
+           {error}
         </div>
       )}
 
@@ -205,7 +205,7 @@ export default function CreateLot() {
           <section className="card p2-photo-section" aria-labelledby="photo-heading">
             <div className="p2-section-header">
               <h2 id="photo-heading" className="p2-section-title">
-                <span className="p2-section-icon" aria-hidden="true">📷</span>
+                
                 {t('createLot.photos.heading')}
               </h2>
               <span className="p2-photo-count">
@@ -220,7 +220,7 @@ export default function CreateLot() {
                 disabled={photos.length >= MAX_PHOTOS}
                 aria-label={t('createLot.photos.cameraLabel')}
               >
-                <span aria-hidden="true">📷</span> {t('createLot.photos.camera')}
+                 {t('createLot.photos.camera')}
               </button>
               <button
                 className="btn btn-outline p2-upload-btn"
@@ -228,7 +228,7 @@ export default function CreateLot() {
                 disabled={photos.length >= MAX_PHOTOS}
                 aria-label={t('createLot.photos.uploadLabel')}
               >
-                <span aria-hidden="true">📁</span> {t('createLot.photos.upload')}
+                 {t('createLot.photos.upload')}
               </button>
               <input ref={cameraInputRef} type="file" accept="image/*" capture="environment"
                 onChange={e => addPhotos(e.target.files)} style={{ display: 'none' }} />
@@ -247,7 +247,7 @@ export default function CreateLot() {
                 onKeyDown={e => e.key === 'Enter' && fileInputRef.current?.click()}
               >
                 <div className="photo-placeholder">
-                  <span aria-hidden="true" style={{ fontSize: 52 }}>📸</span>
+                  
                   <p style={{ fontWeight: 'var(--weight-semibold)' }}>
                     {t('createLot.photos.dragDrop')}
                   </p>
@@ -266,7 +266,7 @@ export default function CreateLot() {
                       onClick={() => removePhoto(idx)}
                       aria-label={t('createLot.photos.removePhoto', { n: idx + 1 })}
                     >
-                      ✕
+                      
                     </button>
                     {idx === 0 && <span className="p2-photo-primary-badge">{t('createLot.photos.primary')}</span>}
                   </div>
@@ -290,7 +290,7 @@ export default function CreateLot() {
           <section className="card" aria-labelledby="cat-heading">
             <div className="p2-section-header">
               <h2 id="cat-heading" className="p2-section-title">
-                <span className="p2-section-icon" aria-hidden="true">♻</span>
+                
                 {t('createLot.category.heading')}
               </h2>
               {category && (
@@ -353,7 +353,7 @@ export default function CreateLot() {
         <div className="step-panel animate-scale-in">
           <section className="card" aria-labelledby="weight-heading">
             <h2 id="weight-heading" className="p2-section-title" style={{ marginBottom: 'var(--space-6)' }}>
-              <span className="p2-section-icon" aria-hidden="true">⚖</span>
+              
               {t('createLot.weight.heading')}
             </h2>
 
@@ -445,7 +445,7 @@ export default function CreateLot() {
                 </div>
               ) : valError ? (
                 <div className="p2-val-error">
-                  <span aria-hidden="true">⚠</span>
+                  
                   <span>{valError}</span>
                 </div>
               ) : valuation ? (
@@ -500,7 +500,7 @@ export default function CreateLot() {
                 </div>
               ) : (
                 <div className="p2-val-empty">
-                  <span aria-hidden="true" style={{ fontSize: 40 }}>⚖</span>
+                  
                   <p>{t('createLot.valuation.empty')}</p>
                   <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
                     {t('createLot.valuation.emptyNote', { location })}
@@ -530,7 +530,7 @@ export default function CreateLot() {
         <div className="step-panel animate-scale-in">
           <section className="card" aria-labelledby="confirm-heading">
             <h2 id="confirm-heading" className="p2-section-title" style={{ marginBottom: 'var(--space-6)' }}>
-              <span className="p2-section-icon" aria-hidden="true">✅</span>
+              
               {t('createLot.review.heading')}
             </h2>
 
@@ -606,7 +606,7 @@ export default function CreateLot() {
             >
               {creating
                 ? <><LoadingSpinner size="sm" /> {t('createLot.buttons.submitting')}</>
-                : <><span aria-hidden="true">🚀</span> {t('createLot.buttons.submitLot')}</>
+                : <> {t('createLot.buttons.submitLot')}</>
               }
             </button>
           </div>
