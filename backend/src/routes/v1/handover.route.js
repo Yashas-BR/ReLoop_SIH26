@@ -18,10 +18,17 @@ router.post(
   handoverController.createLot
 );
 
-// Collector's lots
+// Collector's lots — must be before /:reference to avoid wildcard capture
 router.get(
   '/lots/collector/:collectorId',
   handoverController.getLotsByCollector
+);
+
+// Get handovers by lot — must be before /:reference
+router.get(
+  '/lot/:lotId',
+  validate(getHandoversByLotSchema),
+  handoverController.getHandoversByLot
 );
 
 // Handover initiation
@@ -38,18 +45,11 @@ router.post(
   handoverController.confirmHandover
 );
 
-// Get handover by reference
+// Get handover by reference — wildcard, must be last
 router.get(
   '/:reference',
   validate(getHandoverSchema),
   handoverController.getHandover
-);
-
-// Get handovers by lot
-router.get(
-  '/lot/:lotId',
-  validate(getHandoversByLotSchema),
-  handoverController.getHandoversByLot
 );
 
 export default router;

@@ -72,14 +72,14 @@ export function SyncPanel({ id, onClose }) {
     >
       <div className="sync-panel__header">
         <h2 className="sync-panel__title">
-          <span aria-hidden="true">🔄</span> {t('offline.syncPanel.title')}
+           {t('offline.syncPanel.title')}
         </h2>
         <button
           className="sync-panel__close btn btn-ghost btn-sm"
           onClick={onClose}
           aria-label={t('common.close')}
         >
-          ✕
+          
         </button>
       </div>
 
@@ -89,7 +89,7 @@ export function SyncPanel({ id, onClose }) {
 
       {items.length === 0 ? (
         <div className="sync-panel__empty">
-          <span aria-hidden="true">✓</span>
+          
           <p>{t('offline.syncPanel.noPending')}</p>
         </div>
       ) : (
@@ -148,7 +148,7 @@ export function SyncPanel({ id, onClose }) {
 
       {!isOnline() && (
         <p className="sync-panel__offline-note" role="note">
-          <span aria-hidden="true">📶</span>
+          
           {t('offline.autoSync')}
         </p>
       )}

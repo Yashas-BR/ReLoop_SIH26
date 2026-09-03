@@ -79,12 +79,12 @@ export function OfflineIndicator() {
   const syncMessage = buildMessage();
 
   const VARIANTS = {
-    offline: { icon: '📶', label: syncMessage, cls: 'offline-indicator--offline' },
+    offline: { icon: '', label: syncMessage, cls: 'offline-indicator--offline' },
     syncing: { icon: '↻', label: syncMessage, cls: 'offline-indicator--syncing', spin: true },
-    pending: { icon: '⏳', label: syncMessage, cls: 'offline-indicator--pending' },
-    synced:  { icon: '✓', label: t('offline.syncComplete'), cls: 'offline-indicator--synced' },
-    error:   { icon: '⚠', label: syncMessage, cls: 'offline-indicator--error' },
-    auth:    { icon: '🔒', label: syncMessage, cls: 'offline-indicator--auth' },
+    pending: { icon: '', label: syncMessage, cls: 'offline-indicator--pending' },
+    synced:  { icon: '', label: t('offline.syncComplete'), cls: 'offline-indicator--synced' },
+    error:   { icon: '', label: syncMessage, cls: 'offline-indicator--error' },
+    auth:    { icon: '', label: syncMessage, cls: 'offline-indicator--auth' },
   };
 
   const v = VARIANTS[variant];

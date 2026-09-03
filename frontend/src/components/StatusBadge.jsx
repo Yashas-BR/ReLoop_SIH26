@@ -12,16 +12,16 @@ import { useTranslation } from '../i18n/config.js';
 
 // Visual config (bg/fg/icon) — purely presentational, not translated
 const STATUS_VISUAL = {
-  quoted:               { bg: 'var(--color-info-light)',        fg: 'var(--color-info)',          icon: '💬' },
-  matched:              { bg: 'var(--status-in-progress-bg)',   fg: 'var(--status-in-progress)',   icon: '🤝' },
-  handed_over:          { bg: 'var(--color-warning-light)',     fg: 'var(--color-warning)',        icon: '📦' },
-  pending_confirmation: { bg: 'var(--color-warning-light)',     fg: 'var(--color-warning)',        icon: '⏳' },
-  confirmed:            { bg: 'var(--status-confirmed-bg)',     fg: 'var(--status-confirmed)',     icon: '✓' },
-  pending:              { bg: 'var(--status-pending-bg)',       fg: 'var(--status-pending)',       icon: '⏳' },
+  quoted:               { bg: 'var(--color-info-light)',        fg: 'var(--color-info)',          icon: '' },
+  matched:              { bg: 'var(--status-in-progress-bg)',   fg: 'var(--status-in-progress)',   icon: '' },
+  handed_over:          { bg: 'var(--color-warning-light)',     fg: 'var(--color-warning)',        icon: '' },
+  pending_confirmation: { bg: 'var(--color-warning-light)',     fg: 'var(--color-warning)',        icon: '' },
+  confirmed:            { bg: 'var(--status-confirmed-bg)',     fg: 'var(--status-confirmed)',     icon: '' },
+  pending:              { bg: 'var(--status-pending-bg)',       fg: 'var(--status-pending)',       icon: '' },
   paid:                 { bg: 'var(--status-confirmed-bg)',     fg: 'var(--status-confirmed)',     icon: '₹' },
   partially_paid:       { bg: 'var(--color-warning-light)',     fg: 'var(--color-warning)',        icon: '◑' },
-  authorized:           { bg: 'var(--status-confirmed-bg)',     fg: 'var(--status-confirmed)',     icon: '✓' },
-  unauthorized:         { bg: 'var(--color-destructive-light)', fg: 'var(--color-destructive)',    icon: '✗' },
+  authorized:           { bg: 'var(--status-confirmed-bg)',     fg: 'var(--status-confirmed)',     icon: '' },
+  unauthorized:         { bg: 'var(--color-destructive-light)', fg: 'var(--color-destructive)',    icon: '' },
   in_progress:          { bg: 'var(--status-in-progress-bg)',   fg: 'var(--status-in-progress)',   icon: '↻' },
   default:              { bg: 'var(--color-muted)',             fg: 'var(--color-text-muted)',     icon: '?' },
 };

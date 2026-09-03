@@ -16,7 +16,7 @@
  * Persistence: language choice is stored in localStorage as 'kc_lang'.
  */
 
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext } from 'react';
 import en from './locales/en.json';
 import hi from './locales/hi.json';
 import mr from './locales/mr.json';
