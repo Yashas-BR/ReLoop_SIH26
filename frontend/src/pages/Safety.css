@@ -205,7 +205,7 @@
 }
 
 .safety-donot-block__list li::before {
-  content: '✗';
+  content: '';
   position: absolute;
   left: 0;
   font-weight: var(--weight-bold);

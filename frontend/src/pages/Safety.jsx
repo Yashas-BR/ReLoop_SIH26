@@ -13,13 +13,13 @@ import { useTranslation } from '../i18n/config.js';
 import './Safety.css';
 
 const SECTION_META = [
-  { id: 'general',   icon: '🦺', color: 'blue',   warning: false },
-  { id: 'ppe',       icon: '🧤', color: 'purple',  warning: false },
-  { id: 'materials', icon: '♻️', color: 'green',   warning: false },
-  { id: 'sharp',     icon: '⚠️', color: 'amber',   warning: true  },
-  { id: 'ewaste',    icon: '💻', color: 'purple',  warning: true  },
-  { id: 'chemical',  icon: '🧪', color: 'red',     warning: true  },
-  { id: 'emergency', icon: '🚨', color: 'red',     warning: true  },
+  { id: 'general',   icon: '', color: 'blue',   warning: false },
+  { id: 'ppe',       icon: '', color: 'purple',  warning: false },
+  { id: 'materials', icon: '', color: 'green',   warning: false },
+  { id: 'sharp',     icon: '', color: 'amber',   warning: true  },
+  { id: 'ewaste',    icon: '', color: 'purple',  warning: true  },
+  { id: 'chemical',  icon: '', color: 'red',     warning: true  },
+  { id: 'emergency', icon: '', color: 'red',     warning: true  },
 ];
 
 const COLOR_MAP = {
@@ -96,7 +96,7 @@ function SafetySection({ sectionId, icon, color, warning, t }) {
       {safeDoNot.length > 0 && (
         <div className="safety-donot-block" role="note">
           <p className="safety-donot-block__heading" aria-label="Do not do the following">
-            <span aria-hidden="true">🚫</span> {t('safety.doNot')}
+             {t('safety.doNot')}
           </p>
           <ul className="safety-donot-block__list">
             {safeDoNot.map((item, i) => (
@@ -116,7 +116,7 @@ export default function SafetyGuidance() {
     <div className="container">
       {/* Page Header */}
       <div className="safety-header animate-fade-in">
-        <div className="safety-header__icon" aria-hidden="true">🦺</div>
+        <div className="safety-header__icon" aria-hidden="true"></div>
         <div>
           <h1 className="section-title">{t('safety.title')}</h1>
           <p className="section-subtitle">{t('safety.subtitle')}</p>
@@ -125,7 +125,7 @@ export default function SafetyGuidance() {
 
       {/* Offline notice — page works offline */}
       <div className="safety-offline-notice animate-fade-in" role="note">
-        <span aria-hidden="true">📶</span>
+        
         <span>{t('safety.offlineNotice')}</span>
       </div>
 
