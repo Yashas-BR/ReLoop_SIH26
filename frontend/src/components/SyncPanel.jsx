@@ -11,30 +11,33 @@ import { useEffect, useState, useCallback } from 'react';
 import { getQueue, resetForRetry } from '../services/offline/syncQueue.js';
 import { processSyncQueue } from '../services/offline/syncManager.js';
 import { isOnline } from '../services/offline/offlineUtils.js';
+import { useTranslation } from '../i18n/config.js';
 import './SyncPanel.css';
 
-function fmtDate(iso) {
+function fmtDate(iso, lang) {
   if (!iso) return '';
-  return new Date(iso).toLocaleString('en-IN', {
+  const locale = lang === 'hi' ? 'hi-IN' : lang === 'mr' ? 'mr-IN' : 'en-IN';
+  return new Date(iso).toLocaleString(locale, {
     day: 'numeric', month: 'short',
     hour: '2-digit', minute: '2-digit',
   });
 }
 
-// Human-readable labels for operations
-const OPERATION_LABELS = {
-  initiateHandover: 'Initiate Handover',
-};
-
-const STATUS_LABELS = {
-  pending:  { label: 'Pending sync', cls: 'sync-item--pending' },
-  syncing:  { label: 'Syncing…',     cls: 'sync-item--syncing' },
-  failed:   { label: 'Failed',       cls: 'sync-item--failed' },
-};
-
 export function SyncPanel({ id, onClose }) {
+  const { t, lang } = useTranslation();
   const [items, setItems] = useState([]);
   const [retrying, setRetrying] = useState(null);
+
+  // Human-readable labels for operations (resolved via t())
+  const OPERATION_LABELS = {
+    initiateHandover: t('recyclers.initiateHandover'),
+  };
+
+  const STATUS_LABELS = {
+    pending:  { label: t('offline.syncPanel.statusPending'), cls: 'sync-item--pending' },
+    syncing:  { label: t('offline.syncing') + '…',          cls: 'sync-item--syncing' },
+    failed:   { label: t('offline.syncPanel.statusFailed'), cls: 'sync-item--failed' },
+  };
 
   const load = useCallback(async () => {
     const q = await getQueue();
@@ -64,33 +67,33 @@ export function SyncPanel({ id, onClose }) {
       id={id}
       className="sync-panel animate-scale-in"
       role="dialog"
-      aria-label="Pending sync operations"
+      aria-label={t('offline.syncPanel.title')}
       aria-modal="false"
     >
       <div className="sync-panel__header">
         <h2 className="sync-panel__title">
-          <span aria-hidden="true">🔄</span> Pending Sync
+          <span aria-hidden="true">🔄</span> {t('offline.syncPanel.title')}
         </h2>
         <button
           className="sync-panel__close btn btn-ghost btn-sm"
           onClick={onClose}
-          aria-label="Close sync panel"
+          aria-label={t('common.close')}
         >
           ✕
         </button>
       </div>
 
       <p className="sync-panel__subtitle">
-        These operations were saved while offline and will sync automatically when connected.
+        {t('offline.operationQueued')}
       </p>
 
       {items.length === 0 ? (
         <div className="sync-panel__empty">
           <span aria-hidden="true">✓</span>
-          <p>All operations synced</p>
+          <p>{t('offline.syncPanel.noPending')}</p>
         </div>
       ) : (
-        <ul className="sync-panel__list" aria-label="Sync queue items">
+        <ul className="sync-panel__list" aria-label={t('offline.syncPanel.title')}>
           {items.map((item) => {
             const st = STATUS_LABELS[item.status] ?? STATUS_LABELS.pending;
             const opLabel = OPERATION_LABELS[item.operation] ?? item.operation;
@@ -106,10 +109,10 @@ export function SyncPanel({ id, onClose }) {
                       Lot: <span className="font-mono">{item.entityId}</span>
                     </p>
                   )}
-                  <p className="sync-item__time">{fmtDate(item.createdAt)}</p>
+                  <p className="sync-item__time">{fmtDate(item.createdAt, lang)}</p>
                   {item.retryCount > 0 && (
                     <p className="sync-item__retries">
-                      Retry attempt {item.retryCount}
+                      {t('offline.syncPanel.retries')}: {item.retryCount}
                     </p>
                   )}
                   {item.lastError && item.status === 'failed' && (
@@ -131,9 +134,9 @@ export function SyncPanel({ id, onClose }) {
                       className="btn btn-outline btn-sm"
                       onClick={() => handleRetry(item)}
                       disabled={retrying === item.id}
-                      aria-label={`Retry ${opLabel}`}
+                      aria-label={`${t('common.retry')} ${opLabel}`}
                     >
-                      {retrying === item.id ? '…' : 'Retry'}
+                      {retrying === item.id ? '…' : t('common.retry')}
                     </button>
                   )}
                 </div>
@@ -146,7 +149,7 @@ export function SyncPanel({ id, onClose }) {
       {!isOnline() && (
         <p className="sync-panel__offline-note" role="note">
           <span aria-hidden="true">📶</span>
-          You're offline. Items will sync automatically when you reconnect.
+          {t('offline.autoSync')}
         </p>
       )}
     </div>
