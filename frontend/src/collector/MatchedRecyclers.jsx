@@ -108,14 +108,14 @@ export default function MatchedRecyclers() {
       return (
         <div className="container">
           <div className="handover-success animate-scale-in" style={{ borderColor: 'var(--color-warning)', borderWidth: 2, borderStyle: 'solid' }}>
-            <div className="handover-success__icon" aria-hidden="true">📶</div>
+            <div className="handover-success__icon" aria-hidden="true"></div>
             <h1 className="section-title" style={{ textAlign: 'center' }}>{t('recyclers.savedOffline')}</h1>
             <p className="section-subtitle" style={{ textAlign: 'center' }}>
               {t('recyclers.savedOfflineDesc')}
             </p>
 
             <div className="handover-success__status-row" style={{ background: 'var(--color-warning-light)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)' }}>
-              <span aria-hidden="true">⏳</span>
+              
               <span className="text-sm" style={{ color: 'var(--color-warning)', fontWeight: 'var(--weight-semibold)' }}>
                 {t('offline.savedOffline')}
               </span>
@@ -136,7 +136,7 @@ export default function MatchedRecyclers() {
     return (
       <div className="container">
         <div className="handover-success animate-scale-in">
-          <div className="handover-success__icon" aria-hidden="true">🎉</div>
+          <div className="handover-success__icon" aria-hidden="true"></div>
           <h1 className="section-title" style={{ textAlign: 'center' }}>{t('recyclers.handoverInitiated')}</h1>
           <p className="section-subtitle" style={{ textAlign: 'center' }}>
             {t('recyclers.handoverRef')}: <strong>{lotId}</strong> → <strong>{handoverResult.recyclerName}</strong>
@@ -161,7 +161,7 @@ export default function MatchedRecyclers() {
               className="btn btn-primary"
               id="view-lot-detail-btn"
             >
-              <span aria-hidden="true">📋</span> {t('lotDetail.viewTraceability')}
+               {t('lotDetail.viewTraceability')}
             </Link>
             <Link to="/collector" className="btn btn-outline" id="go-dashboard-btn">
               {t('common.back')}
@@ -196,7 +196,7 @@ export default function MatchedRecyclers() {
 
       {error && (
         <div className="alert-banner alert-banner--error animate-fade-in" role="alert">
-          <span aria-hidden="true">⚠</span> {error}
+           {error}
         </div>
       )}
 
@@ -204,7 +204,7 @@ export default function MatchedRecyclers() {
         <PageLoader />
       ) : recyclers.length === 0 ? (
         <div className="empty-state card">
-          <span style={{ fontSize: 48 }} aria-hidden="true">🏭</span>
+          
           <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)' }}>
             {t('recyclers.noMatch')}
           </p>
@@ -226,7 +226,7 @@ export default function MatchedRecyclers() {
               >
                 <div className="recycler-card__header">
                   <div className="recycler-card__name-wrap">
-                    <div className="recycler-card__avatar" aria-hidden="true">🏭</div>
+                    <div className="recycler-card__avatar" aria-hidden="true"></div>
                     <div>
                       <h2 className="recycler-card__name">{r.name}</h2>
                       <p className="recycler-card__area">{r.service_area || r.facility_location}</p>
@@ -255,7 +255,7 @@ export default function MatchedRecyclers() {
                 {/* Stats */}
                 <div className="recycler-card__stats">
                   <div className="recycler-stat">
-                    <span className="recycler-stat__icon" aria-hidden="true">📍</span>
+                    
                     <div>
                       <p className="recycler-stat__label">{t('recyclers.distance')}</p>
                       <p className="recycler-stat__value">
@@ -273,7 +273,7 @@ export default function MatchedRecyclers() {
                     </div>
                   </div>
                   <div className="recycler-stat">
-                    <span className="recycler-stat__icon" aria-hidden="true">♻</span>
+                    
                     <div>
                       <p className="recycler-stat__label">{t('recyclers.pickup')}</p>
                       <p className="recycler-stat__value">
@@ -303,7 +303,7 @@ export default function MatchedRecyclers() {
                   >
                     {isHandingOver
                       ? <><LoadingSpinner size="sm" /> {t('recyclers.handingOver')}…</>
-                      : <><span aria-hidden="true">🤝</span> {t('recyclers.selectRecycler')}</>
+                      : <> {t('recyclers.selectRecycler')}</>
                     }
                   </button>
                 )}

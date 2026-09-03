@@ -71,7 +71,7 @@ export default function CollectorLotDetail() {
     {
       label: t('traceability.created'),
       sub: lot ? `${fmtDate(lot.created_at)}` : '',
-      icon: '📦',
+      icon: '',
     },
     {
       label: t('createLot.valuation.instantEstimate'),
@@ -81,21 +81,21 @@ export default function CollectorLotDetail() {
     {
       label: t('traceability.matched'),
       sub: latestHandover?.recycler_name || lot?.recycler_name || t('status.pending'),
-      icon: '🤝',
+      icon: '',
     },
     {
       label: t('traceability.handoverInitiated'),
       sub: latestHandover?.handover_reference_number
         ? `${t('lotDetail.handoverRef')}: ${latestHandover.handover_reference_number}`
         : t('lotDetail.noHandover'),
-      icon: '🔄',
+      icon: '',
     },
     {
       label: t('traceability.handoverConfirmed'),
       sub: latestHandover?.confirmation_timestamp
         ? fmtDate(latestHandover.confirmation_timestamp)
         : t('status.pending'),
-      icon: '✓',
+      icon: '',
     },
   ];
 
@@ -119,7 +119,7 @@ export default function CollectorLotDetail() {
 
       {error && (
         <div className="alert-banner alert-banner--warn animate-fade-in" role="alert">
-          <span aria-hidden="true">⚠</span> {error}
+           {error}
           <button className="btn btn-ghost btn-sm" onClick={load} style={{ marginLeft: 'auto' }}>
             {t('common.retry')}
           </button>
@@ -128,7 +128,7 @@ export default function CollectorLotDetail() {
 
       {!lot && !loading ? (
         <div className="empty-state card">
-          <span style={{ fontSize: 48 }} aria-hidden="true">🔍</span>
+          
           <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)' }}>
             {t('lotDetail.loadError')}
           </p>
@@ -211,7 +211,7 @@ export default function CollectorLotDetail() {
                   >
                     <div className="cdash-timeline-step__connector" />
                     <div className="cdash-timeline-step__dot" aria-hidden="true">
-                      {isDone ? '✓' : step.icon}
+                      {isDone ? '' : step.icon}
                     </div>
                     <div className="cdash-timeline-step__content">
                       <p className="cdash-timeline-step__label">{step.label}</p>
@@ -265,7 +265,7 @@ export default function CollectorLotDetail() {
           {/* No handover yet — prompt collector to initiate */}
           {handovers.length === 0 && lot?.transaction_status === 'quoted' && (
             <div className="empty-state card animate-fade-in">
-              <span style={{ fontSize: 48 }} aria-hidden="true">🤝</span>
+              
               <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)' }}>
                 {t('lotDetail.noHandover')}
               </p>

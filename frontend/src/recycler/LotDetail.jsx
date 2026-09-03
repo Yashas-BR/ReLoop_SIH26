@@ -75,12 +75,12 @@ export default function LotDetail() {
 
       {error && (
         <div className="alert-banner alert-banner--error animate-fade-in" role="alert">
-          <span aria-hidden="true">⚠</span> {error}
+           {error}
         </div>
       )}
       {success && (
         <div className="alert-banner alert-banner--success animate-fade-in" role="alert">
-          <span aria-hidden="true">✓</span> {success}
+           {success}
         </div>
       )}
 
@@ -88,7 +88,7 @@ export default function LotDetail() {
         <PageLoader />
       ) : handovers.length === 0 ? (
         <div className="empty-state card">
-          <span style={{ fontSize: 48 }} aria-hidden="true">📭</span>
+          
           <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)' }}>
             {t('common.noData')}
           </p>
@@ -233,14 +233,14 @@ export default function LotDetail() {
                     >
                       {isConfirming
                         ? <><LoadingSpinner size="sm" /> {t('common.loading')}…</>
-                        : <><span aria-hidden="true">✓</span> {t('sync.confirmReceipt')}</>
+                        : <> {t('sync.confirmReceipt')}</>
                       }
                     </button>
                   )}
 
                   {isConfirmed && (
                     <div className="confirmed-banner" role="status">
-                      <span aria-hidden="true">✓</span>
+                      
                       {t('traceability.events.txComplete')}
                     </div>
                   )}

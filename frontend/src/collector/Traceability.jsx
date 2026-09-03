@@ -42,7 +42,7 @@ function buildTimeline(lot, handovers, t, lang) {
     detail: `${t('lotDetail.category')}: ${lot.category}${lot.approx_weight_kg ? ` · ${lot.approx_weight_kg} ${t('common.kg')}` : ''}`,
     timestamp: fmtDate(lot.created_at, lang),
     status: 'done',
-    icon: '📦',
+    icon: '',
   });
 
   if (lot.estimated_value != null) {
@@ -75,7 +75,7 @@ function buildTimeline(lot, handovers, t, lang) {
       : t('traceability.events.awaitingMatch'),
     timestamp: isMatched ? fmtDate(latestHandover?.event_timestamp, lang) : null,
     status: isMatched ? 'done' : 'pending',
-    icon: '🤝',
+    icon: '',
   });
 
   const hasHandover = !!latestHandover?.handover_reference_number;
@@ -87,7 +87,7 @@ function buildTimeline(lot, handovers, t, lang) {
       : t('traceability.events.notInitiated'),
     timestamp: hasHandover ? fmtDate(latestHandover.event_timestamp, lang) : null,
     status: hasHandover ? 'done' : 'pending',
-    icon: '🔄',
+    icon: '',
   });
 
   const isConfirmed = latestHandover?.status === 'confirmed';
@@ -99,7 +99,7 @@ function buildTimeline(lot, handovers, t, lang) {
       : t('traceability.events.awaitingConfirm'),
     timestamp: isConfirmed ? fmtDate(latestHandover.confirmation_timestamp, lang) : null,
     status: isConfirmed ? 'done' : 'pending',
-    icon: '✓',
+    icon: '',
   });
 
   return events;
@@ -160,7 +160,7 @@ export default function CollectorTraceability() {
 
       {error && (
         <div className="alert-banner alert-banner--warn animate-fade-in" role="alert">
-          <span aria-hidden="true">⚠</span> {error}
+           {error}
           <button className="btn btn-ghost btn-sm" onClick={load} style={{ marginLeft: 'auto' }}>
             {t('common.retry')}
           </button>
@@ -169,7 +169,7 @@ export default function CollectorTraceability() {
 
       {!lot && !loading ? (
         <div className="empty-state card">
-          <span style={{ fontSize: 48 }} aria-hidden="true">🔍</span>
+          
           <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)' }}>
             {t('lotDetail.loadError')}
           </p>
@@ -200,7 +200,7 @@ export default function CollectorTraceability() {
 
                   {/* Icon dot */}
                   <div className="trace-event__dot" aria-hidden="true">
-                    {event.status === 'done' ? '✓' : event.icon}
+                    {event.status === 'done' ? '' : event.icon}
                   </div>
 
                   {/* Content */}

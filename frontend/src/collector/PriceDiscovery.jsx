@@ -330,7 +330,7 @@ export default function PriceDiscovery() {
             onClick={speaking ? stopSpeaking : speakPrice}
             aria-label={speaking ? t('priceDiscovery.stopAudio') : t('priceDiscovery.speakPrice')}
           >
-            <span aria-hidden="true">{speaking ? '⏹' : '🔊'}</span>
+            <span aria-hidden="true">{speaking ? '' : ''}</span>
             <span>{speaking ? t('priceDiscovery.stopAudio') : t('priceDiscovery.speakPrice')}</span>
           </button>
         </div>
@@ -338,7 +338,7 @@ export default function PriceDiscovery() {
 
       {error && (
         <div className="alert-banner alert-banner--warn animate-fade-in">
-          <span aria-hidden="true">⚠</span> {error}
+           {error}
         </div>
       )}
 
@@ -384,7 +384,7 @@ export default function PriceDiscovery() {
           <PageLoader />
         ) : trends.length === 0 ? (
           <div className="empty-state" style={{ minHeight: 200 }}>
-            <span aria-hidden="true" style={{ fontSize: 40 }}>📊</span>
+            
             <p style={{ fontWeight: 'var(--weight-semibold)' }}>
               {t('prices.noTrendData')}
             </p>
@@ -447,7 +447,7 @@ export default function PriceDiscovery() {
           <PageLoader />
         ) : filteredRecyclers.length === 0 ? (
           <div className="empty-state" style={{ minHeight: 100 }}>
-            <span aria-hidden="true" style={{ fontSize: 32 }}>🏭</span>
+            
             <p>{t('prices.noRecyclers')}</p>
           </div>
         ) : (
@@ -475,7 +475,7 @@ export default function PriceDiscovery() {
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                             {i === 0 && (
-                              <span className="p2-best-badge" title="Best rate">★</span>
+                              <span className="p2-best-badge" title="Best rate"></span>
                             )}
                             <span style={{ fontWeight: 'var(--weight-semibold)' }}>{r.name}</span>
                           </div>
@@ -488,7 +488,7 @@ export default function PriceDiscovery() {
                         </td>
                         <td>
                           <span style={{ color: r.pickup_available ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
-                            {r.pickup_available ? `✓ ${t('prices.yes')}` : `✗ ${t('prices.no')}`}
+                            {r.pickup_available ? ` ${t('prices.yes')}` : ` ${t('prices.no')}`}
                           </span>
                         </td>
                         <td>

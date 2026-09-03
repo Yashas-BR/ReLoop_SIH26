@@ -10,17 +10,10 @@ import './IncomingLots.css';
 // There is no GET /v1/handover/lots/recycler/:recyclerId endpoint yet.
 // As a workaround, we fetch all lots via the collector endpoint and filter
 // to only show lots that have a recycler assigned (matched/handed_over status).
-// Once Vedanth adds /v1/handover/lots/recycler/:id, replace the fetch call below.
+// Once the backend adds /v1/handover/lots/recycler/:id, replace the fetch call below.
 
-// Filter tabs use the actual transaction_status enum from the backend DB schema.
-// transaction_status values: quoted | matched | handed_over | confirmed
+// transaction_status values from DB schema: quoted | matched | handed_over | confirmed
 const ALL_FILTER = 'all';
-const STATUS_FILTERS = [
-  { key: ALL_FILTER,     label: 'All Matched' },
-  { key: 'matched',      label: 'Matched' },
-  { key: 'handed_over',  label: 'Handed Over' },
-  { key: 'confirmed',    label: 'Confirmed' },
-];
 
 function fmtDate(d, lang) {
   if (!d) return '';
@@ -34,7 +27,7 @@ function fmt(n) {
 }
 
 export default function IncomingLots() {
-  const { t, lang } = useTranslation();
+  const { t } = useTranslation();
   const STATUS_FILTERS = [
     { key: ALL_FILTER,    label: t('incomingLots.filterAll') },
     { key: 'matched',     label: t('status.matched') },
@@ -63,7 +56,7 @@ export default function IncomingLots() {
       })
       .catch(() => setError(t('incomingLots.loadError')))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -103,7 +96,7 @@ export default function IncomingLots() {
 
       {error && (
         <div className="alert-banner alert-banner--warn animate-fade-in" role="alert">
-          <span aria-hidden="true">⚠</span> {error}
+           {error}
           <button
             className="btn btn-ghost btn-sm"
             onClick={load}
@@ -118,14 +111,14 @@ export default function IncomingLots() {
         <PageLoader />
       ) : filtered.length === 0 ? (
         <div className="empty-state card">
-          <span style={{ fontSize: 48 }} aria-hidden="true">📭</span>
+          
           <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)' }}>
-            {lots.length === 0 ? 'No matched lots yet' : 'No lots match this filter'}
+            {lots.length === 0 ? t('incomingLots.noLots') : t('incomingLots.noFilteredLots')}
           </p>
           <p>
             {lots.length === 0
-              ? 'Collectors will be matched to your facility once they create lots in your area.'
-              : 'Try selecting a different status filter above.'}
+              ? t('incomingLots.noLotsDesc')
+              : t('incomingLots.noFilteredLotsDesc')}
           </p>
         </div>
       ) : (
@@ -139,7 +132,7 @@ export default function IncomingLots() {
               aria-label={`Lot ${lot.lot_id} — ${lot.category}`}
             >
               <div className="lot-card__header">
-                <div className="lot-card__icon" aria-hidden="true">📦</div>
+                <div className="lot-card__icon" aria-hidden="true"></div>
                 <div className="lot-card__meta">
                   {/* Use transaction_status — the meaningful recycler-facing status */}
                   <StatusBadge status={lot.transaction_status || 'matched'} />
@@ -149,17 +142,17 @@ export default function IncomingLots() {
               <p className="lot-card__category">{lot.category}</p>
               <div className="lot-card__details">
                 <div className="lot-card__detail">
-                  <span aria-hidden="true">⚖</span>
+                  
                   <span>{lot.approx_weight_kg ?? '?'} kg</span>
                 </div>
                 {lot.recycler_name && (
                   <div className="lot-card__detail">
-                    <span aria-hidden="true">🏭</span>
+                    
                     <span>{lot.recycler_name}</span>
                   </div>
                 )}
                 <div className="lot-card__detail">
-                  <span aria-hidden="true">📅</span>
+                  
                   <span>{fmtDate(lot.created_at)}</span>
                 </div>
               </div>

@@ -54,7 +54,7 @@ export default function CollectorDashboard() {
 
       {error && (
         <div className="alert-banner alert-banner--warn animate-fade-in">
-          <span aria-hidden="true">⚠</span> {error}
+           {error}
         </div>
       )}
 
@@ -74,21 +74,21 @@ export default function CollectorDashboard() {
                 delay={0}
               />
               <StatCard
-                icon="✓"
+                icon=""
                 label={t('dashboard.paidOut')}
                 value={fmt(earnings?.total_paid)}
                 sub={t('common.completed')}
                 delay={60}
               />
               <StatCard
-                icon="⏳"
+                icon=""
                 label={t('dashboard.pending')}
                 value={fmt(earnings?.total_pending)}
                 sub={t('common.pendingPayment')}
                 delay={120}
               />
               <StatCard
-                icon="📦"
+                icon=""
                 label={t('dashboard.totalLots')}
                 value={earnings?.total_transactions ?? '—'}
                 sub={t('common.createdSoFar')}
@@ -107,27 +107,27 @@ export default function CollectorDashboard() {
         </h2>
         <div className="quick-actions__grid">
           <Link to="/collector/create-lot" className="quick-action-card">
-            <span className="quick-action-card__icon" aria-hidden="true">📦</span>
+            
             <span className="quick-action-card__label">{t('dashboard.createLot')}</span>
             <span className="quick-action-card__desc">{t('dashboard.createLotDesc')}</span>
           </Link>
           <Link to="/collector/prices" className="quick-action-card">
-            <span className="quick-action-card__icon" aria-hidden="true">📈</span>
+            
             <span className="quick-action-card__label">{t('dashboard.priceBoard')}</span>
             <span className="quick-action-card__desc">{t('dashboard.priceBoardDesc')}</span>
           </Link>
           <Link to="/collector/matched-recyclers" className="quick-action-card">
-            <span className="quick-action-card__icon" aria-hidden="true">🏭</span>
+            
             <span className="quick-action-card__label">{t('dashboard.findRecyclers')}</span>
             <span className="quick-action-card__desc">{t('dashboard.findRecyclersDesc')}</span>
           </Link>
           <Link to="/collector/earnings" className="quick-action-card">
-            <span className="quick-action-card__icon" aria-hidden="true">💰</span>
+            
             <span className="quick-action-card__label">{t('dashboard.earningsLedger')}</span>
             <span className="quick-action-card__desc">{t('dashboard.earningsLedgerDesc')}</span>
           </Link>
           <Link to="/safety" className="quick-action-card">
-            <span className="quick-action-card__icon" aria-hidden="true">🦺</span>
+            
             <span className="quick-action-card__label">{t('dashboard.safetyGuidance')}</span>
             <span className="quick-action-card__desc">{t('dashboard.safetyGuidanceDesc')}</span>
           </Link>
@@ -144,7 +144,7 @@ export default function CollectorDashboard() {
           <PageLoader />
         ) : lots.length === 0 ? (
           <div className="empty-state card">
-            <span style={{ fontSize: 48 }} aria-hidden="true">📭</span>
+            
             <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)' }}>{t('dashboard.noLots')}</p>
             <p>{t('dashboard.noLotsDesc')}</p>
             <Link to="/collector/create-lot" className="btn btn-primary">
@@ -162,7 +162,7 @@ export default function CollectorDashboard() {
                 aria-label={`Lot ${lot.lot_id} — ${lot.category}`}
               >
                 <div className="lot-row__cat">
-                  <span className="lot-row__cat-badge" aria-hidden="true">📦</span>
+                  
                   <div>
                     <p className="lot-row__id">{lot.lot_id}</p>
                     <p className="lot-row__category">{lot.category}</p>

@@ -52,14 +52,14 @@ export default function RecyclerDashboard() {
           </p>
         </div>
         <Link to="/recycler/profile" className="btn btn-outline">
-          <span aria-hidden="true">👤</span>
+          
           {t('recyclerProfile.title')}
         </Link>
       </div>
 
       {error && (
         <div className="alert-banner alert-banner--warn animate-fade-in">
-          <span aria-hidden="true">⚠</span> {error}
+           {error}
         </div>
       )}
 
@@ -69,10 +69,10 @@ export default function RecyclerDashboard() {
           [0,1,2,3].map(i => <SkeletonCard key={i} />)
         ) : (
           <>
-            <StatCard icon="📦" label={t('recyclerDash.totalLots')} value={lots.length} sub={t('incomingLots.title')} delay={0} />
-            <StatCard icon="⏳" label={t('recyclerDash.totalPending')} value={pending} sub={t('incomingLots.filterPending')} delay={60} />
-            <StatCard icon="✓" label={t('recyclerDash.totalConfirmed')} value={confirmed} sub={t('common.completed')} delay={120} accent />
-            <StatCard icon="♻" label={t('recyclerProfile.materials')}
+            <StatCard icon="" label={t('recyclerDash.totalLots')} value={lots.length} sub={t('incomingLots.title')} delay={0} />
+            <StatCard icon="" label={t('recyclerDash.totalPending')} value={pending} sub={t('incomingLots.filterPending')} delay={60} />
+            <StatCard icon="" label={t('recyclerDash.totalConfirmed')} value={confirmed} sub={t('common.completed')} delay={120} accent />
+            <StatCard icon="" label={t('recyclerProfile.materials')}
               value={loadingR ? '…' : (recycler?.materials_accepted?.length ?? '—')}
               sub={t('recyclerProfile.materialsHint').slice(0, 20) + '…'} delay={180} />
           </>
@@ -86,17 +86,17 @@ export default function RecyclerDashboard() {
         </h2>
         <div className="quick-actions__grid">
           <Link to="/recycler/lots" className="quick-action-card">
-            <span className="quick-action-card__icon" aria-hidden="true">📦</span>
+            
             <span className="quick-action-card__label">{t('recyclerDash.incomingLots')}</span>
             <span className="quick-action-card__desc">{t('recyclerDash.incomingLotsDesc')}</span>
           </Link>
           <Link to="/recycler/profile" className="quick-action-card">
-            <span className="quick-action-card__icon" aria-hidden="true">👤</span>
+            
             <span className="quick-action-card__label">{t('recyclerDash.myProfile')}</span>
             <span className="quick-action-card__desc">{t('recyclerDash.myProfileDesc')}</span>
           </Link>
           <Link to="/safety" className="quick-action-card">
-            <span className="quick-action-card__icon" aria-hidden="true">🦺</span>
+            
             <span className="quick-action-card__label">{t('recyclerDash.safetyGuidance')}</span>
             <span className="quick-action-card__desc">{t('recyclerDash.safetyGuidanceDesc')}</span>
           </Link>
@@ -114,7 +114,7 @@ export default function RecyclerDashboard() {
           <PageLoader />
         ) : lots.length === 0 ? (
           <div className="empty-state card">
-            <span style={{ fontSize: 48 }} aria-hidden="true">📭</span>
+            
             <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)' }}>{t('recyclerDash.totalLots')} 0</p>
             <p>{t('incomingLots.noLotsDesc')}</p>
           </div>
@@ -129,7 +129,7 @@ export default function RecyclerDashboard() {
                     aria-label={`Lot ${lot.lot_id} — ${lot.category}`}
                   >
                 <div className="lot-row__cat">
-                  <span className="lot-row__cat-badge" aria-hidden="true">📦</span>
+                  
                   <div>
                     <p className="lot-row__id">{lot.lot_id}</p>
                     <p className="lot-row__category">{lot.category}</p>
