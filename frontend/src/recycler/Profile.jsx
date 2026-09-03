@@ -15,6 +15,14 @@ export default function RecyclerProfile() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [editing, setEditing] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+
+  function handleImageChange(e) {
+    const file = e.target.files[0];
+    if (file) {
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  }
 
   useEffect(() => {
     getRecycler(DEMO_RECYCLER_ID)
@@ -45,9 +53,8 @@ export default function RecyclerProfile() {
         facility_location: form.facility_location,
         materials_accepted: form.materials_accepted,
         service_area: form.service_area,
-        contact: form.contact,
-        offered_rate: form.offered_rate ? Number(form.offered_rate) : undefined,
-        pickup_available: form.pickup_available,
+        contact_details: form.contact_details ?? form.contact,
+        pickup_availability: form.pickup_availability,
       };
       const r = await updateRecycler(DEMO_RECYCLER_ID, payload);
       setRecycler(r.data);
@@ -74,7 +81,19 @@ export default function RecyclerProfile() {
       <div className="animate-fade-in" style={{ marginBottom: 'var(--space-6)' }}>
         <Link to="/recycler" className="back-link">{t('common.back')}</Link>
         <div className="profile-header">
-          <div className="profile-avatar" aria-hidden="true">🏭</div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <div 
+              className="profile-avatar" 
+              aria-hidden="true"
+              style={avatarPreview ? { backgroundImage: `url(${avatarPreview})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+            ></div>
+            {editing && (
+              <label className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }}>
+                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageChange} />
+                + Add Image
+              </label>
+            )}
+          </div>
           <div>
             <h1 className="section-title">{recycler?.name || t('recyclerDash.myProfile')}</h1>
             <p className="section-subtitle">
@@ -83,7 +102,7 @@ export default function RecyclerProfile() {
           </div>
           {!editing && (
             <button className="btn btn-outline" onClick={() => setEditing(true)}>
-              <span aria-hidden="true">✎</span> {t('recyclerDash.editProfile')}
+               {t('recyclerDash.editProfile')}
             </button>
           )}
         </div>
@@ -91,12 +110,12 @@ export default function RecyclerProfile() {
 
       {error && (
         <div className="alert-banner alert-banner--error animate-fade-in">
-          <span aria-hidden="true">⚠</span> {error}
+           {error}
         </div>
       )}
       {success && (
         <div className="alert-banner alert-banner--success animate-fade-in">
-          <span aria-hidden="true">✓</span> {success}
+           {success}
         </div>
       )}
 
@@ -154,31 +173,12 @@ export default function RecyclerProfile() {
                 <input
                   id="p-contact"
                   className="form-input"
-                  value={form?.contact || ''}
-                  onChange={e => handleField('contact', e.target.value)}
+                  value={form?.contact_details || ''}
+                  onChange={e => handleField('contact_details', e.target.value)}
                   placeholder="Phone / email"
                 />
               ) : (
-                <p className="profile-value">{recycler?.contact || '—'}</p>
-              )}
-            </div>
-
-            <div className="form-group">
-              <label className="form-label" htmlFor="p-rate">{t('recyclerDash.offeredRate')}</label>
-              {editing ? (
-                <input
-                  id="p-rate"
-                  type="number"
-                  className="form-input"
-                  value={form?.offered_rate || ''}
-                  onChange={e => handleField('offered_rate', e.target.value)}
-                  min="0"
-                  step="1"
-                />
-              ) : (
-                <p className="profile-value">
-                  {recycler?.offered_rate ? `₹${recycler.offered_rate}/kg` : '—'}
-                </p>
+                <p className="profile-value">{recycler?.contact_details || '—'}</p>
               )}
             </div>
 
@@ -187,18 +187,18 @@ export default function RecyclerProfile() {
               {editing ? (
                 <div className="toggle-wrap">
                   <button
-                    className={`toggle-btn ${form?.pickup_available ? 'toggle-btn--on' : ''}`}
-                    onClick={() => handleField('pickup_available', !form?.pickup_available)}
-                    aria-pressed={!!form?.pickup_available}
+                    className={`toggle-btn ${form?.pickup_availability === 'daily' ? 'toggle-btn--on' : ''}`}
+                    onClick={() => handleField('pickup_availability', form?.pickup_availability === 'daily' ? 'on_request' : 'daily')}
+                    aria-pressed={form?.pickup_availability === 'daily'}
                     type="button"
                   >
                     <span className="toggle-thumb" />
                   </button>
-                  <span>{form?.pickup_available ? t('recyclerDash.pickupYes') : t('recyclerDash.pickupNo')}</span>
+                  <span>{form?.pickup_availability === 'daily' ? t('recyclerDash.pickupYes') : t('recyclerDash.pickupNo')}</span>
                 </div>
               ) : (
                 <p className="profile-value">
-                  {recycler?.pickup_available ? `✓ ${t('recyclerDash.pickupYes')}` : `✗ ${t('recyclerDash.pickupNo')}`}
+                  {recycler?.pickup_availability === 'daily' ? ` ${t('recyclerDash.pickupYes')}` : ` ${t('recyclerDash.pickupNo')}`}
                 </p>
               )}
             </div>
@@ -236,7 +236,7 @@ export default function RecyclerProfile() {
                   const cat = MATERIAL_CATEGORIES.find(c => c.id === m);
                   return (
                     <span key={m} className="material-pill">
-                      <span aria-hidden="true">{cat?.icon || '♻'}</span>
+                      <span aria-hidden="true">{cat?.icon || ''}</span>
                       {cat?.label || m}
                     </span>
                   );
@@ -270,7 +270,7 @@ export default function RecyclerProfile() {
           </button>
           <button className="btn btn-accent btn-lg" onClick={handleSave} disabled={saving}>
             {saving ? <LoadingSpinner size="sm" /> : null}
-            {saving ? `${t('recyclerDash.profileUpdated').replace('!', '...').replace('updated successfully', 'Saving')}` : `💾 ${t('common.save') || 'Save Changes'}`}
+            {saving ? `${t('recyclerDash.profileUpdated').replace('!', '...').replace('updated successfully', 'Saving')}` : ` ${t('common.save') || 'Save Changes'}`}
           </button>
         </div>
       )}
