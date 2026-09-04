@@ -1,0 +1,120 @@
+/* OfflineIndicator — floating status chip */
+
+.offline-indicator {
+  position: fixed;
+  bottom: calc(64px + var(--space-3));  /* above mobile bottom nav */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 300;
+  animation: slideUpIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  pointer-events: auto;
+}
+
+/* On desktop — move to bottom-right corner */
+@media (min-width: 641px) {
+  .offline-indicator {
+    bottom: var(--space-6);
+    left: auto;
+    right: var(--space-6);
+    transform: none;
+  }
+}
+
+.offline-indicator__btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  border: 1.5px solid transparent;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base);
+  white-space: nowrap;
+  max-width: min(360px, calc(100vw - var(--space-8)));
+}
+
+.offline-indicator__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.offline-indicator__icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.offline-indicator__icon--spin {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+.offline-indicator__chevron {
+  font-size: var(--text-xs);
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* ── Variants ── */
+.offline-indicator--offline .offline-indicator__btn {
+  background: #1E1B4B;
+  color: #EDE9FE;
+  border-color: #4C1D95;
+}
+
+.offline-indicator--syncing .offline-indicator__btn {
+  background: var(--color-info-light);
+  color: var(--color-info);
+  border-color: var(--color-info);
+}
+
+.offline-indicator--pending .offline-indicator__btn {
+  background: var(--color-warning-light);
+  color: var(--color-warning);
+  border-color: var(--color-warning);
+}
+
+.offline-indicator--synced .offline-indicator__btn {
+  background: var(--color-success-light);
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.offline-indicator--error .offline-indicator__btn {
+  background: var(--color-destructive-light);
+  color: var(--color-destructive);
+  border-color: var(--color-destructive);
+}
+
+.offline-indicator--auth .offline-indicator__btn {
+  background: var(--color-warning-light);
+  color: var(--color-warning);
+  border-color: var(--color-warning);
+}
+
+/* ── Animations ── */
+@keyframes slideUpIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@media (min-width: 641px) {
+  @keyframes slideUpIn {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}

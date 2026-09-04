@@ -1,0 +1,605 @@
+{
+  "lang": {
+    "en": "English",
+    "hi": "हिंदी",
+    "mr": "मराठी"
+  },
+
+  "nav": {
+    "home": "Kabadiwala Connect",
+    "dashboard": "Dashboard",
+    "createLot": "Create Lot",
+    "prices": "Prices",
+    "earnings": "Earnings",
+    "safety": "Safety",
+    "lots": "Lots",
+    "profile": "Profile",
+    "collector": "Collector",
+    "recycler": "Recycler",
+    "switchPortal": "Switch portal",
+    "mainNav": "Main navigation",
+    "mobileNav": "Mobile navigation",
+    "homeLabel": "Kabadiwala Connect Home"
+  },
+
+  "common": {
+    "back": "← Back",
+    "next": "Next →",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "retry": "Retry",
+    "loading": "Loading…",
+    "error": "Error",
+    "success": "Success",
+    "view": "View →",
+    "close": "Close",
+    "optional": "(optional)",
+    "allTime": "All time",
+    "completed": "Completed",
+    "pendingPayment": "Awaiting payment",
+    "createdSoFar": "Created so far",
+    "kg": "kg",
+    "photos": "photos",
+    "photo": "photo",
+    "tryAgain": "Please try again.",
+    "noData": "No data available.",
+    "summary": "Summary",
+    "lotId": "Lot ID"
+  },
+
+  "status": {
+    "quoted": "Quoted",
+    "matched": "Matched",
+    "pending": "Pending",
+    "initiated": "Initiated",
+    "inProgress": "In Progress",
+    "handed_over": "Handed Over",
+    "confirmed": "Confirmed",
+    "paid": "Paid",
+    "failed": "Failed",
+    "syncing": "Syncing",
+    "queued": "Queued"
+  },
+
+  "offline": {
+    "offline": "Offline",
+    "online": "Online",
+    "syncing": "Syncing",
+    "pendingSync": "pending sync",
+    "changesPendingSync": "changes pending sync",
+    "changePendingSync": "change pending sync",
+    "syncComplete": "All changes synced",
+    "syncFailed": "Some changes could not sync — tap to retry",
+    "sessionExpired": "Session expired — reconnect to sync changes",
+    "autoSync": "Offline — changes will sync automatically",
+    "offlineNPending": "Offline — {{count}} {{noun}} pending sync",
+    "syncingN": "Syncing {{count}} pending {{noun}}…",
+    "pendingN": "{{count}} {{noun}} pending sync",
+    "change": "change",
+    "changes": "changes",
+    "savedOffline": "Saved offline — pending sync",
+    "pageAvailableOffline": "This page is available offline once loaded. No internet connection required.",
+    "showingCached": "Showing cached data — connect to refresh",
+    "backendOffline": "Could not calculate value — backend may be offline.",
+    "operationQueued": "Operation saved locally. Will sync when you reconnect.",
+    "syncPanel": {
+      "title": "Pending Changes",
+      "noPending": "No pending changes.",
+      "operation": "Operation",
+      "entity": "Entity",
+      "created": "Created",
+      "retries": "Retries",
+      "lastError": "Last Error",
+      "statusPending": "Pending",
+      "statusSyncing": "Syncing",
+      "statusFailed": "Failed"
+    }
+  },
+
+  "sync": {
+    "confirmReceipt": "Confirm Receipt"
+  },
+
+  "dashboard": {
+    "title": "My Dashboard",
+    "subtitle": "Track your earnings and recent lots",
+    "createNewLot": "Create New Lot",
+    "earnings": "Earnings Summary",
+    "totalEarned": "Total Earned",
+    "paidOut": "Paid Out",
+    "pending": "Pending",
+    "totalLots": "Total Lots",
+    "quickActions": "Quick Actions",
+    "recentLots": "Recent Lots",
+    "createLot": "Create Lot",
+    "createLotDesc": "Photo, weigh & value your scrap",
+    "priceBoard": "Price Board",
+    "priceBoardDesc": "Today's rates & trends",
+    "findRecyclers": "Find Recyclers",
+    "findRecyclersDesc": "Nearby authorized buyers",
+    "earningsLedger": "Earnings Ledger",
+    "earningsLedgerDesc": "Payment history & totals",
+    "safetyGuidance": "Safety Guidance",
+    "safetyGuidanceDesc": "Handling & field safety",
+    "noLots": "No lots yet",
+    "noLotsDesc": "Create your first lot to start earning.",
+    "createFirstLot": "Create Your First Lot",
+    "backendError": "Could not load earnings. Is the backend running?",
+    "lotId": "Lot ID",
+    "category": "Category",
+    "weight": "Weight",
+    "date": "Date",
+    "value": "Value"
+  },
+
+  "createLot": {
+    "title": "Create New Lot",
+    "subtitle": "Document your scrap and get an instant value estimate",
+    "steps": {
+      "photoCategory": "Photo & Category",
+      "weightValue": "Weight & Value",
+      "reviewSubmit": "Review & Submit"
+    },
+    "photos": {
+      "heading": "Add Photos",
+      "count": "{{current}}/{{max}} photos",
+      "camera": "Camera",
+      "upload": "Upload",
+      "cameraLabel": "Take a photo with camera",
+      "uploadLabel": "Upload photo from device",
+      "dropLabel": "Drop photos here or click to upload",
+      "dropHint": "JPG, PNG — up to {{max}} photos, 10MB each",
+      "dragDrop": "Drag & drop or tap to add photos",
+      "primary": "Primary",
+      "addPhoto": "Add photo",
+      "removePhoto": "Remove photo {{n}}"
+    },
+    "category": {
+      "heading": "Select Material Type",
+      "label": "Material categories",
+      "subCategory": "Sub-category",
+      "subCategoryLabel": "Sub-categories",
+      "selected": "Selected"
+    },
+    "weight": {
+      "heading": "Weight & Location",
+      "label": "Approximate Weight (kg)",
+      "hint": "Enter the approximate weight. Use + / − buttons for easy adjustment.",
+      "decrease": "Decrease weight by 1 kg",
+      "increase": "Increase weight by 1 kg",
+      "presets": "Quick weight presets",
+      "stepperLabel": "Weight stepper"
+    },
+    "location": {
+      "label": "Your Location",
+      "hint": "Used to calculate your local market price."
+    },
+    "notes": {
+      "label": "Notes",
+      "placeholder": "Condition, mix type, any special details…"
+    },
+    "valuation": {
+      "label": "Instant Valuation Estimate",
+      "calculating": "Calculating real-time value from market prices…",
+      "instantEstimate": "Instant Estimate",
+      "breakdown": "{{unitPrice}}/kg × {{weight}} kg = {{total}}",
+      "unitPrice": "Unit Price",
+      "totalValue": "Total Value",
+      "weight": "Weight",
+      "low": "Low {{price}}/kg",
+      "high": "High {{price}}/kg",
+      "yourPrice": "Your price: {{price}}/kg",
+      "marketRange": "Market range for {{category}} in {{location}}",
+      "priceAt": "Your price is at {{pct}}% of market range",
+      "empty": "Enter weight above to see your live market value estimate",
+      "emptyNote": "Calculated from real market prices in {{location}}",
+      "noPriceData": "No price data for {{category}} in {{location}}. Try a different location."
+    },
+    "review": {
+      "heading": "Review & Submit",
+      "category": "Category",
+      "weight": "Weight",
+      "location": "Location",
+      "notes": "Notes",
+      "estimatedValue": "Estimated Value",
+      "marketPrice": "Market price ({{location}})",
+      "marketRange": "Market range",
+      "photosAttached": "Photos attached"
+    },
+    "buttons": {
+      "nextWeight": "Next: Enter Weight →",
+      "reviewSubmit": "Review & Submit →",
+      "submitting": "Submitting…",
+      "submitLot": "Submit Lot"
+    },
+    "errors": {
+      "selectCategory": "Please select a material category.",
+      "validWeight": "Enter a valid weight greater than 0.",
+      "submitFailed": "Failed to create lot. Please try again."
+    }
+  },
+
+  "materials": {
+    "CRT": "CRTs",
+    "LCD": "LCD Panels",
+    "PCB": "PCBs",
+    "Cable": "Cables",
+    "Battery": "Batteries",
+    "Motor": "Motors",
+    "Plastic": "Mixed Plastics"
+  },
+
+  "prices": {
+    "title": "Price Discovery",
+    "subtitle": "Live market rates, trends & recycler information",
+    "currentRates": "Current Rates",
+    "currentRatesDesc": "Today's buying prices by material",
+    "trendChart": "Price Trend Chart",
+    "trendChartDesc": "Historical buying price trend",
+    "buyingPrice": "Buying Price",
+    "location": "Location",
+    "category": "Category",
+    "days": "Days",
+    "day30": "30 days",
+    "day60": "60 days",
+    "day90": "90 days",
+    "speakPrices": "Speak Prices",
+    "stopSpeaking": "Stop Speaking",
+    "speakLabel": "Read prices aloud",
+    "min": "Min",
+    "max": "Max",
+    "avg": "Avg",
+    "latest": "Latest",
+    "change": "Change",
+    "dataPoints": "data points",
+    "recyclerRates": "Recycler Rates",
+    "recyclerName": "Recycler",
+    "offered": "Offered",
+    "authorized": "Authorized",
+    "distance": "Distance",
+    "pickup": "Pickup",
+    "yes": "Yes",
+    "no": "No",
+    "available": "Available",
+    "unavailable": "Unavailable",
+    "perKg": "/kg",
+    "noTrendData": "No trend data available for this selection.",
+    "noRecyclers": "No recycler data available.",
+    "loadError": "Could not load price data.",
+    "selectCategory": "Select a category to view trends",
+    "priceCard": "{{category}} — {{location}}"
+  },
+
+  "priceDiscovery": {
+    "subtitle": "Live market rates, trends & recycler information",
+    "regionalPrices": "Current Market Rates",
+    "unitPrice": "Unit Price",
+    "marketRange": "Market Range",
+    "buyingPrice": "Buying Price",
+    "speakPrice": "Speak Prices",
+    "stopAudio": "Stop Speaking",
+    "marketHigh": "Market High",
+    "marketLow": "Market Low"
+  },
+
+  "recyclers": {
+    "title": "Matched Recyclers",
+    "subtitle": "Authorized recyclers matched to your lot",
+    "noMatch": "No recyclers matched",
+    "noMatchDesc": "Try a different category or location.",
+    "rank": "Rank",
+    "name": "Name",
+    "distance": "Distance",
+    "rate": "Rate",
+    "pickup": "Pickup Available",
+    "authorized": "Authorized",
+    "matchScore": "Match Score",
+    "handingOver": "Initiating…",
+    "selectRecycler": "Select this Recycler",
+    "initiateHandover": "Initiate Handover",
+    "handoverInitiated": "Handover Initiated",
+    "handoverRef": "Reference",
+    "savedOffline": "Saved Offline",
+    "savedOfflineDesc": "Your handover request has been saved and will be sent when you reconnect.",
+    "queuedAt": "Queued at",
+    "retryCount": "Retry count",
+    "loadError": "Could not load matched recyclers.",
+    "locationRequired": "Location access required to find nearby recyclers.",
+    "km": "km away",
+    "lots": "lots",
+    "status": "Status"
+  },
+
+  "lotDetail": {
+    "title": "Lot Details",
+    "lotId": "Lot ID",
+    "category": "Category",
+    "subCategory": "Sub-category",
+    "weight": "Weight",
+    "location": "Location",
+    "status": "Status",
+    "estimatedValue": "Estimated Value",
+    "createdAt": "Created At",
+    "description": "Notes",
+    "handover": "Handover",
+    "initiateHandover": "Initiate Handover",
+    "handoverRef": "Reference Number",
+    "handoverStatus": "Handover Status",
+    "gpsLocation": "GPS Location",
+    "captureGPS": "Capture GPS",
+    "captureGPSLabel": "Capture current GPS location",
+    "gpsNote": "GPS coordinates will be included in the handover record.",
+    "gpsUnavailable": "GPS unavailable — location will not be recorded.",
+    "gpsError": "Could not capture location. Enable GPS and try again.",
+    "confirmHandover": "Confirm Handover",
+    "handoverConfirmed": "Handover Confirmed",
+    "viewTraceability": "View Traceability",
+    "noHandover": "No handover initiated yet.",
+    "loadError": "Could not load lot details.",
+    "traceability": "Traceability",
+    "photos": "Photos"
+  },
+
+  "traceability": {
+    "title": "Traceability",
+    "subtitle": "Full audit trail for this lot",
+    "lifecycle": "Lot Lifecycle",
+    "lotId": "Lot ID",
+    "timeline": "Timeline",
+    "created": "Lot Created",
+    "matched": "Recycler Matched",
+    "handoverInitiated": "Handover Initiated",
+    "handoverConfirmed": "Handover Confirmed",
+    "paymentPending": "Payment Pending",
+    "paymentComplete": "Payment Complete",
+    "reference": "Reference",
+    "gps": "GPS",
+    "timestamp": "Timestamp",
+    "recycler": "Recycler",
+    "weight": "Weight",
+    "noTraceability": "No traceability data yet.",
+    "loadError": "Could not load traceability data.",
+    "events": {
+      "created": "Lot Created",
+      "valued": "Valuation Completed",
+      "matched": "Recycler Matched",
+      "handoverInit": "Handover Initiated",
+      "confirmed": "Handover Confirmed",
+      "awaitingMatch": "Awaiting recycler match",
+      "notInitiated": "Not yet initiated",
+      "awaitingConfirm": "Awaiting recycler confirmation",
+      "txComplete": "Receipt confirmed"
+    },
+    "details": {
+      "ref": "Reference Number",
+      "gps": "GPS Location",
+      "timestamp": "Timestamp",
+      "recycler": "Recycler",
+      "weight": "Weight"
+    }
+  },
+
+  "earnings": {
+    "title": "Earnings Ledger",
+    "subtitle": "Your payment history and totals",
+    "totalEarned": "Total Earned",
+    "paidOut": "Paid Out",
+    "pending": "Pending",
+    "totalTransactions": "Transactions",
+    "filterAll": "All",
+    "filterPaid": "Paid",
+    "filterPending": "Pending",
+    "filteredTotal": "Total (filtered)",
+    "noTransactions": "No transactions yet.",
+    "noTransactionsDesc": "Complete a handover to see your earnings here.",
+    "noFilteredResults": "No transactions match this filter.",
+    "table": {
+      "lot": "Lot",
+      "material": "Material",
+      "weight": "Weight",
+      "recycler": "Recycler",
+      "amount": "Amount",
+      "status": "Status",
+      "date": "Date",
+      "view": "View"
+    },
+    "cachedNotice": "Showing cached data — connect to refresh",
+    "loadError": "Could not load earnings."
+  },
+
+  "safety": {
+    "title": "Safety Guidance",
+    "subtitle": "Essential safety information for handling recyclable and electronic materials",
+    "offlineNotice": "This page is available offline once loaded. No internet connection required.",
+    "jumpNavLabel": "Jump to safety section",
+    "footer": "When in doubt, do not handle the material. Contact your supervisor or the ReLoop support team. Your safety is more important than any collection.",
+    "warningBadge": "Warning",
+    "doNot": "Do NOT:",
+    "sections": {
+      "general": {
+        "title": "General Safety",
+        "items": [
+          "Inspect materials before handling — look for damage, leaks, or unusual smells.",
+          "Never handle materials in poor lighting or confined spaces without ventilation.",
+          "Keep your work area clean and free of clutter to avoid trips and falls.",
+          "Wash hands thoroughly after handling any materials.",
+          "Do not eat, drink, or touch your face while handling recyclables.",
+          "Always inform someone of your location when working alone in the field."
+        ]
+      },
+      "ppe": {
+        "title": "Protective Equipment",
+        "items": [
+          "Wear heavy-duty gloves when handling any electronic waste.",
+          "Use closed-toe footwear — sandals are not appropriate for fieldwork.",
+          "Wear safety glasses or goggles when dismantling or breaking materials.",
+          "Use a dust mask (N95 or equivalent) in dusty environments or when handling old CRT screens.",
+          "Wear long sleeves and trousers to protect skin from sharp edges."
+        ]
+      },
+      "materials": {
+        "title": "Material Handling",
+        "items": [
+          "Sort materials before transport — mixed loads are harder and riskier to handle.",
+          "Secure loads properly before transporting — loose items shift and cause injury.",
+          "Use a trolley or cart for heavy loads — do not strain your back.",
+          "Stack heavy items at the bottom of a pile, lighter items on top.",
+          "Keep different material categories separate to prevent contamination."
+        ]
+      },
+      "sharp": {
+        "title": "Sharp & Hazardous Materials",
+        "items": [
+          "Broken glass, metal shards, and exposed circuit board pins are all sharp — handle with thick gloves.",
+          "Never pick up broken CRT glass without eye protection and thick gloves.",
+          "If a material has visible rust or corrosion, avoid skin contact.",
+          "Do not apply pressure to cracked or bulging batteries — risk of rupture.",
+          "Place sharp items in a rigid container — never loose in a bag."
+        ],
+        "doNot": [
+          "Do NOT handle severely broken materials with bare hands.",
+          "Do NOT place sharp items in soft bags or pockets.",
+          "Do NOT attempt to repair or disassemble damaged equipment yourself."
+        ]
+      },
+      "ewaste": {
+        "title": "Electronic Waste (E-Waste)",
+        "items": [
+          "Old CRT monitors and televisions may contain lead — avoid dust from broken units.",
+          "Circuit boards (PCBs) may have traces of lead solder — wash hands after contact.",
+          "Do not attempt to open or dismantle capacitors or power supplies.",
+          "LCD panels may contain mercury — do not break or crush them.",
+          "Store e-waste in a dry location away from direct heat or sunlight.",
+          "Batteries from electronics should be separated and stored upright."
+        ],
+        "doNot": [
+          "Do NOT attempt to drain or discharge batteries yourself.",
+          "Do NOT incinerate or crush batteries.",
+          "Do NOT mix e-waste with general household waste."
+        ]
+      },
+      "chemical": {
+        "title": "Chemical & Unknown Materials",
+        "items": [
+          "If a material has an unknown smell, liquid, or powder — do not touch it.",
+          "Do not handle materials with visible chemical stains or residues.",
+          "If you suspect a hazardous chemical, leave the area and call for assistance.",
+          "Never mix unknown liquids — chemical reactions can cause injury."
+        ],
+        "doNot": [
+          "Do NOT handle any container that is leaking, pressurized, or unlabelled.",
+          "Do NOT smell or taste unknown substances to identify them.",
+          "Do NOT attempt to clean up large chemical spills yourself."
+        ]
+      },
+      "emergency": {
+        "title": "Emergency Guidance",
+        "items": [
+          "If you are injured: apply pressure to wounds, move away from hazards, call for help immediately.",
+          "If you inhale fumes: move to fresh air immediately, call for medical help if symptoms persist.",
+          "If skin contact with unknown substance: rinse with clean water for at least 15 minutes.",
+          "If eyes are exposed: flush gently with clean water for 15 minutes, seek medical help.",
+          "Emergency number (India): 112",
+          "Poison Control Helpline (India): 1800-11-6117"
+        ]
+      }
+    }
+  },
+
+  "recyclerDash": {
+    "title": "Recycler Dashboard",
+    "subtitle": "Manage incoming lots and your profile",
+    "incomingLots": "Incoming Lots",
+    "incomingLotsDesc": "Review and confirm lot handovers",
+    "myProfile": "My Profile",
+    "myProfileDesc": "Update your rates and service area",
+    "safetyGuidance": "Safety Guidance",
+    "safetyGuidanceDesc": "Handling & field safety",
+    "totalConfirmed": "Confirmed",
+    "totalPending": "Pending",
+    "totalLots": "Total Lots",
+    "loadError": "Could not load recycler data.",
+    "viewAll": "View All",
+    "editProfile": "Edit Profile",
+    "basicInfo": "Basic Information",
+    "facilityName": "Facility Name",
+    "facilityLocation": "Facility Location",
+    "serviceArea": "Service Area",
+    "contact": "Contact Details",
+    "contactPlaceholder": "Phone / email",
+    "offeredRate": "Offered Rate (₹/kg)",
+    "pickupAvailable": "Pickup Available",
+    "pickupYes": "Yes — Pickup available",
+    "pickupNo": "No pickup",
+    "authStatus": "Authorization Status",
+    "authDetails": "Authorization Details",
+    "saveChanges": "Save Changes",
+    "profileUpdated": "Profile updated successfully.",
+    "profileUpdateFail": "Could not save profile. Please try again.",
+    "profileError": "Could not load profile."
+  },
+
+  "incomingLots": {
+    "title": "Incoming Lots",
+    "subtitle": "Lots matched and awaiting handover confirmation",
+    "noLots": "No matched lots yet",
+    "noLotsDesc": "Collectors will be matched to your facility once they create lots in your area.",
+    "noFilteredLots": "No lots match this filter",
+    "noFilteredLotsDesc": "Try selecting a different status filter above.",
+    "loadError": "Could not load incoming lots.",
+    "collector": "Collector",
+    "category": "Category",
+    "weight": "Weight",
+    "location": "Location",
+    "status": "Status",
+    "value": "Estimated Value",
+    "date": "Date",
+    "confirm": "Confirm Receipt",
+    "confirmTitle": "Confirm Handover",
+    "confirmDesc": "Confirm that you have received lot {{lotId}}.",
+    "confirmed": "Confirmed",
+    "filterAll": "All Matched",
+    "filterPending": "Pending",
+    "filterConfirmed": "Confirmed",
+    "estimated": "est."
+  },
+
+  "recyclerLotDetail": {
+    "title": "Lot Details",
+    "handoverRef": "Handover Reference",
+    "confirmReceipt": "Confirm Receipt",
+    "confirmTitle": "Confirm that you received this lot",
+    "confirmSuccess": "Handover confirmed successfully.",
+    "confirmError": "Could not confirm handover.",
+    "loadError": "Could not load lot details.",
+    "gps": "GPS Location",
+    "photos": "Photos"
+  },
+
+  "recyclerProfile": {
+    "title": "Recycler Profile",
+    "subtitle": "Manage your profile and service settings",
+    "name": "Recycler Name",
+    "namePlaceholder": "Your business or personal name",
+    "location": "Location",
+    "locationPlaceholder": "City or area",
+    "materials": "Accepted Materials",
+    "materialsHint": "Select all material categories you accept",
+    "rate": "Offered Rate (₹/kg)",
+    "ratePlaceholder": "e.g. 120",
+    "pickup": "Pickup Available",
+    "serviceRadius": "Service Radius (km)",
+    "serviceRadiusPlaceholder": "e.g. 20",
+    "contact": "Contact Number",
+    "contactPlaceholder": "+91 XXXXX XXXXX",
+    "authorized": "Authorization Status",
+    "authorizedYes": "Authorized",
+    "authorizedNo": "Not Authorized",
+    "saveProfile": "Save Profile",
+    "saving": "Saving…",
+    "saveSuccess": "Profile saved successfully.",
+    "saveError": "Could not save profile.",
+    "loadError": "Could not load profile."
+  }
+}

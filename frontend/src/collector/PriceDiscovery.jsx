@@ -10,13 +10,14 @@ import {
   MATERIAL_CATEGORIES, DEFAULT_LOCATION,
 } from '../api/client';
 import { PageLoader, SkeletonCard } from '../components/LoadingSpinner';
+import { useTranslation } from '../i18n/config.js';
 import './PriceDiscovery.css';
 import './PriceDiscoveryP2.css';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 const LOCATIONS = ['Bengaluru', 'Mumbai', 'Delhi', 'Hyderabad', 'Chennai', 'Pune'];
-const SAMPLE_WEIGHT = 1; // baseline kg for price card display
+const SAMPLE_WEIGHT = 1;
 
 function fmt(n) {
   if (n == null) return '—';
@@ -45,28 +46,26 @@ function trendStats(arr) {
 }
 
 export default function PriceDiscovery() {
-  const [category, setCategory] = useState(MATERIAL_CATEGORIES[2].id); // PCB default
+  const { t } = useTranslation();
+  const [category, setCategory] = useState(MATERIAL_CATEGORIES[2].id);
   const [location, setLocation] = useState(DEFAULT_LOCATION);
   const [days, setDays] = useState(90);
 
   const [trends, setTrends] = useState([]);
   const [recyclers, setRecyclers] = useState([]);
-  const [priceCards, setPriceCards] = useState({}); // { catId: { unit_price, market_range_low, market_range_high } }
+  const [priceCards, setPriceCards] = useState({});
 
   const [loadingTrend, setLoadingTrend] = useState(true);
   const [loadingRec, setLoadingRec] = useState(true);
   const [loadingCards, setLoadingCards] = useState(true);
   const [error, setError] = useState('');
 
-  // Web Speech
   const [speaking, setSpeaking] = useState(false);
   const synthRef = useRef(window.speechSynthesis);
 
-  // ── Computed ──────────────────────────────────────────────
   const stats = trendStats(trends);
   const catLabel = MATERIAL_CATEGORIES.find(c => c.id === category)?.label;
 
-  // ── Fetch price cards (all categories, current price) ─────
   useEffect(() => {
     setLoadingCards(true);
     Promise.allSettled(
@@ -84,19 +83,17 @@ export default function PriceDiscovery() {
     }).finally(() => setLoadingCards(false));
   }, [location]);
 
-  // ── Fetch trend for selected category ─────────────────────
   const fetchTrends = useCallback(() => {
     setLoadingTrend(true);
     setError('');
     getPriceTrends({ category, location, days })
       .then(r => setTrends(Array.isArray(r.data) ? r.data : []))
-      .catch(() => { setTrends([]); setError('Could not load price trend data. Is the backend running?'); })
+      .catch(() => { setTrends([]); setError(t('prices.loadError')); })
       .finally(() => setLoadingTrend(false));
-  }, [category, location, days]);
+  }, [category, location, days, t]);
 
   useEffect(() => { fetchTrends(); }, [fetchTrends]);
 
-  // ── Fetch recyclers ───────────────────────────────────────
   useEffect(() => {
     getAllRecyclers()
       .then(r => setRecyclers(Array.isArray(r.data) ? r.data : []))
@@ -104,7 +101,6 @@ export default function PriceDiscovery() {
       .finally(() => setLoadingRec(false));
   }, []);
 
-  // ── Web Speech ────────────────────────────────────────────
   function speakPrice() {
     if (!synthRef.current) return;
     synthRef.current.cancel();
@@ -128,8 +124,6 @@ export default function PriceDiscovery() {
     setSpeaking(false);
   }
 
-  // ── Chart data ────────────────────────────────────────────
-  // Build datasets with buying_price + market range band
   const chartLabels = trends.map(t =>
     new Date(t.price_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
   );
@@ -137,9 +131,8 @@ export default function PriceDiscovery() {
   const hasRange = trends.some(t => t.market_range_low != null && t.market_range_high != null);
 
   const chartDatasets = [
-    // Shaded range band — top boundary
     ...(hasRange ? [{
-      label: 'Market High',
+      label: t('priceDiscovery.marketHigh'),
       data: trends.map(t => Number(t.market_range_high)),
       borderColor: 'rgba(167,139,250,0.4)',
       backgroundColor: 'rgba(167,139,250,0.12)',
@@ -147,11 +140,10 @@ export default function PriceDiscovery() {
       borderDash: [4, 4],
       pointRadius: 0,
       tension: 0.4,
-      fill: '+1',  // fill down to market low dataset
+      fill: '+1',
     }] : []),
-    // Shaded range band — bottom boundary
     ...(hasRange ? [{
-      label: 'Market Low',
+      label: t('priceDiscovery.marketLow'),
       data: trends.map(t => Number(t.market_range_low)),
       borderColor: 'rgba(167,139,250,0.4)',
       backgroundColor: 'rgba(167,139,250,0.12)',
@@ -161,9 +153,8 @@ export default function PriceDiscovery() {
       tension: 0.4,
       fill: false,
     }] : []),
-    // Main buying price line
     {
-      label: `${catLabel} Buying Price (₹/kg)`,
+      label: `${catLabel} ${t('priceDiscovery.buyingPrice')} (₹/kg)`,
       data: trends.map(t => Number(t.buying_price)),
       borderColor: '#7C3AED',
       backgroundColor: 'rgba(124,58,237,0.08)',
@@ -187,12 +178,12 @@ export default function PriceDiscovery() {
         display: hasRange,
         position: 'bottom',
         labels: { boxWidth: 12, font: { size: 12 }, color: '#6B7280' },
-        filter: item => item.text !== 'Market Low',
+        filter: item => item.text !== t('priceDiscovery.marketLow'),
       },
       tooltip: {
         callbacks: {
           label: ctx => {
-            if (ctx.dataset.label === 'Market Low') return null;
+            if (ctx.dataset.label === t('priceDiscovery.marketLow')) return null;
             return `${ctx.dataset.label}: ₹${ctx.parsed.y.toLocaleString('en-IN')}/kg`;
           },
         },
@@ -214,7 +205,6 @@ export default function PriceDiscovery() {
     },
   };
 
-  // ── Filtered recycler rates ───────────────────────────────
   const filteredRecyclers = recyclers.filter(r =>
     r.authorization_status === 'authorized' &&
     (r.materials_accepted || []).includes(category)
@@ -222,16 +212,15 @@ export default function PriceDiscovery() {
 
   return (
     <div className="container">
-      {/* Page Header */}
       <div className="animate-fade-in" style={{ marginBottom: 'var(--space-6)' }}>
-        <h1 className="section-title">Price Discovery Board</h1>
-        <p className="section-subtitle">Live e-waste scrap prices, trends, and authorized recycler rates</p>
+        <h1 className="section-title">{t('dashboard.priceBoard')}</h1>
+        <p className="section-subtitle">{t('priceDiscovery.subtitle')}</p>
       </div>
 
-      {/* ── Location + History Controls ── */}
+      {/* Controls */}
       <div className="p2-pd-controls animate-fade-in">
         <div className="form-group" style={{ flex: 1, minWidth: 160 }}>
-          <label className="form-label" htmlFor="pd-location">Location</label>
+          <label className="form-label" htmlFor="pd-location">{t('prices.location')}</label>
           <select
             id="pd-location"
             className="form-input form-select"
@@ -242,29 +231,29 @@ export default function PriceDiscovery() {
           </select>
         </div>
         <div className="form-group" style={{ flex: 1, minWidth: 130 }}>
-          <label className="form-label" htmlFor="pd-days">History</label>
+          <label className="form-label" htmlFor="pd-days">{t('prices.days')}</label>
           <select
             id="pd-days"
             className="form-input form-select"
             value={days}
             onChange={e => setDays(Number(e.target.value))}
           >
-            <option value={30}>Last 30 days</option>
-            <option value={60}>Last 60 days</option>
-            <option value={90}>Last 90 days</option>
+            <option value={30}>{t('prices.day30')}</option>
+            <option value={60}>{t('prices.day60')}</option>
+            <option value={90}>{t('prices.day90')}</option>
           </select>
         </div>
       </div>
 
-      {/* ══════════════════════════════════════════════════════
-          SECTION 1 — Material Price Cards Grid
-      ══════════════════════════════════════════════════════ */}
-      <section className="animate-fade-in" aria-labelledby="price-cards-heading">
+      {/* Section 1 — Price Cards */}
+      <section className="animate-fade-in" aria-labelledby="regional-prices-heading">
         <div className="p2-section-row">
-          <h2 id="price-cards-heading" className="section-title" style={{ fontSize: 'var(--text-xl)' }}>
-            Current Market Prices
+          <h2 id="regional-prices-heading" className="section-title" style={{ fontSize: 'var(--text-xl)' }}>
+            {t('priceDiscovery.regionalPrices')}
           </h2>
-          <span className="text-sm text-muted">in {location} · per kg</span>
+          <span className="text-sm text-muted">
+            {t('prices.priceCard', { category: '', location }).replace(' — ', '')} · {t('prices.buyingPrice').toLowerCase()}
+          </span>
         </div>
 
         <div className="p2-price-cards-grid">
@@ -273,7 +262,6 @@ export default function PriceDiscovery() {
             : MATERIAL_CATEGORIES.map((cat, i) => {
                 const card = priceCards[cat.id];
                 const isSelected = category === cat.id;
-                const chg = null; // per-card trend change requires separate calls; show — for now
                 return (
                   <button
                     key={cat.id}
@@ -284,12 +272,14 @@ export default function PriceDiscovery() {
                   >
                     <div className="p2-price-card__icon" aria-hidden="true">{cat.icon}</div>
                     <div className="p2-price-card__label">{cat.label}</div>
-                    <div className="p2-price-card__price">
-                      {card ? fmt(card.unit_price) : 'No data'}
+                    <div className="region-card__row">
+                      <span>{t('priceDiscovery.unitPrice')}</span>
+                      <span className="region-card__val font-mono">{card ? fmt(card.unit_price) : t('common.noData')} <span className="text-muted">/ {t('common.kg')}</span></span>
                     </div>
                     {card && (
-                      <div className="p2-price-card__range">
-                        {fmt(card.market_range_low)}–{fmt(card.market_range_high)}
+                      <div className="region-card__row">
+                        <span>{t('priceDiscovery.marketRange')}</span>
+                        <span className="region-card__val font-mono">{fmt(card.market_range_low)}–{fmt(card.market_range_high)}</span>
                       </div>
                     )}
                     {isSelected && (
@@ -302,12 +292,9 @@ export default function PriceDiscovery() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════════
-          SECTION 2 — Selected Category Hero + Speak
-      ══════════════════════════════════════════════════════ */}
+      {/* Section 2 — Hero + Speak */}
       <div className="p2-hero-row animate-fade-in">
-        {/* Category Tabs (horizontal scroll) */}
-        <div className="cat-tabs" role="tablist" aria-label="Select material for trend chart">
+        <div className="cat-tabs" role="tablist" aria-label={t('prices.selectCategory')}>
           {MATERIAL_CATEGORIES.map(cat => (
             <button
               key={cat.id}
@@ -322,13 +309,15 @@ export default function PriceDiscovery() {
           ))}
         </div>
 
-        {/* Price Hero */}
         <div className="price-hero card">
           <div className="price-hero__info">
-            <p className="price-hero__label">Current Price — {catLabel} in {location}</p>
-            <p className="price-hero__value">
-              {stats?.latest ? `${fmt(stats.latest)}/kg` : loadingTrend ? '…' : 'No data'}
+            <p className="price-hero__label">
+              {t('prices.priceCard', { category: catLabel, location })}
             </p>
+            <div className="price-main-stat__content">
+              <span className="price-main-stat__value">{stats?.latest ? fmt(stats.latest) : loadingTrend ? '…' : t('common.noData')}</span>
+              {stats?.latest && <span className="price-main-stat__unit">/ {t('common.kg')}</span>}
+            </div>
             {stats?.change != null && (
               <p className={`p2-price-change ${stats.change >= 0 ? 'p2-price-change--up' : 'p2-price-change--down'}`}>
                 <span aria-hidden="true">{stats.change >= 0 ? '▲' : '▼'}</span>
@@ -339,53 +328,49 @@ export default function PriceDiscovery() {
           <button
             className={`speak-btn ${speaking ? 'speak-btn--active' : ''}`}
             onClick={speaking ? stopSpeaking : speakPrice}
-            aria-label={speaking ? 'Stop reading price aloud' : 'Read current price aloud'}
-            title="Web Speech API"
+            aria-label={speaking ? t('priceDiscovery.stopAudio') : t('priceDiscovery.speakPrice')}
           >
-            <span aria-hidden="true">{speaking ? '⏹' : '🔊'}</span>
-            <span>{speaking ? 'Stop' : 'Read Aloud'}</span>
+            <span aria-hidden="true">{speaking ? '' : ''}</span>
+            <span>{speaking ? t('priceDiscovery.stopAudio') : t('priceDiscovery.speakPrice')}</span>
           </button>
         </div>
       </div>
 
       {error && (
         <div className="alert-banner alert-banner--warn animate-fade-in">
-          <span aria-hidden="true">⚠</span> {error}
+           {error}
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════
-          SECTION 3 — Trend Stats + Chart
-      ══════════════════════════════════════════════════════ */}
+      {/* Section 3 — Trend Chart */}
       <section className="card animate-fade-in" aria-labelledby="chart-heading">
         <div className="chart-header">
           <h2 id="chart-heading" className="section-title" style={{ fontSize: 'var(--text-xl)' }}>
-            Price Trend — {catLabel}
+            {t('prices.trendChart')} — {catLabel}
           </h2>
-          <span className="text-sm text-muted">{days} days · {location}</span>
+          <span className="text-sm text-muted">{days} {t('prices.days')} · {location}</span>
         </div>
 
-        {/* Stat chips */}
         {stats && !loadingTrend && (
           <div className="p2-stat-chips">
             <div className="p2-stat-chip">
-              <span className="p2-stat-chip__label">Min</span>
+              <span className="p2-stat-chip__label">{t('prices.min')}</span>
               <span className="p2-stat-chip__value">{fmt(stats.min)}</span>
             </div>
             <div className="p2-stat-chip p2-stat-chip--accent">
-              <span className="p2-stat-chip__label">Current</span>
+              <span className="p2-stat-chip__label">{t('prices.latest')}</span>
               <span className="p2-stat-chip__value">{fmt(stats.latest)}</span>
             </div>
             <div className="p2-stat-chip">
-              <span className="p2-stat-chip__label">Avg</span>
+              <span className="p2-stat-chip__label">{t('prices.avg')}</span>
               <span className="p2-stat-chip__value">{fmt(Math.round(stats.avg))}</span>
             </div>
             <div className="p2-stat-chip">
-              <span className="p2-stat-chip__label">Max</span>
+              <span className="p2-stat-chip__label">{t('prices.max')}</span>
               <span className="p2-stat-chip__value">{fmt(stats.max)}</span>
             </div>
             <div className={`p2-stat-chip ${stats.change != null ? (stats.change >= 0 ? 'p2-stat-chip--up' : 'p2-stat-chip--down') : ''}`}>
-              <span className="p2-stat-chip__label">Change</span>
+              <span className="p2-stat-chip__label">{t('prices.change')}</span>
               <span className="p2-stat-chip__value">
                 {stats.change != null
                   ? `${stats.change >= 0 ? '+' : ''}${stats.change.toFixed(1)}%`
@@ -399,10 +384,9 @@ export default function PriceDiscovery() {
           <PageLoader />
         ) : trends.length === 0 ? (
           <div className="empty-state" style={{ minHeight: 200 }}>
-            <span aria-hidden="true" style={{ fontSize: 40 }}>📊</span>
-            <p style={{ fontWeight: 'var(--weight-semibold)' }}>No trend data for {catLabel} in {location}</p>
-            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
-              Try a different location or material category.
+            
+            <p style={{ fontWeight: 'var(--weight-semibold)' }}>
+              {t('prices.noTrendData')}
             </p>
           </div>
         ) : (
@@ -415,19 +399,20 @@ export default function PriceDiscovery() {
           </div>
         )}
 
-        {/* Accessible data table (collapsible) */}
         {trends.length > 0 && (
           <details className="chart-table-details">
-            <summary className="chart-table-summary">View data table ({trends.length} records)</summary>
+            <summary className="chart-table-summary">
+              {t('prices.trendChartDesc')} ({trends.length} {t('prices.dataPoints')})
+            </summary>
             <div style={{ overflowX: 'auto', marginTop: 'var(--space-4)' }}>
               <table className="price-table" aria-label="Price history data">
                 <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>Location</th>
-                    <th>Buying Price</th>
-                    <th>Market Low</th>
-                    <th>Market High</th>
+                    <th>{t('dashboard.date')}</th>
+                    <th>{t('prices.location')}</th>
+                    <th>{t('prices.buyingPrice')}</th>
+                    <th>{t('prices.min')}</th>
+                    <th>{t('prices.max')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -449,34 +434,32 @@ export default function PriceDiscovery() {
         )}
       </section>
 
-      {/* ══════════════════════════════════════════════════════
-          SECTION 4 — Recycler Rate Table
-      ══════════════════════════════════════════════════════ */}
+      {/* Section 4 — Recycler Rates */}
       <section className="card animate-fade-in" aria-labelledby="rates-heading">
         <h2 id="rates-heading" className="section-title" style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-4)' }}>
-          Authorized Recycler Rates — {catLabel}
+          {t('prices.recyclerRates')} — {catLabel}
         </h2>
         <p className="section-subtitle" style={{ marginBottom: 'var(--space-5)' }}>
-          Compare rates offered by authorized recyclers in your area
+          {t('prices.currentRatesDesc')}
         </p>
 
         {loadingRec ? (
           <PageLoader />
         ) : filteredRecyclers.length === 0 ? (
           <div className="empty-state" style={{ minHeight: 100 }}>
-            <span aria-hidden="true" style={{ fontSize: 32 }}>🏭</span>
-            <p>No authorized recyclers currently listed for {catLabel}.</p>
+            
+            <p>{t('prices.noRecyclers')}</p>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table className="price-table" aria-label="Authorized recycler rates">
               <thead>
                 <tr>
-                  <th>Recycler</th>
-                  <th>Location</th>
-                  <th>Offered Rate</th>
-                  <th>Pickup</th>
-                  <th>vs Market</th>
+                  <th>{t('prices.recyclerName')}</th>
+                  <th>{t('prices.location')}</th>
+                  <th>{t('prices.offered')}</th>
+                  <th>{t('prices.pickup')}</th>
+                  <th>vs {t('prices.buyingPrice')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -492,7 +475,7 @@ export default function PriceDiscovery() {
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                             {i === 0 && (
-                              <span className="p2-best-badge" title="Best rate">★</span>
+                              <span className="p2-best-badge" title="Best rate"></span>
                             )}
                             <span style={{ fontWeight: 'var(--weight-semibold)' }}>{r.name}</span>
                           </div>
@@ -505,7 +488,7 @@ export default function PriceDiscovery() {
                         </td>
                         <td>
                           <span style={{ color: r.pickup_available ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
-                            {r.pickup_available ? '✓ Yes' : '✗ No'}
+                            {r.pickup_available ? ` ${t('prices.yes')}` : ` ${t('prices.no')}`}
                           </span>
                         </td>
                         <td>

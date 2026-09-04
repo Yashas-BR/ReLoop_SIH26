@@ -110,7 +110,7 @@
   position: relative;
   font-size: var(--text-xs);
   color: var(--color-text-muted);
-  text-align: center;
+  text-align: left;
 }
 
 .timeline-step:not(:last-child)::after {
@@ -150,6 +150,19 @@
 .timeline-step--done {
   color: var(--color-accent);
   font-weight: var(--weight-medium);
+}
+
+.timeline-step__label {
+  display: block;
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+}
+
+.timeline-step__sub {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-top: 2px;
 }
 
 /* Confirmed Banner */
