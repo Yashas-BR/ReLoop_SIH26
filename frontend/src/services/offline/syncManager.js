@@ -189,6 +189,30 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+// ── Keep-alive ping ───────────────────────────────────────────────────────
+// Render free tier spins down after 15 min of inactivity. Ping /v1/health
+// every 5 min while the tab is open and online to prevent cold starts.
+const KEEP_ALIVE_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+let _keepAliveTimer = null;
+
+function pingHealth() {
+  if (!navigator.onLine) return;
+  fetch('/v1/health', { method: 'GET', cache: 'no-store' }).catch(() => {});
+}
+
+function startKeepAlive() {
+  if (_keepAliveTimer) return; // already running
+  pingHealth(); // immediate ping on start
+  _keepAliveTimer = setInterval(pingHealth, KEEP_ALIVE_INTERVAL_MS);
+}
+
+function stopKeepAlive() {
+  if (_keepAliveTimer) {
+    clearInterval(_keepAliveTimer);
+    _keepAliveTimer = null;
+  }
+}
+
 /**
  * Call once at app startup (in App.jsx).
  * Attaches the 'online' listener and processes any leftover queue items
@@ -198,14 +222,17 @@ export function initSyncManager() {
   window.addEventListener('online', () => {
     emit('online');
     processSyncQueue();
+    startKeepAlive();
   });
 
   window.addEventListener('offline', () => {
     emit('offline');
+    stopKeepAlive();
   });
 
   // Process any leftover items from previous session (if online at startup)
   if (navigator.onLine) {
     processSyncQueue();
+    startKeepAlive();
   }
 }
