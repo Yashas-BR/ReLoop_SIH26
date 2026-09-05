@@ -27,10 +27,6 @@ const connectionConfig = process.env.DATABASE_URL
 
 export const pool = new Pool(connectionConfig);
 
-pool.on('connect', () => {
-  pool.query("SET TIME ZONE 'Asia/Kolkata'");
-});
-
 pool.on('error', (err) => {
   console.error('Unexpected error on idle PostgreSQL client', err);
   process.exit(1);

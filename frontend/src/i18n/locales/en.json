@@ -30,7 +30,6 @@
     "phonePlaceholder": "Enter 10-digit mobile number",
     "signIn": "Sign in",
     "signingIn": "Signing in…",
-    "demoAccounts": "Or tap one of the demo Kabadiwala accounts:",
     "phoneHint": "Use a 10-digit Indian mobile number, e.g. 9876543210",
     "phoneRequired": "Please enter your 10-digit mobile number",
     "recycler": "Recycler (Scrap Dealer)",
@@ -921,7 +920,6 @@
     "phonePlaceholder": "Enter 10-digit mobile number",
     "signIn": "Sign in",
     "signingIn": "Signing in…",
-    "demoAccounts": "Or tap a demo account:",
     "phoneHint": "Use a 10-digit Indian mobile number",
     "noAccount": "New to Kabadiwala Connect?",
     "createAccount": "Create an account"
