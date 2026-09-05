@@ -289,3 +289,68 @@
   .handover-success__actions { flex-direction: row; justify-content: center; }
 }
 
+
+/* -- Quote marketplace --------------------------------------------------- */
+.quote-section {
+  margin-bottom: var(--space-6);
+  padding: var(--space-5);
+}
+
+.quote-section__empty {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.quote-list {
+  list-style: none;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.quote-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.quote-item__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.quote-item__name {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.quote-item__status {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.quote-item__status strong {
+  color: var(--color-success);
+  font-size: var(--text-lg);
+}
+
+.quote-item__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.recycler-card--chosen {
+  border-color: var(--color-success);
+  box-shadow: 0 0 0 2px var(--color-success-light);
+}

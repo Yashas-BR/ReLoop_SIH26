@@ -6,7 +6,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import {
-  getPriceTrends, getAllRecyclers, getInstantValuation,
+  getPriceTrends, getRecyclerRateBoard, getInstantValuation,
   MATERIAL_CATEGORIES, DEFAULT_LOCATION,
 } from '../api/client';
 import { PageLoader, SkeletonCard } from '../components/LoadingSpinner';
@@ -52,7 +52,7 @@ export default function PriceDiscovery() {
   const [days, setDays] = useState(90);
 
   const [trends, setTrends] = useState([]);
-  const [recyclers, setRecyclers] = useState([]);
+  const [rateRows, setRateRows] = useState([]);
   const [priceCards, setPriceCards] = useState({});
 
   const [loadingTrend, setLoadingTrend] = useState(true);
@@ -95,11 +95,12 @@ export default function PriceDiscovery() {
   useEffect(() => { fetchTrends(); }, [fetchTrends]);
 
   useEffect(() => {
-    getAllRecyclers()
-      .then(r => setRecyclers(Array.isArray(r.data) ? r.data : []))
-      .catch(() => {})
+    setLoadingRec(true);
+    getRecyclerRateBoard({ category, location })
+      .then(r => setRateRows(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setRateRows([]))
       .finally(() => setLoadingRec(false));
-  }, []);
+  }, [category, location]);
 
   function speakPrice() {
     if (!synthRef.current) return;
@@ -205,10 +206,11 @@ export default function PriceDiscovery() {
     },
   };
 
-  const filteredRecyclers = recyclers.filter(r =>
-    r.authorization_status === 'authorized' &&
-    (r.materials_accepted || []).includes(category)
-  );
+  const filteredRecyclers = [...rateRows]
+    .filter(r => (r.materials_accepted || []).includes(category))
+    .sort((a, b) => (b.offered_rate || 0) - (a.offered_rate || 0));
+  const rateAsOf = rateRows.reduce((best, r) =>
+    r.rate_date && (!best || r.rate_date > best) ? r.rate_date : best, null);
 
   return (
     <div className="container">
@@ -442,6 +444,11 @@ export default function PriceDiscovery() {
         <p className="section-subtitle" style={{ marginBottom: 'var(--space-5)' }}>
           {t('prices.currentRatesDesc')}
         </p>
+        {rateAsOf && (
+          <p className="text-sm text-muted" style={{ marginBottom: 'var(--space-4)' }}>
+            {t('prices.rateAsOf', { date: rateAsOf })}
+          </p>
+        )}
 
         {loadingRec ? (
           <PageLoader />
@@ -464,7 +471,6 @@ export default function PriceDiscovery() {
               </thead>
               <tbody>
                 {filteredRecyclers
-                  .sort((a, b) => (b.offered_rate || 0) - (a.offered_rate || 0))
                   .map((r, i) => {
                     const marketPrice = priceCards[category]?.unit_price;
                     const vsMkt = marketPrice && r.offered_rate
@@ -474,21 +480,21 @@ export default function PriceDiscovery() {
                       <tr key={r.recycler_id}>
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                            {i === 0 && (
+                            {i === 0 && r.offered_rate && (
                               <span className="p2-best-badge" title="Best rate"></span>
                             )}
                             <span style={{ fontWeight: 'var(--weight-semibold)' }}>{r.name}</span>
                           </div>
                         </td>
                         <td style={{ color: 'var(--color-text-muted)' }}>
-                          {r.facility_location || r.service_area}
+                          {r.facility_location}
                         </td>
                         <td style={{ fontWeight: 'var(--weight-bold)', color: 'var(--color-accent)' }}>
                           {r.offered_rate ? `${fmt(r.offered_rate)}/kg` : '—'}
                         </td>
                         <td>
-                          <span style={{ color: r.pickup_available === 'daily' ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
-                            {r.pickup_available === 'daily' ? ` ${t('prices.yes')}` : ` ${t('prices.no')}`}
+                          <span style={{ color: r.pickup_availability === 'daily' ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
+                            {r.pickup_availability === 'daily' ? ` ${t('prices.yes')}` : ` ${t('prices.no')}`}
                           </span>
                         </td>
                         <td>

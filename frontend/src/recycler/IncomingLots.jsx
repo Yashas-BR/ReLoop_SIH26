@@ -1,12 +1,14 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { getLotsByRecycler, DEMO_RECYCLER_ID } from '../api/client';
+import { getLotsByRecycler, getAvailableLots, quoteLot } from '../api/client';
+import { resolveRecyclerId } from '../services/auth';
 import { StatusBadge } from '../components/StatusBadge';
-import { PageLoader } from '../components/LoadingSpinner';
+import { PageLoader, LoadingSpinner } from '../components/LoadingSpinner';
 import { useTranslation } from '../i18n/config.js';
 import './IncomingLots.css';
 
 // transaction_status values from DB schema: quoted | matched | handed_over | confirmed
+// Plus marketplace statuses on open_offer_status: requested | offered | accepted | rejected | expired
 const ALL_FILTER = 'all';
 
 function fmtDate(d, lang) {
@@ -29,24 +31,64 @@ export default function IncomingLots() {
     { key: 'confirmed',   label: t('status.confirmed') },
   ];
   const [lots, setLots] = useState([]);
+  // Available pool = collectors' freshly-created lots matching this recycler's
+  // materials that have no open offer yet (they would otherwise never appear).
+  const [availableLots, setAvailableLots] = useState([]);
   const [filter, setFilter] = useState(ALL_FILTER);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  // Quote marketplace state (open offers on lots)
+  const [quotePrices, setQuotePrices] = useState({});
+  const [quotingLot, setQuotingLot] = useState(null);
+  const [quoteMsg, setQuoteMsg] = useState('');
+  const recyclerId = resolveRecyclerId();
 
   const load = useCallback(() => {
     setLoading(true);
-    // GET /v1/handover/lots/recycler/:recyclerId returns only lots assigned
-    // to this recycler (matched / handed_over / confirmed), including the
-    // latest handover reference and traceability status.
-    getLotsByRecycler(DEMO_RECYCLER_ID)
+    // GET /v1/handover/lots/recycler/:recyclerId returns lots assigned
+    // to this recycler (matched / handed_over / confirmed), AND lots where
+    // this recycler has an open quote offer (open_offer_id/_price/_status).
+    getLotsByRecycler(recyclerId)
       .then(r => {
         setLots(Array.isArray(r.data) ? r.data : []);
       })
       .catch(() => setError(t('incomingLots.loadError')))
       .finally(() => setLoading(false));
-  }, [t]);
+
+    // GET /v1/quotes/available?recycler_id= → open lots matched by material
+    getAvailableLots(recyclerId)
+      .then(r => setAvailableLots(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setAvailableLots([]));
+  }, [t, recyclerId]);
 
   useEffect(() => { load(); }, [load]);
+
+  const openQuoteLots = lots.filter(l => l.open_offer_status && l.open_offer_status !== 'accepted');
+
+  async function handleSubmitQuote(lot) {
+    const price = Number(quotePrices[lot.lot_id]);
+    if (!price || price <= 0) { setQuoteMsg(t('quotes.validPrice')); return; }
+    setQuotingLot(lot.lot_id);
+    setQuoteMsg('');
+    setError('');
+    try {
+      // Reuse the open request (existingOfferId) or create one, then set price
+      await quoteLot({
+        lotId: lot.lot_id,
+        recyclerId: lot.recycler_id ?? recyclerId,
+        offeredPrice: price,
+        existingOfferId: lot.open_offer_id,
+      });
+      setQuoteMsg(t('quotes.quoteSent'));
+      setQuotePrices((q) => ({ ...q, [lot.lot_id]: '' }));
+      load();
+      setTimeout(() => setQuoteMsg(''), 4500);
+    } catch (err) {
+      setError(err.message || t('quotes.quoteSendFail'));
+    } finally {
+      setQuotingLot(null);
+    }
+  }
 
   // Filter by transaction_status (the real backend enum field)
   const filtered = filter === ALL_FILTER
@@ -93,6 +135,116 @@ export default function IncomingLots() {
             Retry
           </button>
         </div>
+      )}
+
+      {quoteMsg && (
+        <div className="alert-banner alert-banner--success animate-fade-in" role="status">
+          {quoteMsg}
+        </div>
+      )}
+
+      {!loading && openQuoteLots.length > 0 && (
+        <section className="card quote-section animate-fade-in" aria-labelledby="quote-req-heading">
+          <h2 id="quote-req-heading" className="detail-section-title">{t('quotes.recyclerRequests')}</h2>
+          <p className="quote-section__empty">{t('quotes.recyclerRequestsDesc')}</p>
+          <ul className="quote-list">
+            {openQuoteLots.map((lot) => (
+              <li key={lot.lot_id} className="quote-item">
+                <div className="quote-item__main">
+                  <Link to={`/recycler/lots/${lot.lot_id}`} className="quote-item__name" style={{ color: 'var(--color-primary)' }}>
+                    {lot.lot_id} · {lot.category}
+                  </Link>
+                  <div className="quote-item__status">
+                    {t('quotes.weightValue', { weight: lot.approx_weight_kg ?? '—', value: fmt(lot.estimated_value) })}
+                  </div>
+                </div>
+
+                {lot.open_offer_status === 'offered' ? (
+                  <div className="quote-item__actions">
+                    <strong>{fmt(lot.open_offer_price)}</strong>
+                    <StatusBadge status="offered" size="md" />
+                    <button className="btn btn-ghost btn-sm" onClick={() => setQuotePrices((q) => ({ ...q, [lot.lot_id]: String(lot.open_offer_price) }))}>
+                      {t('common.edit')}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="quote-item__actions">
+                    <div className="pay-price-input" style={{ width: 'auto' }}>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="form-input"
+                        placeholder={t('quotes.pricePlaceholder')}
+                        value={quotePrices[lot.lot_id] || ''}
+                        onChange={(e) => setQuotePrices((q) => ({ ...q, [lot.lot_id]: e.target.value }))}
+                        aria-label={`${t('quotes.submitQuote')} ${lot.lot_id}`}
+                      />
+                      <span className="weight-unit">₹</span>
+                    </div>
+                    <button
+                      className="btn btn-accent btn-sm"
+                      onClick={() => handleSubmitQuote(lot)}
+                      disabled={quotingLot === lot.lot_id}
+                      aria-busy={quotingLot === lot.lot_id}
+                    >
+                      {quotingLot === lot.lot_id
+                        ? <><LoadingSpinner size="sm" /> {t('common.loading')}…</>
+                        : <> {t('quotes.submitQuote')}</>}
+                    </button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {!loading && availableLots.length > 0 && (
+        <section className="card quote-section animate-fade-in" aria-labelledby="avail-heading">
+          <h2 id="avail-heading" className="detail-section-title">{t('incomingLots.availableTitle')}</h2>
+          <p className="quote-section__empty">{t('incomingLots.availableDesc')}</p>
+          <ul className="quote-list">
+            {availableLots.map((lot) => (
+              <li key={lot.lot_id} className="quote-item">
+                <div className="quote-item__main">
+                  <Link to={`/recycler/lots/${lot.lot_id}`} className="quote-item__name" style={{ color: 'var(--color-primary)' }}>
+                    {lot.lot_id} · {lot.category}
+                  </Link>
+                  <div className="quote-item__status">
+                    {t('quotes.weightValue', { weight: lot.approx_weight_kg ?? '—', value: fmt(lot.market_estimate) })}
+                    {lot.collection_location ? ` · ${lot.collection_location}` : ''}
+                  </div>
+                </div>
+                <div className="quote-item__actions">
+                  <div className="pay-price-input" style={{ width: 'auto' }}>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className="form-input"
+                      placeholder={t('quotes.pricePlaceholder')}
+                      value={quotePrices[lot.lot_id] || ''}
+                      onChange={(e) => setQuotePrices((q) => ({ ...q, [lot.lot_id]: e.target.value }))}
+                      aria-label={`${t('quotes.submitQuote')} ${lot.lot_id}`}
+                    />
+                    <span className="weight-unit">₹</span>
+                  </div>
+                  <button
+                    className="btn btn-accent btn-sm"
+                    onClick={() => handleSubmitQuote(lot)}
+                    disabled={quotingLot === lot.lot_id}
+                    aria-busy={quotingLot === lot.lot_id}
+                  >
+                    {quotingLot === lot.lot_id
+                      ? <><LoadingSpinner size="sm" /> {t('common.loading')}…</>
+                      : <> {t('quotes.submitQuote')}</>}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {loading ? (

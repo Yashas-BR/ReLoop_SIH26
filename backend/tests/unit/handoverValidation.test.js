@@ -150,6 +150,23 @@ describe('Handover Validation', () => {
       expect(result.success).toBe(true);
     });
 
+    it('accepts optional verification metadata', () => {
+      const result = confirmHandoverSchema.body.safeParse({
+        recycler_id: 1,
+        final_weight_kg: 3.9,
+        gps_lat: 12.97,
+        gps_lng: 77.59,
+        verification_photo: '/img/verify.jpg',
+        scan_verified: true,
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects invalid final_weight_kg', () => {
+      const result = confirmHandoverSchema.body.safeParse({ recycler_id: 1, final_weight_kg: -1 });
+      expect(result.success).toBe(false);
+    });
+
     it('rejects missing recycler_id', () => {
       const result = confirmHandoverSchema.body.safeParse({});
       expect(result.success).toBe(false);

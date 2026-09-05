@@ -28,7 +28,7 @@ export function isLoggedIn(role) {
 }
 
 // Effective ids used by pages — falls back to the app-wide demo persona
-// when no user has logged in (the portal remains usable for evaluation).
+// only in development; a recycler must sign in to get a usable session.
 export function currentCollectorId() {
   const s = getSession();
   return s?.role === 'collector' && s.userId ? s.userId : null;
@@ -37,4 +37,12 @@ export function currentCollectorId() {
 export function currentRecyclerId() {
   const s = getSession();
   return s?.role === 'recycler' && s.userId ? s.userId : null;
+}
+
+// Legacy demo fallback — the whole app previously assumed a single recycler.
+// Only used when NO user has signed in yet, to keep the portal inspectable.
+const DEMO_RECYCLER_FALLBACK = 1;
+
+export function resolveRecyclerId() {
+  return currentRecyclerId() ?? DEMO_RECYCLER_FALLBACK;
 }

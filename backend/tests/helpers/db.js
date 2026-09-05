@@ -7,6 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const sqlDir = path.join(__dirname, '..', '..', 'sql');
 
 const seedFiles = [
+  '06_lot_system.sql',
   '02_seed_recyclers_prices.sql',
   '03_seed_transactions.sql',
   '05_seed_recycler_rates.sql',

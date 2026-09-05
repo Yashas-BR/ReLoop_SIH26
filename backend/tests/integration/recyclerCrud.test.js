@@ -140,3 +140,50 @@ describe('Recycler CRUD API', () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe('Recycler login API', () => {
+  it('POST /v1/recyclers/login signs in an authorized recycler', async () => {
+    const res = await request(server)
+      .post('/v1/recyclers/login')
+      .send({ recycler_id: 5 })
+      .expect(200);
+
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.recycler.id).toBe(5);
+    expect(res.body.data.recycler.name).toBe('E-Parisaraa Pvt. Ltd.');
+    expect(res.body.data.recycler.authorization_status).toBe('authorized');
+    expect(res.body.data.token).toMatch(/^mock-recycler-login-5-/);
+  });
+
+  it('POST /v1/recyclers/login blocks a pending recycler', async () => {
+    const res = await request(server)
+      .post('/v1/recyclers/login')
+      .send({ recycler_id: 7 });
+
+    expect(res.status).toBe(403);
+  });
+
+  it('POST /v1/recyclers/login blocks an unauthorized recycler', async () => {
+    const res = await request(server)
+      .post('/v1/recyclers/login')
+      .send({ recycler_id: 9 });
+
+    expect(res.status).toBe(403);
+  });
+
+  it('POST /v1/recyclers/login returns 404 for a missing recycler', async () => {
+    const res = await request(server)
+      .post('/v1/recyclers/login')
+      .send({ recycler_id: 9999 });
+
+    expect(res.status).toBe(404);
+  });
+
+  it('POST /v1/recyclers/login validates the payload', async () => {
+    const res = await request(server)
+      .post('/v1/recyclers/login')
+      .send({});
+
+    expect(res.status).toBe(400);
+  });
+});

@@ -24,6 +24,7 @@ const expectedCounts = {
   materials: 6,
   transactions: 6,
   traceability: 4,
+  price_sources: 4,
 };
 
 async function main() {
@@ -43,7 +44,8 @@ async function main() {
         (SELECT COUNT(*) FROM collectors)   AS collectors,
         (SELECT COUNT(*) FROM materials)    AS materials,
         (SELECT COUNT(*) FROM transactions) AS transactions,
-        (SELECT COUNT(*) FROM traceability) AS traceability
+        (SELECT COUNT(*) FROM traceability) AS traceability,
+        (SELECT COUNT(*) FROM price_sources) AS price_sources
     `);
 
     const actual = res.rows[0];

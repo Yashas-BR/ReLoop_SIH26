@@ -5,6 +5,8 @@ import { validate } from '../../middlewares/validate.js';
 import { matchRecyclersSchema } from '../../validations/recycler.validation.js';
 import {
   createRecyclerSchema,
+  onboardRecyclerSchema,
+  loginRecyclerSchema,
   updateRecyclerSchema,
   getRecyclerSchema,
   listRecyclersSchema,
@@ -17,6 +19,20 @@ router.get(
   '/match',
   validate(matchRecyclersSchema),
   recyclerController.getMatchedRecyclers
+);
+
+// Recycler self-onboarding — creates an application in 'pending' state
+router.post(
+  '/onboard',
+  validate(onboardRecyclerSchema),
+  recyclerCrudController.onboardRecycler
+);
+
+// Recycler sign-in — only authorized recyclers gain access to the portal
+router.post(
+  '/login',
+  validate(loginRecyclerSchema),
+  recyclerCrudController.loginRecycler
 );
 
 // CRUD

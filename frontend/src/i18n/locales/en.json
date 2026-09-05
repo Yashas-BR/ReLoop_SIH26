@@ -4,7 +4,6 @@
     "hi": "हिंदी",
     "mr": "मराठी"
   },
-
   "nav": {
     "home": "Kabadiwala Connect",
     "dashboard": "Dashboard",
@@ -17,12 +16,12 @@
     "collector": "Collector",
     "recycler": "Recycler",
     "recyclerPortal": "Recycler Portal",
+    "admin": "Admin",
     "switchPortal": "Switch portal",
     "mainNav": "Main navigation",
     "mobileNav": "Mobile navigation",
     "homeLabel": "Kabadiwala Connect Home"
   },
-
   "login": {
     "title": "Welcome to Kabadiwala Connect",
     "subtitle": "Sign in to manage scrap collection, lots, and earnings",
@@ -35,21 +34,26 @@
     "phoneHint": "Use a 10-digit Indian mobile number, e.g. 9876543210",
     "phoneRequired": "Please enter your 10-digit mobile number",
     "recycler": "Recycler (Scrap Dealer)",
-    "recyclerHint": "Head to the recycler side without an account (portal unification work in progress)",
-    "enterRecycler": "Enter Recycler Portal",
+    "recyclerHint": "Sign in to access the recycler dashboard",
+    "recyclerSignIn": "Sign in to Recycler Portal",
+    "recyclerIdLabel": "Recycler ID",
+    "recyclerIdPlaceholder": "Enter facility ID, e.g. 5",
+    "recyclerIdRequired": "Please select or enter a recycler ID",
+    "demoRecyclers": "Or tap one of the verified demo recyclers:",
+    "recyclerHint2": "Only admin-verified recyclers are allowed to sign in.",
     "loginFailed": "Could not sign in. Check your mobile number and try again.",
     "browseWithoutLogin": "Browse without signing in",
+    "noAccount": "New to Kabadiwala Connect?",
+    "createAccount": "Create an account",
     "loggedInAs": "Signed in as",
     "logout": "Sign out"
   },
-
   "recyclerPortal": {
     "nav": "Recycler portal sections",
     "overview": "Overview",
     "incomingLots": "Incoming Lots",
     "profile": "Profile"
   },
-
   "common": {
     "back": "← Back",
     "next": "Next →",
@@ -60,6 +64,7 @@
     "loading": "Loading…",
     "error": "Error",
     "success": "Success",
+    "edit": "Edit",
     "view": "View →",
     "close": "Close",
     "optional": "(optional)",
@@ -75,7 +80,6 @@
     "summary": "Summary",
     "lotId": "Lot ID"
   },
-
   "status": {
     "quoted": "Quoted",
     "matched": "Matched",
@@ -87,9 +91,13 @@
     "paid": "Paid",
     "failed": "Failed",
     "syncing": "Syncing",
-    "queued": "Queued"
+    "queued": "Queued",
+    "requested": "Requested",
+    "offered": "Offered",
+    "accepted": "Accepted",
+    "rejected": "Rejected",
+    "expired": "Expired"
   },
-
   "offline": {
     "offline": "Offline",
     "online": "Online",
@@ -124,11 +132,9 @@
       "statusFailed": "Failed"
     }
   },
-
   "sync": {
     "confirmReceipt": "Confirm Receipt"
   },
-
   "dashboard": {
     "title": "My Dashboard",
     "subtitle": "Track your earnings and recent lots",
@@ -160,7 +166,6 @@
     "date": "Date",
     "value": "Value"
   },
-
   "createLot": {
     "title": "Create New Lot",
     "subtitle": "Document your scrap and get an instant value estimate",
@@ -273,7 +278,6 @@
       "action": "Back to Dashboard"
     }
   },
-
   "materials": {
     "CRT": "CRTs",
     "LCD": "LCD Panels",
@@ -283,12 +287,12 @@
     "Motor": "Motors",
     "Plastic": "Mixed Plastics"
   },
-
   "prices": {
     "title": "Price Discovery",
     "subtitle": "Live market rates, trends & recycler information",
     "currentRates": "Current Rates",
-    "currentRatesDesc": "Today's buying prices by material",
+    "currentRatesDesc": "Latest recorded buying prices by material",
+    "rateAsOf": "Recorded as of {{date}}",
     "trendChart": "Price Trend Chart",
     "trendChartDesc": "Historical buying price trend",
     "buyingPrice": "Buying Price",
@@ -324,7 +328,6 @@
     "selectCategory": "Select a category to view trends",
     "priceCard": "{{category}} — {{location}}"
   },
-
   "priceDiscovery": {
     "subtitle": "Live market rates, trends & recycler information",
     "regionalPrices": "Current Market Rates",
@@ -336,7 +339,6 @@
     "marketHigh": "Market High",
     "marketLow": "Market Low"
   },
-
   "recyclers": {
     "title": "Matched Recyclers",
     "subtitle": "Authorized recyclers matched to your lot",
@@ -366,7 +368,6 @@
     "lots": "lots",
     "status": "Status"
   },
-
   "lotDetail": {
     "title": "Lot Details",
     "lotId": "Lot ID",
@@ -375,6 +376,7 @@
     "weight": "Weight",
     "location": "Location",
     "status": "Status",
+    "recycler": "Recycler",
     "estimatedValue": "Estimated Value",
     "createdAt": "Created At",
     "description": "Notes",
@@ -418,7 +420,6 @@
     },
     "payMarketRange": "Market range: {{low}} – {{high}}/kg"
   },
-
   "traceability": {
     "title": "Traceability",
     "subtitle": "Full audit trail for this lot",
@@ -441,7 +442,18 @@
     "events": {
       "created": "Lot Created",
       "valued": "Valuation Completed",
+      "imageUploaded": "Collection Photo Saved",
       "matched": "Recycler Matched",
+      "quoteReceived": "Quote Received",
+      "quoteAccepted": "Quote Accepted",
+      "qrScanned": "QR Scanned at Pickup",
+      "lotVerified": "Lot Verified",
+      "weightRecorded": "Final Weight Recorded",
+      "handoverPhoto": "Handover Photo Captured",
+      "gpsCaptured": "GPS Location Recorded",
+      "handoverConfirmed": "Handover Confirmed",
+      "paymentDone": "Payment Completed",
+      "dispute": "Dispute Raised",
       "handoverInit": "Handover Initiated",
       "confirmed": "Handover Confirmed",
       "awaitingMatch": "Awaiting recycler match",
@@ -454,10 +466,18 @@
       "gps": "GPS Location",
       "timestamp": "Timestamp",
       "recycler": "Recycler",
-      "weight": "Weight"
-    }
+      "weight": "Weight",
+      "imageType": "Photo type: {type}",
+      "photoCount": "{count} photo(s) captured",
+      "estimated": "estimated",
+      "qrVerified": "QR verified"
+    },
+    "photoEvidence": "Photo Evidence Chain",
+    "photoEvidenceDesc": "Every photo is stored separately and never overwritten. This is the immutable evidence trail for this lot.",
+    "noEvents": "No events recorded yet for this lot.",
+    "eventCount": "event(s)",
+    "collectionGps": "Collection GPS"
   },
-
   "earnings": {
     "title": "Earnings Ledger",
     "subtitle": "Your payment history and totals",
@@ -485,7 +505,112 @@
     "cachedNotice": "Showing cached data — connect to refresh",
     "loadError": "Could not load earnings."
   },
-
+  "register": {
+    "title": "Create Kabadiwala Account",
+    "subtitle": "Join Kabadiwala Connect to create lots and earn from verified recyclers",
+    "name": "Full Name",
+    "namePlaceholder": "e.g. Ramesh Kumar",
+    "location": "Operating Location",
+    "locationPlaceholder": "e.g. Whitefield, Bengaluru",
+    "language": "Preferred language",
+    "lang": {
+      "en": "English",
+      "hi": "Hindi",
+      "mr": "Marathi"
+    },
+    "create": "Create account & sign in",
+    "creating": "Creating account…",
+    "haveAccount": "Already have an account? Sign in",
+    "errName": "Please enter your name (at least 2 letters).",
+    "errPhone": "Enter a valid 10-digit mobile number.",
+    "errSubmit": "Could not create the account. Try a different phone number."
+  },
+  "quotes": {
+    "title": "Quote Marketplace",
+    "receivedTitle": "Quotes Received",
+    "requestQuote": "Request Quote",
+    "requesting": "Requesting…",
+    "requestSent": "Quote request sent to the recycler.",
+    "requestFail": "Could not request a quote.",
+    "awaitingRecycler": "Waiting for the recycler to set a price…",
+    "totalOffer": "total offer for your lot",
+    "accept": "Accept",
+    "reject": "Reject",
+    "accepted": "Quote accepted.",
+    "rejected": "Quote rejected. The recycler can quote again.",
+    "acceptedBanner": "Quote accepted — {{recycler}} will buy your lot for {{price}}.",
+    "quoteElsewhere": "Quote accepted with another recycler.",
+    "noOffersYet": "No quotes yet — request quotes from the recyclers below.",
+    "noQuotesYet": "No quotes received yet.",
+    "requestPage": "Compare recyclers & request quotes",
+    "actionFail": "Could not update the quote.",
+    "loadError": "Could not load quotes for this lot.",
+    "submitted": "Submitted",
+    "weightValue": "{{weight}} kg · est. {{value}}",
+    "recyclerRequests": "Quote Requests",
+    "recyclerRequestsDesc": "Collectors want your price for these lots.",
+    "submitTitle": "Quote this Lot",
+    "submitDesc": "This lot does not have a matched recycler yet — your quote lets the collector compare and choose.",
+    "yourPrice": "Your offered price (₹)",
+    "pricePlaceholder": "₹ price per lot",
+    "submitQuote": "Submit Quote",
+    "quoteSent": "Quote submitted — awaiting collector decision.",
+    "quoteSendFail": "Could not submit the quote.",
+    "validPrice": "Enter a valid offer price greater than 0.",
+    "offeredBanner": "Your quote of {{price}} is live — waiting for the collector to decide.",
+    "acceptedBannerRecycler": "Collector accepted your quote of {{price}}.",
+    "acceptedBannerRecyclerDesc": "You're the chosen recycler. When the collector schedules the pickup and the material arrives, confirm the handover and record the payment here.",
+    "marketEstimateHint": "Market estimate for this lot: {{amount}}"
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "subtitle": "Platform oversight, recycler verification and price-source registry",
+    "codeLabel": "Admin code",
+    "codePlaceholder": "Enter admin access code",
+    "enterPanel": "Enter Admin Panel",
+    "codeRequired": "Please enter the admin code.",
+    "loginFail": "Invalid admin code.",
+    "demoCode": "Demo code: {{code}}",
+    "tabsLabel": "Admin sections",
+    "tab": {
+      "overview": "Overview",
+      "recyclers": "Recycler Verification",
+      "prices": "Price Sources"
+    },
+    "stat": {
+      "collectors": "Collectors",
+      "recyclers": "Recyclers",
+      "pending": "Pending Authorization",
+      "expiring": "Expiring (60 days)",
+      "lots": "Lots",
+      "transactions": "Transactions",
+      "paid": "Paid Transactions",
+      "openOffers": "Open Quotes",
+      "priceSources": "Price Sources"
+    },
+    "expiryTitle": "Authorizations expiring within 60 days",
+    "expiryHint": "Expires on {{date}} — request re-verification",
+    "verifyDesc": "Approve only recyclers with a valid SPCB authorization. Reject is reversible.",
+    "approve": "Approve",
+    "reject": "Reject",
+    "approved": "Recycler approved.",
+    "rejected": "Recycler authorization set to unauthorized.",
+    "verifyFail": "Could not update the recycler.",
+    "loadError": "Could not load admin data.",
+    "pricesDesc": "Where this platform's market prices come from — the data provenance registry.",
+    "table": {
+      "name": "Recycler",
+      "location": "Location",
+      "authNumber": "SPCB Auth. No.",
+      "validUntil": "Valid Until",
+      "status": "Status",
+      "actions": "Actions",
+      "source": "Source",
+      "type": "Type",
+      "url": "URL",
+      "lastCollected": "Last Collected"
+    }
+  },
   "safety": {
     "title": "Safety Guidance",
     "subtitle": "Essential safety information for handling recyclable and electronic materials",
@@ -584,10 +709,12 @@
       }
     }
   },
-
   "recyclerDash": {
     "title": "Recycler Dashboard",
     "subtitle": "Manage incoming lots and your profile",
+    "newLotsTitle": "{{count}} new lots to quote",
+    "newLotsDesc": "Freshly created by collectors — matched to your accepted materials.",
+    "viewLots": "View & Quote",
     "incomingLots": "Incoming Lots",
     "incomingLotsDesc": "Review and confirm lot handovers",
     "myProfile": "My Profile",
@@ -617,10 +744,11 @@
     "profileUpdateFail": "Could not save profile. Please try again.",
     "profileError": "Could not load profile."
   },
-
   "incomingLots": {
     "title": "Incoming Lots",
     "subtitle": "Lots matched and awaiting handover confirmation",
+    "availableTitle": "New Lots to Quote",
+    "availableDesc": "Collectors just created these lots — they match your accepted materials. Quote to appear in their comparisons.",
     "noLots": "No matched lots yet",
     "noLotsDesc": "Collectors will be matched to your facility once they create lots in your area.",
     "noFilteredLots": "No lots match this filter",
@@ -644,7 +772,6 @@
     "filterConfirmed": "Confirmed",
     "estimated": "est."
   },
-
   "recyclerLotDetail": {
     "title": "Lot Details",
     "handoverRef": "Handover Reference",
@@ -656,7 +783,6 @@
     "gps": "GPS Location",
     "photos": "Photos"
   },
-
   "recyclerProfile": {
     "title": "Recycler Profile",
     "subtitle": "Manage your profile and service settings",
@@ -681,5 +807,107 @@
     "saveSuccess": "Profile saved successfully.",
     "saveError": "Could not save profile.",
     "loadError": "Could not load profile."
+  },
+  "recyclerScan": {
+    "nav": "Scan Lot",
+    "cta": "Scan Lot",
+    "ctaDesc": "Point the camera at a collector's lot QR to verify and confirm the handover on the spot.",
+    "title": "Scan Lot",
+    "subtitle": "The QR carries only the lot ID. Scan it to pull the live lot record and verify the physical material before confirming the handover.",
+    "cameraMode": "Camera scan",
+    "cameraHint": "Align the lot QR inside the box on the lot's printed label or digital card.",
+    "manualMode": "Manual entry",
+    "manualHint": "If the QR is damaged or the camera is unavailable, enter the lot ID shown next to the code.",
+    "codeLabel": "Lot ID",
+    "codePlaceholder": "e.g. EW-BLR-20260905-0001",
+    "findLot": "Find lot",
+    "startCamera": "Start camera",
+    "stopCamera": "Stop camera",
+    "cameraUnavailable": "Camera unavailable or permission denied. Use manual entry instead.",
+    "lookingUp": "Looking up lot record…",
+    "lotFound": "Lot {code} found. Opening the lot card…",
+    "notFound": "Lot {code} was not found or is not assigned to your facility.",
+    "lookupFail": "Could not reach the lot registry. Try again."
+  },
+  "verify": {
+    "qrTitle": "Lot QR",
+    "title": "Verify lot at pickup",
+    "pendingPrompt": "Awaiting recycler confirmation — confirm this handover via the Verify & Confirm card below.",
+    "collectionWeight": "Collection weight",
+    "collectedAt": "Collected at",
+    "handover": "Handover",
+    "collectionPhotoLabel": "Collection photo — original evidence (never overwritten)",
+    "collectionPhotoAlt": "Original collection photograph of the lot",
+    "approxWeight": "Recorded weight",
+    "collector": "Collector",
+    "collectionLocation": "Collection location",
+    "quotedPrice": "Quoted price",
+    "finalWeight": "Final weighed quantity",
+    "weightPlaceholder": "Recorded collection weight",
+    "validWeight": "Enter a valid final weight before confirming the handover.",
+    "photoLabel": "Handover photograph",
+    "photoCapture": "Capture photo",
+    "photoChange": "Change photo",
+    "photoCapturedAlt": "Handover verification photo",
+    "photoHint": "Photo of the material at checkout — becomes part of the digital handover record.",
+    "gpsLabel": "GPS location",
+    "gpsLocating": "Locating…",
+    "gpsCapture": "Capture GPS",
+    "gpsRecorded": "GPS recorded:",
+    "gpsUnavailable": "GPS unavailable — the handover can still be confirmed without coordinates.",
+    "timestampNote": "Confirmation timestamp is recorded automatically when you confirm.",
+    "confirmHandover": "Confirm handover & log verification",
+    "confirmSuccess": "Handover {reference} verified and confirmed.",
+    "recordTitle": "Digital handover record",
+    "timestamp": "Verified at",
+    "notRecorded": "Not recorded",
+    "qrScanLabel": "QR scan",
+    "qrScanned": "Scanned via QR",
+    "qrManual": "Entered manually",
+    "recordComplete": "Verification complete — the recycler has confirmed the physical lot matches its digital record. Payment can now be recorded."
+  },
+  "checklist": {
+    "qrTitle": "Lot QR",
+    "qrDesc": "Show this QR to the recycler at pickup. They will scan it to verify the lot and confirm the handover on the spot.",
+    "title": "Handover checklist",
+    "progress": "{done} of {total} steps complete",
+    "complete": "All steps complete — the lot has been collected, verified, and paid.",
+    "collection": "Lot Created",
+    "photo": "Collection Photo",
+    "priceEstimated": "Price Estimated",
+    "matched": "Recycler Matched",
+    "quoteAccepted": "Quote Accepted",
+    "qrScanned": "QR Scanned at Pickup",
+    "weightVerified": "Final Weight Recorded",
+    "handover": "Handover Initiated",
+    "recyclerConfirmed": "Recycler Confirmed",
+    "payment": "Payment Recorded"
+  },
+  "landing": {
+  "tagline": "Connect collectors with authorized recyclers. Track your scrap. Get fair prices.",
+  "getStarted": "Get Started",
+  "learnMore": "Learn More",
+  "featuresTitle": "How It Works",
+  "feature1Title": "Create Lots",
+  "feature1Desc": "Upload photos and details of your scrap collection with GPS location",
+  "feature2Title": "Get Fair Prices",
+  "feature2Desc": "Receive instant valuation and competitive quotes from verified recyclers",
+  "feature3Title": "Track Everything",
+  "feature3Desc": "Full traceability from collection to final handover with photo evidence",
+  "feature4Title": "Easy Pickup",
+  "feature4Desc": "Schedule pickups and receive payments directly to your account",
+  "whoAreYou": "Who Are You?",
+  "collector": "Kabadiwala (Collector)",
+  "collectorDesc": "Collect scrap from households and businesses, create lots, and get paid",
+  "recycler": "Recycler",
+  "recyclerDesc": "Receive quotes from collectors, manage incoming lots, and process materials",
+  "admin": "Admin",
+  "adminDesc": "Manage recyclers, monitor platform, and oversee operations",
+  "loginAsCollector": "Login as Kabadiwala",
+  "loginAsRecycler": "Login as Recycler",
+  "loginAsAdmin": "Login as Admin",
+  "ctaTitle": "Ready to Start?",
+  "ctaDesc": "Join thousands of collectors and recyclers in the Kabadiwala Connect network",
+  "footer": "All rights reserved."
   }
 }

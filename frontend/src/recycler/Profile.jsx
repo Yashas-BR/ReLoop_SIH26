@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getRecycler, updateRecycler, DEMO_RECYCLER_ID, MATERIAL_CATEGORIES } from '../api/client';
+import { getRecycler, updateRecycler, MATERIAL_CATEGORIES } from '../api/client';
+import { resolveRecyclerId } from '../services/auth';
 import { StatusBadge } from '../components/StatusBadge';
 import { PageLoader, LoadingSpinner } from '../components/LoadingSpinner';
 import { useTranslation } from '../i18n/config.js';
@@ -16,6 +17,7 @@ export default function RecyclerProfile() {
   const [success, setSuccess] = useState('');
   const [editing, setEditing] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState(null);
+  const recyclerId = resolveRecyclerId();
 
   function handleImageChange(e) {
     const file = e.target.files[0];
@@ -25,7 +27,7 @@ export default function RecyclerProfile() {
   }
 
   useEffect(() => {
-    getRecycler(DEMO_RECYCLER_ID)
+    getRecycler(recyclerId)
       .then(r => { setRecycler(r.data); setForm(r.data); })
       .catch(() => setError(t('recyclerDash.profileError')))
       .finally(() => setLoading(false));
@@ -56,7 +58,7 @@ export default function RecyclerProfile() {
         contact_details: form.contact_details ?? form.contact,
         pickup_availability: form.pickup_availability,
       };
-      const r = await updateRecycler(DEMO_RECYCLER_ID, payload);
+      const r = await updateRecycler(recyclerId, payload);
       setRecycler(r.data);
       setForm(r.data);
       setSuccess(t('recyclerDash.profileUpdated'));

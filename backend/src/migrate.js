@@ -11,11 +11,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 async function main() {
   const schemaPath = path.join(__dirname, '..', 'sql', '01_schema.sql');
+  const lotSystemPath = path.join(__dirname, '..', 'sql', '06_lot_system.sql');
   const sql = fs.readFileSync(schemaPath, 'utf8');
+  const lotSystemSql = fs.readFileSync(lotSystemPath, 'utf8');
 
   try {
     console.log('Running schema migration...');
     await pool.query(sql);
+    await pool.query(lotSystemSql);
     console.log('✅ Schema created successfully.');
 
     const res = await pool.query(`

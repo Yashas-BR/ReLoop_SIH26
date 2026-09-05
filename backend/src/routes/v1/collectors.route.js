@@ -1,12 +1,15 @@
 import express from 'express';
 import * as collectorsController from '../../controllers/collectors.controller.js';
 import { validate } from '../../middlewares/validate.js';
-import { loginCollectorSchema } from '../../validations/collectors.validation.js';
+import { loginCollectorSchema, registerCollectorSchema } from '../../validations/collectors.validation.js';
 
 const router = express.Router();
 
 // List collector accounts (login screen lists demo accounts)
 router.get('/', collectorsController.getCollectors);
+
+// Collector registration — create an account (phone/name/area/language)
+router.post('/register', validate(registerCollectorSchema), collectorsController.register);
 
 // Collector login — phone-number based for the demo
 router.post('/login', validate(loginCollectorSchema), collectorsController.login);

@@ -16,6 +16,9 @@ export const createLotSchema = {
     condition: z.string().optional(),
     source_type: z.string().optional(),
     location: z.string().min(1, 'Location is required for valuation'),
+    // GPS evidence captured at collection time
+    collection_lat: z.coerce.number().min(-90).max(90).optional(),
+    collection_lng: z.coerce.number().min(-180).max(180).optional(),
   }),
 };
 
@@ -38,6 +41,11 @@ export const confirmHandoverSchema = {
   }),
   body: z.object({
     recycler_id: z.coerce.number().int().positive(),
+    final_weight_kg: z.coerce.number().positive('Final weight must be positive').optional(),
+    gps_lat: z.coerce.number().min(-90).max(90).optional(),
+    gps_lng: z.coerce.number().min(-180).max(180).optional(),
+    verification_photo: z.string().optional(),
+    scan_verified: z.boolean().optional(),
   }),
 };
 

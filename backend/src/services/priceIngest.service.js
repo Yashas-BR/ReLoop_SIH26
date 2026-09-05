@@ -99,3 +99,40 @@ export const getRecyclerRates = async (recyclerId) => {
 
   return result.rows;
 };
+
+/**
+ * Rate board — authorized recyclers that accept a category, each with their
+ * latest offered (quoted) rate for the given location.
+ * @param {Object} opts
+ * @param {string} opts.category
+ * @param {string} opts.location
+ * @returns {Promise<Array>}
+ */
+export const getRecyclerRateBoard = async ({ category, location }) => {
+  const result = await query(
+    `SELECT
+       r.id AS recycler_id,
+       r.name,
+       r.facility_location,
+       r.pickup_availability,
+       r.materials_accepted,
+       p.quoted_price AS offered_rate,
+       p.price_date AS rate_date
+     FROM recyclers r
+     LEFT JOIN LATERAL (
+       SELECT quoted_price, price_date
+       FROM prices
+       WHERE material_category = $1
+         AND location = $2
+         AND recycler_id = r.id
+       ORDER BY price_date DESC, id DESC
+       LIMIT 1
+     ) p ON true
+     WHERE r.authorization_status = 'authorized'
+       AND r.materials_accepted ? $1
+     ORDER BY r.id ASC`,
+    [category, location]
+  );
+
+  return result.rows;
+};

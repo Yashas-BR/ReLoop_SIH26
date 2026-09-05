@@ -19,25 +19,16 @@ router.post(
   handoverController.createLot
 );
 
-// Collector's lots — must be before /:reference to avoid wildcard capture
-router.get(
-  '/lots/collector/:collectorId',
-  handoverController.getLotsByCollector
-);
+// Static /lots sub-paths first — all must come before /lots/:lotId wildcard
+router.get('/lots/collector/:collectorId', handoverController.getLotsByCollector);
+router.get('/lots/recycler/:recyclerId', validate(getLotsByRecyclerSchema), handoverController.getLotsByRecycler);
 
-// Get handovers by lot — must be before /:reference
-router.get(
-  '/lot/:lotId',
-  validate(getHandoversByLotSchema),
-  handoverController.getHandoversByLot
-);
+// Wildcard lot sub-routes
+router.get('/lots/:lotId/events', handoverController.getLotEvents);
+router.get('/lots/:lotId/images', handoverController.getLotImages);
 
-// Recycler's incoming lots — must be before /:reference wildcard
-router.get(
-  '/lots/recycler/:recyclerId',
-  validate(getLotsByRecyclerSchema),
-  handoverController.getLotsByRecycler
-);
+// Handovers by lot
+router.get('/lot/:lotId', validate(getHandoversByLotSchema), handoverController.getHandoversByLot);
 
 // Handover initiation
 router.post(

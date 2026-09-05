@@ -18,3 +18,14 @@ export const getRecyclerRates = async (req, res) => {
     data: result,
   });
 };
+
+export const getRecyclerRateBoard = async (req, res) => {
+  const { category, location } = req.query;
+  const result = await priceIngestService.getRecyclerRateBoard({ category, location });
+
+  res.status(200).json({
+    success: true,
+    count: result.length,
+    data: result,
+  });
+};

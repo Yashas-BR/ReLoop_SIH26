@@ -8,6 +8,8 @@ import syncRoute from './sync.route.js';
 import paymentRoute from './payment.route.js';
 import priceIngestRoute from './priceIngest.route.js';
 import collectorsRoute from './collectors.route.js';
+import offersRoute from './offers.route.js';
+import adminRoute from './admin.route.js';
 
 const router = express.Router();
 
@@ -47,6 +49,14 @@ const defaultRoutes = [
   {
     path: '/collectors',
     route: collectorsRoute,
+  },
+  {
+    path: '/quotes',
+    route: offersRoute,
+  },
+  {
+    path: '/admin',
+    route: adminRoute,
   },
 ];
 

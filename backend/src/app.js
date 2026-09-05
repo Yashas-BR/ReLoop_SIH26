@@ -14,7 +14,9 @@ const app = express();
 app.use(helmet());
 
 // Parse json request body
-app.use(express.json());
+// Evidence photos arrive as compressed data URLs and are immediately sent to
+// Cloudinary; keep the request limit bounded to prevent oversized uploads.
+app.use(express.json({ limit: '7mb' }));
 
 // Parse urlencoded request body
 app.use(express.urlencoded({ extended: true }));

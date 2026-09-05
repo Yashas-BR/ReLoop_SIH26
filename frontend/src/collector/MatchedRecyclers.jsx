@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import {
   getMatchedRecyclers, initiateHandover,
+  requestQuote, acceptOffer, rejectOffer, getOffersByLot,
   DEFAULT_LAT, DEFAULT_LNG, DEMO_COLLECTOR_ID,
 } from '../api/client';
 import { currentCollectorId } from '../services/auth';
@@ -22,6 +23,15 @@ export default function MatchedRecyclers() {
   const [recyclers, setRecyclers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Quote marketplace state
+  const [offers, setOffers] = useState([]);
+  const [offersError, setOffersError] = useState('');
+  const [requesting, setRequesting] = useState(null);   // recycler_id
+  const [offerBusy, setOfferBusy] = useState(null);     // offer id being accepted/rejected
+  const [quoteToast, setQuoteToast] = useState('');
+
+  // Handover state (post-acceptance)
   const [handingOver, setHandingOver] = useState(null); // recycler_id being processed
   const [handoverResult, setHandoverResult] = useState(null); // { reference, recyclerName, queued? }
 
@@ -48,6 +58,60 @@ export default function MatchedRecyclers() {
       .catch(() => setError(t('recyclers.loadError')))
       .finally(() => setLoading(false));
   }, [category, lat, lng]);
+
+  // Load quote offers for the lot (marketplace state)
+  const loadOffers = useCallback(() => {
+    if (!lotId) return;
+    setOffersError('');
+    getOffersByLot(lotId)
+      .then(r => setOffers(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setOffersError(t('quotes.loadError')));
+  }, [lotId]);
+
+  useEffect(() => { loadOffers(); }, [loadOffers]);
+
+  const acceptedOffer = offers.find(o => o.offer_status === 'accepted');
+  const openOffers = offers.filter(o => ['requested', 'offered'].includes(o.offer_status));
+
+  async function handleRequestQuote(recycler) {
+    if (!lotId) return;
+    const recyclerId = recycler.id ?? recycler.recycler_id;
+    setRequesting(recyclerId);
+    setQuoteToast('');
+    setError('');
+    try {
+      // POST /v1/quotes/request { lot_id, recycler_id }
+      await requestQuote(lotId, recyclerId);
+      loadOffers();
+      setQuoteToast(t('quotes.requestSent'));
+    } catch (err) {
+      setError(err.message || t('quotes.requestFail'));
+    } finally {
+      setRequesting(null);
+    }
+  }
+
+  async function handleOfferAction(offerId, decision) {
+    setOfferBusy(offerId);
+    setQuoteToast('');
+    setError('');
+    try {
+      if (decision === 'accept') {
+        // POST /v1/quotes/:id/accept → binds the lot to the recycler
+        await acceptOffer(offerId);
+        setQuoteToast(t('quotes.accepted'));
+      } else {
+        await rejectOffer(offerId);
+        setQuoteToast(t('quotes.rejected'));
+      }
+      loadOffers();
+      setTimeout(() => setQuoteToast(''), 4500);
+    } catch (err) {
+      setError(err.message || t('quotes.actionFail'));
+    } finally {
+      setOfferBusy(null);
+    }
+  }
 
   async function handleSelectRecycler(recycler) {
     if (!lotId) {
@@ -102,6 +166,10 @@ export default function MatchedRecyclers() {
     return Math.max(0, Math.round((1 - Math.min(score ?? 0.5, 1)) * 100));
   }
 
+  function offerForRecycler(recyclerId) {
+    return offers.find(o => o.recycler_id === recyclerId);
+  }
+
   // Result panel — shown after initiateHandover returns (online OR offline queued)
   if (handoverResult) {
     // ── OFFLINE / QUEUED path ────────────────────────────────────────────────
@@ -118,7 +186,7 @@ export default function MatchedRecyclers() {
             </p>
 
             <div className="handover-success__status-row" style={{ background: 'var(--color-warning-light)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)' }}>
-              
+
               <span className="text-sm" style={{ color: 'var(--color-warning)', fontWeight: 'var(--weight-semibold)' }}>
                 {t('offline.savedOffline')}
               </span>
@@ -203,11 +271,23 @@ export default function MatchedRecyclers() {
         </div>
       )}
 
+      {quoteToast && (
+        <div className="alert-banner alert-banner--success animate-fade-in" role="status">
+          {quoteToast}
+        </div>
+      )}
+
+      {offersError && (
+        <div className="alert-banner alert-banner--warn animate-fade-in" role="alert">
+          {offersError}
+        </div>
+      )}
+
       {loading ? (
         <PageLoader />
       ) : recyclers.length === 0 ? (
         <div className="empty-state card">
-          
+
           <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)' }}>
             {t('recyclers.noMatch')}
           </p>
@@ -215,6 +295,67 @@ export default function MatchedRecyclers() {
         </div>
       ) : (
         <>
+          {/* ── Quotes received ─────────────────────────────────────────────── */}
+          {lotId && (openOffers.length > 0 || acceptedOffer) && (
+            <section className="card quote-section animate-fade-in" aria-labelledby="quotes-heading">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+                <h2 id="quotes-heading" className="detail-section-title" style={{ marginBottom: 0 }}>
+                  {t('quotes.receivedTitle')}
+                </h2>
+                {acceptedOffer && (
+                  <StatusBadge status="accepted" size="md" />
+                )}
+              </div>
+
+              {acceptedOffer ? (
+                <div className="confirmed-banner" role="status">
+                  {t('quotes.acceptedBanner', {
+                    recycler: acceptedOffer.recycler_name,
+                    price: `₹${Number(acceptedOffer.offered_price).toLocaleString('en-IN')}`,
+                  })}
+                </div>
+              ) : openOffers.length === 0 ? (
+                <p className="quote-section__empty">{t('quotes.noOffersYet')}</p>
+              ) : (
+                <ul className="quote-list">
+                  {openOffers.map((o) => (
+                    <li key={o.id} className="quote-item">
+                      <div className="quote-item__main">
+                        <div className="quote-item__name">{o.recycler_name}</div>
+                        <div className="quote-item__status">
+                          {o.offer_status === 'offered'
+                            ? <><strong>₹{Number(o.offered_price).toLocaleString('en-IN')}</strong> {t('quotes.totalOffer')}</>
+                            : <span>{t('quotes.awaitingRecycler')}</span>}
+                        </div>
+                      </div>
+                      {o.offer_status === 'offered' ? (
+                        <div className="quote-item__actions">
+                          <button
+                            className="btn btn-accent btn-sm"
+                            disabled={!!offerBusy}
+                            onClick={() => handleOfferAction(o.id, 'accept')}
+                            aria-busy={offerBusy === o.id}
+                          >
+                            {t('quotes.accept')}
+                          </button>
+                          <button
+                            className="btn btn-outline btn-sm"
+                            disabled={!!offerBusy}
+                            onClick={() => handleOfferAction(o.id, 'reject')}
+                          >
+                            {t('quotes.reject')}
+                          </button>
+                        </div>
+                      ) : (
+                        <StatusBadge status="requested" size="md" />
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
+
           <div className="map-wrap card">
             <RecyclersMap
               recyclers={recyclers}
@@ -229,12 +370,16 @@ export default function MatchedRecyclers() {
             // Matching API returns `id` as the recycler primary key
             const recyclerId = r.id ?? r.recycler_id;
             const isHandingOver = handingOver === recyclerId;
+            const isRequesting = requesting === recyclerId;
             const pct = scoreToPercent(r.match_score);
+
+            const myOffer = offerForRecycler(recyclerId);
+            const isAcceptor = acceptedOffer?.recycler_id === recyclerId;
 
             return (
               <div
                 key={recyclerId}
-                className={`recycler-card card card-clickable stagger-item ${selectedId === recyclerId ? 'recycler-card--selected' : ''}`}
+                className={`recycler-card card card-clickable stagger-item ${selectedId === recyclerId ? 'recycler-card--selected' : ''} ${isAcceptor ? 'recycler-card--chosen' : ''}`}
                 style={{ animationDelay: `${i * 70}ms` }}
                 onClick={() => setSelectedId(recyclerId)}
               >
@@ -269,7 +414,7 @@ export default function MatchedRecyclers() {
                 {/* Stats */}
                 <div className="recycler-card__stats">
                   <div className="recycler-stat">
-                    
+
                     <div>
                       <p className="recycler-stat__label">{t('recyclers.distance')}</p>
                       <p className="recycler-stat__value">
@@ -306,21 +451,86 @@ export default function MatchedRecyclers() {
                   </div>
                 )}
 
-                {/* Initiate Handover — only shown if a lot exists */}
-                {lotId && (
-                  <button
-                    className="btn btn-accent btn-full"
-                    onClick={() => handleSelectRecycler(r)}
-                    disabled={!!handingOver}
-                    aria-busy={isHandingOver}
-                    id={`select-recycler-${recyclerId}`}
-                  >
-                    {isHandingOver
-                      ? <><LoadingSpinner size="sm" /> {t('recyclers.handingOver')}…</>
-                      : <> {t('recyclers.selectRecycler')}</>
-                    }
-                  </button>
+                {/* Marketplace CTA — only when a lot exists */}
+                {lotId && acceptedOffer && (
+                  isAcceptor ? (
+                    <button
+                      className="btn btn-accent btn-full"
+                      onClick={() => handleSelectRecycler(r)}
+                      disabled={!!handingOver}
+                      aria-busy={isHandingOver}
+                      id={`select-recycler-${recyclerId}`}
+                    >
+                      {isHandingOver
+                        ? <><LoadingSpinner size="sm" /> {t('recyclers.handingOver')}…</>
+                        : <> {t('recyclers.selectRecycler')}</>
+                      }
+                    </button>
+                  ) : (
+                    <p className="quote-section__empty" style={{ textAlign: 'center', margin: 0 }}>
+                      {t('quotes.quoteElsewhere')}
+                    </p>
+                  )
                 )}
+
+                {lotId && !acceptedOffer && (() => {
+                  if (!myOffer) {
+                    return (
+                      <button
+                        className="btn btn-primary btn-full"
+                        onClick={() => handleRequestQuote(r)}
+                        disabled={!!requesting}
+                        aria-busy={isRequesting}
+                        id={`request-quote-${recyclerId}`}
+                      >
+                        {isRequesting
+                          ? <><LoadingSpinner size="sm" /> {t('quotes.requesting')}…</>
+                          : <> {t('quotes.requestQuote')}</>
+                        }
+                      </button>
+                    );
+                  }
+                  if (myOffer.offer_status === 'requested') {
+                    return (
+                      <p className="quote-section__empty" style={{ textAlign: 'center', margin: 0 }}>
+                        {t('quotes.awaitingRecycler')}
+                      </p>
+                    );
+                  }
+                  if (myOffer.offer_status === 'offered') {
+                    return (
+                      <div className="quote-item__actions" style={{ justifyContent: 'center' }}>
+                        <strong>₹{Number(myOffer.offered_price).toLocaleString('en-IN')}</strong>
+                        <button
+                          className="btn btn-accent btn-sm"
+                          disabled={!!offerBusy}
+                          onClick={() => handleOfferAction(myOffer.id, 'accept')}
+                          aria-busy={offerBusy === myOffer.id}
+                        >
+                          {t('quotes.accept')}
+                        </button>
+                        <button
+                          className="btn btn-outline btn-sm"
+                          disabled={!!offerBusy}
+                          onClick={() => handleOfferAction(myOffer.id, 'reject')}
+                        >
+                          {t('quotes.reject')}
+                        </button>
+                      </div>
+                    );
+                  }
+                  return (
+                    <button
+                      className="btn btn-primary btn-full"
+                      onClick={() => handleRequestQuote(r)}
+                      disabled={!!requesting}
+                      aria-busy={isRequesting}
+                      id={`request-quote-${recyclerId}`}
+                    >
+                      {t('quotes.requestQuote')}
+                    </button>
+                  );
+                })()}
               </div>
             );
           })}

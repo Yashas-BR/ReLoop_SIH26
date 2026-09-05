@@ -76,13 +76,13 @@ async function request(path, options = {}) {
       headers: { 'Content-Type': 'application/json', ...options.headers },
       ...options,
     });
-    
+
     let json = null;
     const isJson = res.headers.get('content-type')?.includes('application/json');
     if (isJson) {
       json = await res.json();
     }
-    
+
     if (!res.ok) {
       throw new Error(json?.message || `HTTP ${res.status}`);
     }
@@ -120,6 +120,10 @@ export const getPriceTrends = ({ category, location, days = 90 }) => {
   if (location) url += `&location=${encodeURIComponent(location)}`;
   return request(url);
 };
+
+// Authorized recyclers that accept a category + their latest offered rate per location.
+export const getRecyclerRateBoard = ({ category, location }) =>
+  request(`/prices/ingest/recycler-rates?category=${encodeURIComponent(category)}&location=${encodeURIComponent(location)}`);
 
 // ── Handover / Lots ──────────────────────────────────────────────────────────
 
@@ -169,14 +173,27 @@ export async function initiateHandover(data) {
   return request('/handover/initiate', { method: 'POST', body: JSON.stringify(data) });
 }
 
-export const confirmHandover = (reference, recycler_id) =>
+export const confirmHandover = (reference, opts) =>
   request(`/handover/confirm/${reference}`, {
     method: 'POST',
-    body: JSON.stringify({ recycler_id }),
+    body: JSON.stringify(opts),
   });
 
 export const getHandoverByRef = (reference) => request(`/handover/${reference}`);
 export const getHandoversByLot = (lotId) => request(`/handover/lot/${lotId}`);
+
+/**
+ * Get the full ordered event history + lot_images for a lot.
+ * Powers the traceability timeline page.
+ * Returns { data: { lot, events, images } }
+ */
+export const getLotEvents = (lotId) => request(`/handover/lots/${encodeURIComponent(lotId)}/events`);
+
+/**
+ * Get all lot_images rows for a lot (evidence photo chain).
+ * Returns { data: Array<LotImage> }
+ */
+export const getLotImages = (lotId) => request(`/handover/lots/${encodeURIComponent(lotId)}/images`);
 
 /**
  * Get all lots for a collector.
@@ -190,7 +207,7 @@ export async function getLotsByCollector(collectorId) {
       const lots = Array.isArray(res.data) ? res.data : [];
       // Tag each lot with collector_id for cache indexing
       const tagged = lots.map((l) => ({ ...l, collector_id: collectorId }));
-      cacheLots(collectorId, tagged).catch(() => {});
+      cacheLots(collectorId, tagged).catch(() => { });
       return { ...res, fromCache: false };
     } catch (err) {
       // Network error while "online" — try cache
@@ -237,6 +254,81 @@ export const getCollectors = () => request('/collectors');
 export const loginCollector = (phone) =>
   request('/collectors/login', { method: 'POST', body: JSON.stringify({ phone }) });
 
+// POST /v1/recyclers/login { recycler_id } → { data: { recycler, token } }
+export const loginRecycler = (recyclerId) =>
+  request('/recyclers/login', { method: 'POST', body: JSON.stringify({ recycler_id: recyclerId }) });
+
+// ── Collector registration ──────────────────────────────────────────────────
+// POST /v1/collectors/register { name, phone, operating_location, preferred_language }
+// → 201 { data: { collector, token } } — creates the account AND signs them in.
+export const registerCollector = (data) =>
+  request('/collectors/register', { method: 'POST', body: JSON.stringify(data) });
+
+// ── Quote / acceptance marketplace (offers) ──────────────────────────────────
+// Request a quote from a recycler for a lot (creates or reuses an open offer).
+export const requestQuote = (lotId, recyclerId) =>
+  request('/quotes/request', {
+    method: 'POST',
+    body: JSON.stringify({ lot_id: lotId, recycler_id: recyclerId }),
+  });
+
+// Recycler submits a price on an open request.
+export const respondToOffer = (offerId, offeredPrice) =>
+  request(`/quotes/${offerId}/respond`, {
+    method: 'POST',
+    body: JSON.stringify({ offered_price: offeredPrice }),
+  });
+
+// Collector accepts an offer → binds the lot to that recycler at the offer price.
+export const acceptOffer = (offerId) =>
+  request(`/quotes/${offerId}/accept`, { method: 'POST' });
+
+// Collector rejects an offer → the request re-opens for the recycler.
+export const rejectOffer = (offerId) =>
+  request(`/quotes/${offerId}/reject`, { method: 'POST' });
+
+// All offers (by status) for a lot — collector view.
+export const getOffersByLot = (lotId) => request(`/quotes/lot/${lotId}`);
+
+// Lots an authorized recycler may quote on (matching their accepted materials).
+export const getAvailableLots = (recyclerId) =>
+  request(`/quotes/available?recycler_id=${recyclerId}`);
+
+/**
+ * One-call "quote this lot" used by the recycler UI: reuse an existing open
+ * request if present, otherwise create one, then fill in the price.
+ */
+export async function quoteLot({ lotId, recyclerId, offeredPrice, existingOfferId }) {
+  let offerId = existingOfferId;
+  if (!offerId) {
+    const created = await requestQuote(lotId, recyclerId);
+    offerId = created.data.id;
+  }
+  return respondToOffer(offerId, offeredPrice);
+}
+
+// ── Admin panel ──────────────────────────────────────────────────────────────
+// POST /v1/admin/login { code } → { data: { admin, token } } (mock code for demo)
+export const adminLogin = (code) =>
+  request('/admin/login', { method: 'POST', body: JSON.stringify({ code }) });
+
+// GET /v1/admin/summary → dashboard counts + alerts
+export const getAdminSummary = () => request('/admin/summary');
+
+// POST /v1/admin/recyclers/:id/verify { decision, verification_source? }
+export const adminVerifyRecycler = (id, decision, verification_source) =>
+  request(`/admin/recyclers/${id}/verify`, {
+    method: 'POST',
+    body: JSON.stringify({ decision, verification_source }),
+  });
+
+// GET /v1/admin/price-sources → provenance registry
+export const getPriceSources = () => request('/admin/price-sources');
+
+// Read-only operational controls for the admin console.
+export const getAdminLots = () => request('/admin/lots');
+export const getAdminAuditEvents = () => request('/admin/audit-events');
+
 // ── Earnings summary ─────────────────────────────────────────────────────────
 
 /**
@@ -248,7 +340,7 @@ export async function getEarningsSummary(collectorId) {
   if (isOnline()) {
     try {
       const res = await request(`/payments/earnings/${collectorId}`);
-      cacheEarnings(collectorId, res.data).catch(() => {});
+      cacheEarnings(collectorId, res.data).catch(() => { });
       return { ...res, fromCache: false };
     } catch (err) {
       const cached = await getCachedEarnings(collectorId);
@@ -274,7 +366,7 @@ export async function getPaymentHistory(collectorId) {
       const rows = Array.isArray(res.data) ? res.data : [];
       // Tag each row with collector_id for cache indexing
       const tagged = rows.map((r) => ({ ...r, collector_id: collectorId }));
-      cacheTransactions(collectorId, tagged).catch(() => {});
+      cacheTransactions(collectorId, tagged).catch(() => { });
       return { ...res, fromCache: false };
     } catch (err) {
       const cached = await getCachedTransactions(collectorId);
@@ -305,11 +397,11 @@ export const DEFAULT_LAT = Number(import.meta.env?.VITE_DEFAULT_LAT) || 12.9716;
 export const DEFAULT_LNG = Number(import.meta.env?.VITE_DEFAULT_LNG) || 77.5946;
 
 export const MATERIAL_CATEGORIES = [
-  { id: 'CRT',    label: 'CRTs',      icon: '', sub: ['Color CRT', 'Monochrome CRT'] },
-  { id: 'LCD',    label: 'LCD Panels', icon: '', sub: ['LED Monitor', 'LCD TV', 'Flat Panel'] },
-  { id: 'PCB',    label: 'PCBs',      icon: '', sub: ['Motherboard', 'Graphics Card', 'RAM', 'Mixed PCB'] },
-  { id: 'Cable',  label: 'Cables',    icon: '', sub: ['Power Cable', 'Data Cable', 'Mixed Cables'] },
+  { id: 'CRT', label: 'CRTs', icon: '', sub: ['Color CRT', 'Monochrome CRT'] },
+  { id: 'LCD', label: 'LCD Panels', icon: '', sub: ['LED Monitor', 'LCD TV', 'Flat Panel'] },
+  { id: 'PCB', label: 'PCBs', icon: '', sub: ['Motherboard', 'Graphics Card', 'RAM', 'Mixed PCB'] },
+  { id: 'Cable', label: 'Cables', icon: '', sub: ['Power Cable', 'Data Cable', 'Mixed Cables'] },
   { id: 'Battery', label: 'Batteries', icon: '', sub: ['Li-Ion', 'Lead-Acid', 'NiMH', 'Mixed'] },
-  { id: 'Motor',  label: 'Motors',    icon: '', sub: ['Electric Motor', 'Transformer', 'Magnet Assembly'] },
+  { id: 'Motor', label: 'Motors', icon: '', sub: ['Electric Motor', 'Transformer', 'Magnet Assembly'] },
   { id: 'Plastic', label: 'Mixed Plastics', icon: '', sub: ['ABS Plastic', 'PC Plastic', 'Mixed E-Plastic'] },
 ];

@@ -4,10 +4,12 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Drop tables if re-running from scratch during development (safe for demo/dev use)
+DROP TABLE IF EXISTS offers CASCADE;
 DROP TABLE IF EXISTS traceability CASCADE;
 DROP TABLE IF EXISTS transactions CASCADE;
 DROP TABLE IF EXISTS materials CASCADE;
 DROP TABLE IF EXISTS prices CASCADE;
+DROP TABLE IF EXISTS price_sources CASCADE;
 DROP TABLE IF EXISTS recyclers CASCADE;
 DROP TABLE IF EXISTS collectors CASCADE;
 
@@ -32,6 +34,10 @@ CREATE TABLE recyclers (
     authorization_status VARCHAR(20) NOT NULL DEFAULT 'unauthorized'
         CHECK (authorization_status IN ('authorized', 'unauthorized', 'pending')),
     authorization_details TEXT,
+    authorization_number TEXT,
+    authorization_valid_until DATE,
+    verification_source TEXT,
+    last_verified_at TIMESTAMP,
     contact_details TEXT,
     pickup_availability VARCHAR(50),
     service_area TEXT,
@@ -88,7 +94,39 @@ CREATE TABLE transactions (
     payment_method VARCHAR(20) NOT NULL DEFAULT 'cash'
         CHECK (payment_method IN ('cash', 'upi', 'bank_transfer', 'other')),
     transaction_status VARCHAR(20) DEFAULT 'quoted'
-        CHECK (transaction_status IN ('quoted', 'matched', 'handed_over', 'confirmed'))
+        CHECK (transaction_status IN ('quoted', 'accepted', 'matched', 'handed_over', 'confirmed')),
+    cg_quantity_weight_kg NUMERIC(8,2)
+);
+
+-- OFFERS (marketplace quote flow: collector requests → recycler quotes → collector accepts)
+CREATE TABLE offers (
+    id SERIAL PRIMARY KEY,
+    lot_id VARCHAR(30) REFERENCES materials(lot_id),
+    recycler_id INTEGER REFERENCES recyclers(id),
+    collector_id INTEGER REFERENCES collectors(id),
+    offered_price NUMERIC(10,2) CHECK (offered_price IS NULL OR offered_price > 0),
+    offer_valid_until TIMESTAMP,
+    offer_status VARCHAR(20) NOT NULL DEFAULT 'requested'
+        CHECK (offer_status IN ('requested', 'offered', 'accepted', 'rejected', 'expired')),
+    created_at TIMESTAMP DEFAULT NOW(),
+    responded_at TIMESTAMP
+);
+
+-- A recycler can have at most one open offer per lot (requested or priced).
+CREATE UNIQUE INDEX idx_offers_open_unique
+    ON offers(lot_id, recycler_id)
+    WHERE offer_status IN ('requested', 'offered');
+
+-- PRICE SOURCES (data provenance for admin price-source management)
+CREATE TABLE price_sources (
+    id SERIAL PRIMARY KEY,
+    source_name TEXT NOT NULL,
+    source_type VARCHAR(30) NOT NULL DEFAULT 'MARKET_REFERENCE'
+        CHECK (source_type IN ('MARKET_REFERENCE', 'RECYCLER_QUOTE', 'FIELD_SURVEY', 'PLATFORM_TRANSACTION', 'REGULATORY')),
+    source_url TEXT,
+    description TEXT,
+    last_collected_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW()
 );
 
 -- TRACEABILITY
@@ -103,6 +141,7 @@ CREATE TABLE traceability (
     handover_reference_number VARCHAR(40) UNIQUE NOT NULL,
     recycler_confirmation BOOLEAN DEFAULT FALSE,
     confirmation_timestamp TIMESTAMP,
+    scan_verified BOOLEAN DEFAULT FALSE,
     status VARCHAR(30) DEFAULT 'pending_confirmation'
         CHECK (status IN ('pending_confirmation', 'confirmed'))
 );
@@ -113,3 +152,5 @@ CREATE INDEX idx_recyclers_auth_status ON recyclers(authorization_status);
 CREATE INDEX idx_transactions_collector ON transactions(collector_id);
 CREATE INDEX idx_transactions_status ON transactions(transaction_status);
 CREATE INDEX idx_traceability_lot ON traceability(lot_id);
+CREATE INDEX idx_offers_lot ON offers(lot_id);
+CREATE INDEX idx_offers_recycler_status ON offers(recycler_id, offer_status);

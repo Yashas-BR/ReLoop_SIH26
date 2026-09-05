@@ -1,0 +1,24 @@
+.scan-layout { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); }
+
+@media (max-width: 900px) {
+  .scan-layout { grid-template-columns: 1fr; }
+}
+
+.scan-panel { overflow: hidden; }
+
+.scan-panel__hint { font-size: var(--text-sm); color: var(--color-text-muted); margin: var(--space-2) 0 var(--space-4); }
+
+.scan-viewport {
+  min-height: 240px;
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+  margin-bottom: var(--space-4);
+}
+.scan-viewport video { width: 100%; display: block; }
+
+.scan-code-row { display: flex; gap: var(--space-3); }
+.scan-code-row .form-input { flex: 1; }
+
+.scan-result { margin-top: var(--space-5); text-align: center; }

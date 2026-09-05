@@ -132,6 +132,60 @@ describe('Price Trend API', () => {
   });
 });
 
+describe('Recycler Rate Board API', () => {
+  it('GET /v1/prices/ingest/recycler-rates returns authorized recyclers with offered rates', async () => {
+    const res = await request(server)
+      .get('/v1/prices/ingest/recycler-rates')
+      .query({ category: 'PCB', location: 'Bengaluru' })
+      .expect(200);
+
+    expect(res.body.success).toBe(true);
+    const rows = res.body.data;
+    expect(rows.length).toBeGreaterThan(0);
+
+    const byId = {};
+    for (const row of rows) byId[row.recycler_id] = row;
+
+    // Seed offered rates (bulk-insert test above may bump recycler 1, so check the stable ones)
+    expect(Number(byId[2].offered_rate)).toBe(270); // E-R3 Solutions PCB
+    expect(Number(byId[4].offered_rate)).toBe(278); // Earth Sense PCB
+    expect(Number(byId[5].offered_rate)).toBe(280); // Green Circuit (Demo A) PCB
+    expect(Number(byId[1].offered_rate)).toBeGreaterThan(0);
+    expect(byId[7]).toBeUndefined();        // pending excluded
+    expect(byId[9]).toBeUndefined();        // unauthorized excluded
+  });
+
+  it('GET /v1/prices/ingest/recycler-rates lists only recyclers accepting the category', async () => {
+    const res = await request(server)
+      .get('/v1/prices/ingest/recycler-rates')
+      .query({ category: 'LCD Panel', location: 'Bengaluru' });
+
+    expect(res.status).toBe(200);
+    const rows = res.body.data;
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row.materials_accepted).toContain('LCD Panel');
+    }
+  });
+
+  it('GET /v1/prices/ingest/recycler-rates defaults location to Bengaluru', async () => {
+    const res = await request(server)
+      .get('/v1/prices/ingest/recycler-rates')
+      .query({ category: 'PCB' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.length).toBeGreaterThan(0);
+  });
+
+  it('GET /v1/prices/ingest/recycler-rates returns 400 for invalid category', async () => {
+    const res = await request(server)
+      .get('/v1/prices/ingest/recycler-rates')
+      .query({ category: 'Nope', location: 'Bengaluru' });
+
+    expect(res.status).toBe(400);
+  });
+});
+
 describe('Health Check', () => {
   it('GET /v1/health returns UP', async () => {
     const res = await request(server)

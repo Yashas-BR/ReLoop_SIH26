@@ -1,14 +1,36 @@
 import { query } from '../db.js';
 import { ApiError } from '../utils/ApiError.js';
 
+// ── Internal event helper ─────────────────────────────────────────────────────
+// Mirrors the same fire-and-forget pattern used in handover.service.js.
+// Kept local here to avoid a circular import between the two services.
+const emitLotEvent = async (lotId, eventType, actorRole, actorId, metadata = {}) => {
+  try {
+    await query(
+      `INSERT INTO lot_events
+         (lot_id, event_type, actor_role, actor_id, metadata)
+       VALUES ($1, $2, $3, $4, $5::jsonb)`,
+      [lotId, eventType, actorRole, actorId ?? null, JSON.stringify(metadata)]
+    );
+  } catch (err) {
+    // Never let event logging break the payment update
+    console.error(`[lot_events] Failed to emit ${eventType} for lot ${lotId}:`, err.message);
+  }
+};
+
 /**
  * Update payment status for a transaction.
+ *
+ * When payment_status transitions to 'paid', appends a PAYMENT_COMPLETED event
+ * to lot_events so the full traceability chain remains unbroken through to the
+ * final step of the lifecycle.
+ *
  * @param {string} lotId
- * @param {Object} data
+ * @param {Object} data { payment_status, final_price, payment_method, recycler_id? }
  * @returns {Promise<Object>}
  */
 export const updatePaymentStatus = async (lotId, data) => {
-  const { payment_status, final_price, payment_method } = data;
+  const { payment_status, final_price, payment_method, recycler_id } = data;
 
   const existing = await query(
     'SELECT * FROM transactions WHERE lot_id = $1',
@@ -17,6 +39,12 @@ export const updatePaymentStatus = async (lotId, data) => {
 
   if (existing.rows.length === 0) {
     throw new ApiError(404, `Transaction for lot ${lotId} not found`);
+  }
+
+  const wasAlreadyPaid = existing.rows[0].payment_status === 'paid';
+
+  if (payment_status === 'paid' && existing.rows[0].transaction_status !== 'handed_over') {
+    throw new ApiError(409, 'Payment can be recorded only after recycler handover confirmation');
   }
 
   const updates = ['payment_status = $1'];
@@ -33,17 +61,35 @@ export const updatePaymentStatus = async (lotId, data) => {
     params.push(payment_method);
   }
 
+  if (payment_status === 'paid') {
+    updates.push("transaction_status = 'confirmed'");
+  }
+
   params.push(lotId);
 
   const result = await query(
-    `UPDATE transactions 
+    `UPDATE transactions
      SET ${updates.join(', ')}
      WHERE lot_id = $${paramIndex}
      RETURNING *`,
     params
   );
 
-  return result.rows[0];
+  const updated = result.rows[0];
+
+  // ── Emit PAYMENT_COMPLETED event once, when status first flips to 'paid' ────
+  // Using the recycler as actor because payment is recorded by the recycler.
+  // Falls back to the recycler bound to this transaction if not passed in.
+  if (payment_status === 'paid' && !wasAlreadyPaid) {
+    const actorId = recycler_id ?? updated.recycler_id ?? null;
+    await emitLotEvent(lotId, 'PAYMENT_COMPLETED', 'recycler', actorId, {
+      amount: final_price ?? updated.final_price ?? null,
+      payment_method: payment_method ?? updated.payment_method ?? 'cash',
+      collector_id: updated.collector_id ?? null,
+    });
+  }
+
+  return updated;
 };
 
 /**

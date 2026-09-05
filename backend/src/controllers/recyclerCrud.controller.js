@@ -9,6 +9,24 @@ export const createRecycler = async (req, res) => {
   });
 };
 
+export const onboardRecycler = async (req, res) => {
+  const recycler = await recyclerCrudService.onboardRecycler(req.body);
+
+  res.status(201).json({
+    success: true,
+    data: recycler,
+  });
+};
+
+export const loginRecycler = async (req, res) => {
+  const { recycler, token } = await recyclerCrudService.loginRecycler(req.body.recycler_id);
+
+  res.status(200).json({
+    success: true,
+    data: { recycler, token },
+  });
+};
+
 export const getRecycler = async (req, res) => {
   const recycler = await recyclerCrudService.getRecyclerById(req.params.id);
 

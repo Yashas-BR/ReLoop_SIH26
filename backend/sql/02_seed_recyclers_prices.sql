@@ -3,67 +3,99 @@
 
 -- HONEST DATA PROVENANCE — read this before using this data anywhere:
 --
--- VERIFIED REAL (name + location only): Trishyirya Recycling India Pvt.
--- Ltd., E-R3 Solutions Pvt. Ltd., Samarthanam Trust for the Disabled, and
--- Earth Sense Recycle Pvt. Ltd. are real companies with these real
--- addresses, sourced directly from an official CPCB-affiliated authorized
--- e-waste recycler/dismantler list (dste.py.gov.in PDF). HOWEVER: their
--- materials_accepted, pickup_availability, service_area, and
--- contact_details below are NOT real — these fields are illustrative
--- placeholders invented for this demo, not sourced from any real listing.
--- Do not present these operational details as the real companies' actual
--- offerings.
+-- VERIFIED AUTHORIZATION (name + facility + authorization source): the ONLY
+-- two entries with a genuinely verifiable authorization record are:
+--   • E-Parisaraa Pvt. Ltd. — CPCB + KSPCB approved; real SPCB authorisation
+--     number published on Nokia's responsible-recycling page, plus the KSPCB
+--     dismantler/recycler list (31.01.2023). Latitude/longitude approximate.
+--   • Cerebra Integrated Technologies Ltd. — KSPCB licensed e-waste processor
+--     (Narasapura, Kolar District; 20,000 MT/annum). NB its Peenya site is its
+--     manufacturing plant, NOT its recycling facility.
+--
+-- VERIFIED-EVENT: Trishyirya Recycling India Pvt. Ltd., E-R3 Solutions Pvt.
+-- Ltd., Samarthanam Trust for the Disabled, and Earth Sense Recycle Pvt. Ltd.
+-- are real companies with real addresses, sourced from an official CPCB-
+-- affiliated authorized e-waste recycler/dismantler list (dste.py.gov.in PDF).
+-- HOWEVER: their materials_accepted, pickup_availability, service_area, and
+-- contact_details below are NOT real — illustrative placeholders invented for
+-- this demo. Their authorization fields are NULL (not independently verified).
 --
 -- ENTIRELY ILLUSTRATIVE (fictional company, standing in for a real one):
 -- the remaining "authorized" entries use fictional names rather than
--- attaching invented details to real companies we could not verify
--- addresses for (E-Parisaraa, Ramky, Virogreen, Escrappy are real
--- companies, but we do not have verified addresses for them, so we do
--- NOT use their real names with fabricated details).
+-- attaching invented details to real companies we could not verify.
 --
--- ADDITIONAL CAVEAT: latitude/longitude for the 4 verified-address
--- companies are approximate coordinates for their general industrial
--- area (e.g., "Peenya Industrial Area" as a whole), NOT verified precise
--- GPS coordinates for each specific facility -- the source document gave
--- street/area addresses only, not GPS data.
+-- ADDITIONAL CAVEAT: latitude/longitude for all entries are approximate
+-- coordinates for their general industrial area, NOT verified precise GPS.
 --
--- DELIBERATELY UNAUTHORIZED (always illustrative): the last two entries
--- are fictional, used to test the authorization-status filter.
+-- DELIBERATELY UNAUTHORIZED (always illustrative): the last two entries are
+-- fictional, used to test the authorization-status filter.
 
-INSERT INTO recyclers (name, facility_location, latitude, longitude, materials_accepted, authorization_status, authorization_details, contact_details, pickup_availability, service_area)
+INSERT INTO recyclers (name, facility_location, latitude, longitude, materials_accepted, authorization_status, authorization_details, authorization_number, verification_source, last_verified_at, contact_details, pickup_availability, service_area)
 VALUES
--- Verified-real name + location; all other fields illustrative
+-- Verified-real name + location; all other fields illustrative; authorization fields NULL (not independently verified)
 ('Trishyirya Recycling India Pvt. Ltd.', '4th Phase, Peenya Industrial Estate, Bengaluru', 13.0284, 77.5199,
- '["PCB","Cable","Motor/Magnet Assembly"]', 'authorized', 'Illustrative demo data -- real registration ID not independently verified', 'Illustrative — real contact not sourced', 'daily', 'Peenya Industrial Area, 15 km radius'),
+ '["PCB","Cable","Motor/Magnet Assembly"]', 'authorized', 'Illustrative demo data -- real registration ID not independently verified', NULL, NULL, NULL,
+ 'Illustrative — real contact not sourced', 'daily', 'Peenya Industrial Area, 15 km radius'),
 
 ('E-R3 Solutions Pvt. Ltd.', '1st Cross, 1st Stage, Peenya Industrial Area, Bengaluru', 13.0300, 77.5175,
- '["PCB","Battery","LCD Panel"]', 'authorized', 'Illustrative demo data -- real registration ID not independently verified', 'Illustrative — real contact not sourced', 'daily', 'Peenya Industrial Area, 10 km radius'),
+ '["PCB","Battery","LCD Panel"]', 'authorized', 'Illustrative demo data -- real registration ID not independently verified', NULL, NULL, NULL,
+ 'Illustrative — real contact not sourced', 'daily', 'Peenya Industrial Area, 10 km radius'),
 
 ('Samarthanam Trust for the Disabled (E-Waste Unit)', '6th Main, 3rd Phase, Peenya Industrial Area, Bengaluru', 13.0270, 77.5220,
- '["Cable","Mixed Plastic","CRT"]', 'authorized', 'Illustrative demo data -- real registration ID not independently verified', 'Illustrative — real contact not sourced', 'daily', 'Peenya to Yeshwanthpur, 12 km radius'),
+ '["Cable","Mixed Plastic","CRT"]', 'authorized', 'Illustrative demo data -- real registration ID not independently verified', NULL, NULL, NULL,
+ 'Illustrative — real contact not sourced', 'daily', 'Peenya to Yeshwanthpur, 12 km radius'),
 
 ('Earth Sense Recycle Pvt. Ltd.', 'Jigani 2nd Stage, Jigani Industrial Area, Bengaluru', 12.7780, 77.6350,
- '["PCB","Cable","Motor/Magnet Assembly","Battery"]', 'authorized', 'Illustrative demo data -- real registration ID not independently verified', 'Illustrative — real contact not sourced', 'on_request', 'Jigani to Electronic City, 10 km radius'),
+ '["PCB","Cable","Motor/Magnet Assembly","Battery"]', 'authorized', 'Illustrative demo data -- real registration ID not independently verified', NULL, NULL, NULL,
+ 'Illustrative — real contact not sourced', 'on_request', 'Jigani to Electronic City, 10 km radius'),
+
+-- E-Parisaraa Pvt. Ltd. — genuinely verified: CPCB + KSPCB approved e-waste &
+-- battery recycler. Real SPCB authorisation number published on Nokia's
+-- responsible-recycling page; also listed in KSPCB dismantler/recycler list
+-- (31.01.2023) at #30-P3 Dobaspet, Bengaluru Rural. Coords approximate.
+('E-Parisaraa Pvt. Ltd.', 'KIADB Industrial Area, Dobaspet, Bengaluru Rural, Karnataka', 13.1278, 77.5038,
+ '["PCB","Battery","Cable","Motor/Magnet Assembly"]', 'authorized', 'CPCB + KSPCB approved e-waste & battery recycling company',
+ 'SPCB Auth No. PCB/WMC/3100/E-waste/2019-20/6471 (via Nokia responsible-recycling page)',
+ 'KSPCB list 31.01.2023 + nokia.com responsible-recycling page', '2026-09-05 00:00:00'::TIMESTAMP,
+ 'Illustrative contact — via corporate website only', 'on_request', 'Dobaspet / North Bengaluru, 25 km radius'),
+
+-- Cerebra Integrated Technologies Ltd. — KSPCB licensed e-waste processor.
+-- NOTE: its e-waste recycling plant is at Narasapura, Kolar District (12-acre
+-- KIADB facility, ~20,000 MT/annum capacity), NOT the Peenya plant which is
+-- its manufacturing unit. Coords approximate for Narasapura.
+('Cerebra Integrated Technologies Ltd.', 'KIADB Industrial Area, Narasapura, Kolar District, Karnataka', 13.1350, 78.0620,
+ '["PCB","Cable","Motor/Magnet Assembly","CRT"]', 'authorized', 'KSPCB licensed e-waste processing, recycling, refurbishing; 20,000 MT/annum (Narsapura facility)',
+ NULL, 'Company site (recycling page) + DSIJ (Aug 2019)', '2026-09-05 00:00:00'::TIMESTAMP,
+ 'Illustrative contact — via corporate website only', 'on_request', 'Kolar District to Bengaluru EPR collection base'),
 
 -- Fully fictional demo entries (not attached to any specific real company we couldn't verify)
-('Demo Recycler A -- Green Circuit Solutions', 'Whitefield, Bengaluru (fictional demo entry)', 12.9698, 77.7500,
- '["PCB","Battery","Mixed Plastic"]', 'authorized', 'Fictional demo entry', 'Demo only — fictional contact', 'daily', 'Whitefield, 8 km radius'),
-
-('Demo Recycler B -- Bengaluru Metal Recovery', 'Electronic City, Bengaluru (fictional demo entry)', 12.8452, 77.6602,
- '["Cable","Motor/Magnet Assembly","LCD Panel"]', 'authorized', 'Fictional demo entry', 'Demo only — fictional contact', 'on_request', 'Electronic City to Hosur Road, 12 km radius'),
-
 ('Demo Recycler C -- Peenya E-Waste Hub', 'Yeshwanthpur, Bengaluru (fictional demo entry)', 13.0284, 77.5540,
- '["PCB","CRT","Cable"]', 'pending', 'Fictional demo entry, application status illustrative', 'Demo only — fictional contact', 'daily', 'Yeshwanthpur, 7 km radius'),
+ '["PCB","CRT","Cable"]', 'pending', 'Fictional demo entry, application status illustrative', NULL, NULL, NULL,
+ 'Demo only — fictional contact', 'daily', 'Yeshwanthpur, 7 km radius'),
 
 ('Demo Recycler D -- Hebbal Circular Recyclers', 'Hebbal, Bengaluru (fictional demo entry)', 13.0358, 77.5970,
- '["Cable","Mixed Plastic","CRT"]', 'authorized', 'Fictional demo entry', 'Demo only — fictional contact', 'on_request', 'Hebbal to Sahakarnagar, 9 km radius'),
+ '["Cable","Mixed Plastic","CRT"]', 'authorized', 'Fictional demo entry', NULL, NULL, NULL,
+ 'Demo only — fictional contact', 'on_request', 'Hebbal to Sahakarnagar, 9 km radius'),
 
 -- Deliberately unauthorized/informal entries for testing the matching filter (always fictional)
 ('Local Scrap Point (fictional demo entry)', 'Koramangala, Bengaluru', 12.9352, 77.6245,
- '["CRT","LCD Panel","Mixed Plastic"]', 'unauthorized', NULL, 'Demo only — fictional contact', 'on_request', 'Koramangala, 5 km radius'),
+ '["CRT","LCD Panel","Mixed Plastic"]', 'unauthorized', NULL, NULL, NULL, NULL,
+ 'Demo only — fictional contact', 'on_request', 'Koramangala, 5 km radius'),
 
 ('Quick Kabadi Aggregator (fictional demo entry)', 'Marathahalli, Bengaluru', 12.9591, 77.6974,
- '["PCB","CRT","Mixed Plastic"]', 'unauthorized', NULL, 'Demo only — fictional contact', 'no', 'Marathahalli to Bellandur, 6 km radius');
+ '["PCB","CRT","Mixed Plastic"]', 'unauthorized', NULL, NULL, NULL, NULL,
+ 'Demo only — fictional contact', 'no', 'Marathahalli to Bellandur, 6 km radius');
+
+-- PRICE SOURCES — data provenance for the admin price-source panel.
+INSERT INTO price_sources (source_name, source_type, source_url, description, last_collected_at) VALUES
+('ScrapRates.in — Bengaluru e-waste market rate', 'MARKET_REFERENCE', 'https://scraprates.in/bangalore/e-waste-scrap-price',
+ 'Public indicative Bengaluru e-waste rate directory; material grades vary (PCB ₹150-400/kg, Li-ion ~₹92/kg). Not an official CPCB/KSPCB price.', '2026-08-04 00:00:00'::TIMESTAMP),
+('CPCB E-Waste Management System', 'REGULATORY', 'https://eprewaste.cpcb.gov.in/',
+ 'Authoritative central source for the EPR/recycler ecosystem. Portal is login-gated; used as the regulatory reference point.', NULL),
+('KSPCB E-Waste Dismantlers & Recyclers list (31.01.2023)', 'REGULATORY', 'https://www.scribd.com/document/754958896/',
+ 'Official KSPCB Waste Management Cell list of Bengaluru/Karnataka dismantlers and recyclers. Validate current validity before relying on any single entry.', '2026-08-04 00:00:00'::TIMESTAMP),
+('Platform field survey', 'FIELD_SURVEY', NULL,
+ 'Illustrative placeholder for future field-survey prices collected during on-ground interviews (SIH Phase 0 research).', NULL);
 
 -- PCB — anchored to real researched India rates: ₹350-450/kg for unsorted
 -- non-functional boards (higher nominal India rate due to manual sorting);

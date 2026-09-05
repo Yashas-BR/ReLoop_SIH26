@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getLotsByRecycler, getRecycler, DEMO_RECYCLER_ID } from '../api/client';
+import { getLotsByRecycler, getRecycler, getAvailableLots } from '../api/client';
+import { resolveRecyclerId } from '../services/auth';
 import { StatCard } from '../components/StatCard';
 import { StatusBadge } from '../components/StatusBadge';
 import { PageLoader, SkeletonCard } from '../components/LoadingSpinner';
@@ -20,16 +21,24 @@ export default function RecyclerDashboard() {
   const [recycler, setRecycler] = useState(null);
   const [loadingLots, setLoadingLots] = useState(true);
   const [loadingR, setLoadingR] = useState(true);
+  const [newLots, setNewLots] = useState(0);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    const recyclerId = resolveRecyclerId();
     // Show lots assigned to this recycler (matched / handed_over / confirmed)
-    getLotsByRecycler(DEMO_RECYCLER_ID)
+    getLotsByRecycler(recyclerId)
       .then(r => setLots(Array.isArray(r.data) ? r.data : []))
       .catch(() => setError(t('recyclerDash.loadError')))
       .finally(() => setLoadingLots(false));
 
-    getRecycler(DEMO_RECYCLER_ID)
+    // Open lots matching this recycler's accepted materials that are not yet
+    // assigned or quoted — the "new lots to quote" pool.
+    getAvailableLots(recyclerId)
+      .then(r => setNewLots(Array.isArray(r.data) ? r.data.length : 0))
+      .catch(() => {});
+
+    getRecycler(recyclerId)
       .then(r => setRecycler(r.data))
       .catch(() => {})
       .finally(() => setLoadingR(false));
@@ -55,6 +64,9 @@ export default function RecyclerDashboard() {
           
           {t('recyclerProfile.title')}
         </Link>
+        <Link to="/recycler/scan" className="btn btn-accent" id="scan-lot-cta">
+          {t('recyclerScan.cta')}
+        </Link>
       </div>
 
       {error && (
@@ -79,12 +91,31 @@ export default function RecyclerDashboard() {
         )}
       </div>
 
+      {/* New lots callout — freshly-created collector lots matched to this facility */}
+      {newLots > 0 && (
+        <section className="card alert-banner alert-banner--success animate-fade-in" role="status"
+          style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <p style={{ fontWeight: 'var(--weight-semibold)' }}>{t('recyclerDash.newLotsTitle', { count: newLots })}</p>
+            <p className="text-muted" style={{ margin: 0 }}>{t('recyclerDash.newLotsDesc')}</p>
+          </div>
+          <Link to="/recycler?section=lots" className="btn btn-accent btn-sm">
+            {t('recyclerDash.viewLots')} →
+          </Link>
+        </section>
+      )}
+
       {/* Quick Nav */}
       <section className="quick-actions animate-fade-in" aria-labelledby="raction-heading">
         <h2 id="raction-heading" className="section-title" style={{ marginBottom: 'var(--space-4)' }}>
           {t('dashboard.quickActions')}
         </h2>
         <div className="quick-actions__grid">
+          <Link to="/recycler/scan" className="quick-action-card quick-action-card--accent">
+            {t('recyclerScan.nav')}
+            <span className="quick-action-card__label">{t('recyclerScan.title')}</span>
+            <span className="quick-action-card__desc">{t('recyclerScan.ctaDesc')}</span>
+          </Link>
           <Link to="/recycler?section=lots" className="quick-action-card">
             
             <span className="quick-action-card__label">{t('recyclerDash.incomingLots')}</span>

@@ -98,6 +98,33 @@ export default function CreateLot() {
     });
   }
 
+  // Compress the primary photo before sending it to the backend. The backend
+  // uploads it to Cloudinary and stores only the returned HTTPS URL.
+  function fileToDataUrl(file, maxDim = 640, quality = 0.7) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onerror = () => resolve(null);
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => resolve(reader.result);
+        img.onload = () => {
+          try {
+            const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          } catch {
+            resolve(reader.result);
+          }
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   function handleDrop(e) {
     e.preventDefault();
     if (photos.length >= MAX_PHOTOS) return;
@@ -195,12 +222,17 @@ export default function CreateLot() {
       if (subCategory) descParts.push(`Sub-category: ${subCategory}`);
       if (description) descParts.push(description);
 
+      // Step 1-2: submit compressed collection evidence; the API uploads it
+      // to Cloudinary before creating the immutable lot-image record.
+      const image_ref = photos[0]?.file ? await fileToDataUrl(photos[0].file) : undefined;
+
       const r = await createLot({
         collector_id: collectorId ?? DEMO_COLLECTOR_ID,
         category,
         approx_weight_kg: Number(weight),
         location,
         description: descParts.join(' | ') || undefined,
+        image_ref,
       });
 
       if (r.queued) {

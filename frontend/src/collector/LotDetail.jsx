@@ -3,10 +3,15 @@ import { useParams, Link } from 'react-router-dom';
 import {
   getLotsByCollector,
   getHandoversByLot,
+  getOffersByLot,
+  getLotEvents,
+  acceptOffer,
+  rejectOffer,
   DEMO_COLLECTOR_ID,
 } from '../api/client';
 import { currentCollectorId } from '../services/auth';
 import { StatusBadge } from '../components/StatusBadge';
+import LotQR from '../components/LotQR';
 import { PageLoader } from '../components/LoadingSpinner';
 import { useTranslation } from '../i18n/config.js';
 import './LotDetail.css';
@@ -31,6 +36,11 @@ export default function CollectorLotDetail() {
   // Lot metadata comes from the collector lots endpoint
   const [lot, setLot] = useState(null);
   const [handovers, setHandovers] = useState([]);
+  const [offers, setOffers] = useState([]);
+  const [lotEventTypes, setLotEventTypes] = useState(new Set()); // set of fired event_type strings
+  const [offerBusy, setOfferBusy] = useState(null);
+  const [offersError, setOffersError] = useState('');
+  const [quoteToast, setQuoteToast] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -39,15 +49,23 @@ export default function CollectorLotDetail() {
     setError('');
     try {
       const collectorId = currentCollectorId() ?? DEMO_COLLECTOR_ID;
-      const [lotsRes, handoversRes] = await Promise.all([
+      const [lotsRes, handoversRes, offersRes, eventsRes] = await Promise.all([
         getLotsByCollector(collectorId),
         getHandoversByLot(lotId),
+        getOffersByLot(lotId),
+        getLotEvents(lotId).catch(() => null), // non-blocking — events table may not exist yet
       ]);
 
       const allLots = Array.isArray(lotsRes.data) ? lotsRes.data : [];
       const foundLot = allLots.find(l => l.lot_id === lotId) ?? null;
       setLot(foundLot);
       setHandovers(Array.isArray(handoversRes.data) ? handoversRes.data : []);
+      setOffers(Array.isArray(offersRes.data) ? offersRes.data : []);
+
+      // Build a set of event types that have actually fired, for the checklist
+      const evData = eventsRes?.data ?? eventsRes;
+      const fired = Array.isArray(evData?.events) ? evData.events : [];
+      setLotEventTypes(new Set(fired.map(e => e.event_type)));
     } catch {
       setError(t('lotDetail.loadError'));
     } finally {
@@ -58,11 +76,93 @@ export default function CollectorLotDetail() {
   useEffect(() => { load(); }, [load]);
 
   const latestHandover = handovers[0] ?? null;
+  const acceptedOffer = offers.find(o => o.offer_status === 'accepted') ?? null;
+  const openOffers = offers.filter(o => o.offer_status === 'offered');
+
+  // ── Handover checklist ────────────────────────────────────────────────────
+  // Each step is satisfied by either a lot_events entry (preferred — direct
+  // evidence) or a fallback inference from lot/handover status fields (for
+  // lots created before the events table existed).
+  const ev = lotEventTypes; // Set<string>
+  const checklist = [
+    {
+      key: 'collection',
+      label: t('checklist.collection'),
+      done: ev.has('LOT_CREATED') || Boolean(lot?.created_at),
+    },
+    {
+      key: 'photo',
+      label: t('checklist.photo'),
+      done: ev.has('IMAGE_UPLOADED') || Boolean(lot?.image_ref),
+    },
+    {
+      key: 'priceEstimated',
+      label: t('checklist.priceEstimated'),
+      done: ev.has('PRICE_ESTIMATED') || lot?.estimated_value != null,
+    },
+    {
+      key: 'matched',
+      label: t('checklist.matched'),
+      done: ev.has('RECYCLER_MATCHED') || ['matched', 'accepted', 'handed_over', 'confirmed'].includes(lot?.transaction_status),
+    },
+    {
+      key: 'quoteAccepted',
+      label: t('checklist.quoteAccepted'),
+      done: ev.has('QUOTE_ACCEPTED') || acceptedOffer !== null,
+    },
+    {
+      key: 'qrScanned',
+      label: t('checklist.qrScanned'),
+      done: ev.has('QR_SCANNED') || latestHandover?.scan_verified === true,
+    },
+    {
+      key: 'weightVerified',
+      label: t('checklist.weightVerified'),
+      done: ev.has('FINAL_WEIGHT_RECORDED') || latestHandover?.weight_kg != null,
+    },
+    {
+      key: 'handover',
+      label: t('checklist.handover'),
+      done: ev.has('HANDOVER_CONFIRMED') || Boolean(latestHandover?.handover_reference_number || latestHandover?.handover_reference),
+    },
+    {
+      key: 'recyclerConfirmed',
+      label: t('checklist.recyclerConfirmed'),
+      done: ev.has('HANDOVER_CONFIRMED') || latestHandover?.status === 'confirmed',
+    },
+    {
+      key: 'payment',
+      label: t('checklist.payment'),
+      done: ev.has('PAYMENT_COMPLETED') || lot?.payment_status === 'paid',
+    },
+  ];
+  const checklistDone = checklist.filter((c) => c.done).length;
+
+  async function handleOfferAction(offerId, decision) {
+    setOfferBusy(offerId);
+    setQuoteToast('');
+    setOffersError('');
+    try {
+      if (decision === 'accept') {
+        await acceptOffer(offerId);
+        setQuoteToast(t('quotes.accepted'));
+      } else {
+        await rejectOffer(offerId);
+        setQuoteToast(t('quotes.rejected'));
+      }
+      load();
+      setTimeout(() => setQuoteToast(''), 4500);
+    } catch (err) {
+      setOffersError(err.message || t('quotes.actionFail'));
+    } finally {
+      setOfferBusy(null);
+    }
+  }
 
   function getCurrentStep() {
     if (latestHandover?.status === 'confirmed') return 4;
     if (latestHandover?.handover_reference_number) return 3;
-    if (lot?.transaction_status === 'matched') return 2;
+    if (lot?.transaction_status === 'matched' || lot?.transaction_status === 'accepted') return 2;
     if (lot?.estimated_value != null) return 1;
     return 0;
   }
@@ -87,8 +187,8 @@ export default function CollectorLotDetail() {
     },
     {
       label: t('traceability.handoverInitiated'),
-      sub: latestHandover?.handover_reference_number
-        ? `${t('lotDetail.handoverRef')}: ${latestHandover.handover_reference_number}`
+      sub: (latestHandover?.handover_reference_number || latestHandover?.handover_reference)
+        ? `${t('lotDetail.handoverRef')}: ${latestHandover.handover_reference_number || latestHandover.handover_reference}`
         : t('lotDetail.noHandover'),
       icon: '',
     },
@@ -121,16 +221,28 @@ export default function CollectorLotDetail() {
 
       {error && (
         <div className="alert-banner alert-banner--warn animate-fade-in" role="alert">
-           {error}
+          {error}
           <button className="btn btn-ghost btn-sm" onClick={load} style={{ marginLeft: 'auto' }}>
             {t('common.retry')}
           </button>
         </div>
       )}
 
+      {quoteToast && (
+        <div className="alert-banner alert-banner--success animate-fade-in" role="status">
+          {quoteToast}
+        </div>
+      )}
+
+      {offersError && (
+        <div className="alert-banner alert-banner--warn animate-fade-in" role="alert">
+          {offersError}
+        </div>
+      )}
+
       {!lot && !loading ? (
         <div className="empty-state card">
-          
+
           <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)' }}>
             {t('lotDetail.loadError')}
           </p>
@@ -139,6 +251,44 @@ export default function CollectorLotDetail() {
         </div>
       ) : lot ? (
         <div className="cdash-layout">
+
+          {/* Lot QR — the recycler scans this at pickup to verify & confirm the lot */}
+          <section className="card animate-scale-in" aria-labelledby="collector-qr-heading">
+            <div className="collector-qr-row">
+              <LotQR value={lotId} />
+              <div>
+                <h2 id="collector-qr-heading" className="detail-section-title">{t('checklist.qrTitle')}</h2>
+                <p className="text-muted text-sm" style={{ margin: 'var(--space-2) 0 0' }}>
+                  {t('checklist.qrDesc')}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Handover checklist — live progress of the physical pickup flow */}
+          <section className="card animate-scale-in" aria-labelledby="checklist-heading">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+              <h2 id="checklist-heading" className="detail-section-title" style={{ marginBottom: 0 }}>
+                {t('checklist.title')}
+              </h2>
+              <span className="checklist-count">
+                {t('checklist.progress', { done: checklistDone, total: checklist.length })}
+              </span>
+            </div>
+            <ol className="checklist">
+              {checklist.map((c) => (
+                <li key={c.key} className={`checklist-step ${c.done ? 'checklist-step--done' : ''}`}>
+                  <span className="checklist-step__dot" aria-hidden="true">{c.done ? '\u2713' : ''}</span>
+                  <span className="checklist-step__label">{c.label}</span>
+                </li>
+              ))}
+            </ol>
+            {checklistDone === checklist.length && (
+              <div className="confirmed-banner" role="status" style={{ marginTop: 'var(--space-4)' }}>
+                {t('checklist.complete')}
+              </div>
+            )}
+          </section>
 
           {/* Lot Info Card */}
           <section className="card animate-scale-in" aria-labelledby="lot-info-heading">
@@ -150,7 +300,7 @@ export default function CollectorLotDetail() {
               </div>
               {lot.sub_category && (
                 <div className="detail-item">
-                <p className="detail-item__label">{t('lotDetail.subCategory')}</p>
+                  <p className="detail-item__label">{t('lotDetail.subCategory')}</p>
                   <p className="detail-item__value">{lot.sub_category}</p>
                 </div>
               )}
@@ -185,6 +335,77 @@ export default function CollectorLotDetail() {
                 </p>
               </div>
             </div>
+            {lot.image_ref && (
+              <figure className="collection-photo" style={{ marginTop: 'var(--space-4)' }}>
+                <img src={lot.image_ref} alt={t('verify.collectionPhotoAlt')} />
+                <figcaption className="text-muted text-sm">{t('verify.collectionPhotoLabel')}</figcaption>
+              </figure>
+            )}
+          </section>
+
+          {/* Quotes / marketplace card */}
+          <section className="card animate-scale-in" aria-labelledby="quotes-heading">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+              <h2 id="quotes-heading" className="detail-section-title" style={{ marginBottom: 0 }}>
+                {t('quotes.title')}
+              </h2>
+              {acceptedOffer && <StatusBadge status="accepted" size="md" />}
+            </div>
+
+            {acceptedOffer ? (
+              <div className="confirmed-banner" role="status">
+                {t('quotes.acceptedBanner', {
+                  recycler: acceptedOffer.recycler_name,
+                  price: fmt(acceptedOffer.offered_price),
+                })}
+              </div>
+            ) : openOffers.length > 0 ? (
+              <>
+                <ul className="quote-list">
+                  {openOffers.map((o) => (
+                    <li key={o.id} className="quote-item">
+                      <div className="quote-item__main">
+                        <div className="quote-item__name">{o.recycler_name}</div>
+                        <div className="quote-item__status">
+                          <strong>{fmt(o.offered_price)}</strong> {t('quotes.totalOffer')}
+                        </div>
+                      </div>
+                      <div className="quote-item__actions">
+                        <button
+                          className="btn btn-accent btn-sm"
+                          disabled={!!offerBusy}
+                          onClick={() => handleOfferAction(o.id, 'accept')}
+                          aria-busy={offerBusy === o.id}
+                        >
+                          {t('quotes.accept')}
+                        </button>
+                        <button
+                          className="btn btn-outline btn-sm"
+                          disabled={!!offerBusy}
+                          onClick={() => handleOfferAction(o.id, 'reject')}
+                        >
+                          {t('quotes.reject')}
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : lot?.transaction_status === 'quoted' ? (
+              <div>
+                <p className="quote-section__empty">{t('quotes.noQuotesYet')}</p>
+                <Link
+                  to="/collector/matched-recyclers"
+                  state={{ category: lot.category, lotId: lot.lot_id }}
+                  className="btn btn-primary"
+                  style={{ marginTop: 'var(--space-4)' }}
+                >
+                  {t('quotes.requestPage')}
+                </Link>
+              </div>
+            ) : (
+              <p className="quote-section__empty">{t('quotes.noQuotesYet')}</p>
+            )}
           </section>
 
           {/* Traceability Timeline */}
@@ -226,13 +447,13 @@ export default function CollectorLotDetail() {
           </section>
 
           {/* Handover Reference Card — shown when a handover exists */}
-          {latestHandover?.handover_reference_number && (
+          {(latestHandover?.handover_reference_number || latestHandover?.handover_reference) && (
             <section className="card animate-fade-in" aria-labelledby="handover-ref-heading">
               <h2 id="handover-ref-heading" className="detail-section-title">{t('lotDetail.handoverRef')}</h2>
               <div className="ref-display">
                 <p className="ref-display__label">{t('lotDetail.handoverRef')}</p>
                 <p className="ref-display__value font-mono">
-                  {latestHandover.handover_reference_number}
+                  {latestHandover.handover_reference_number || latestHandover.handover_reference}
                 </p>
               </div>
               <div className="detail-grid" style={{ marginTop: 'var(--space-5)' }}>
@@ -267,7 +488,7 @@ export default function CollectorLotDetail() {
           {/* No handover yet — prompt collector to initiate */}
           {handovers.length === 0 && lot?.transaction_status === 'quoted' && (
             <div className="empty-state card animate-fade-in">
-              
+
               <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)' }}>
                 {t('lotDetail.noHandover')}
               </p>

@@ -10,25 +10,68 @@ export const createRecycler = async (data) => {
   const {
     name, facility_location, latitude, longitude,
     materials_accepted, authorization_status, authorization_details,
+    authorization_number, verification_source,
     contact_details, pickup_availability, service_area,
   } = data;
 
   const result = await query(
     `INSERT INTO recyclers 
        (name, facility_location, latitude, longitude, materials_accepted,
-        authorization_status, authorization_details, contact_details,
-        pickup_availability, service_area)
-     VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10)
+        authorization_status, authorization_details, authorization_number, verification_source,
+        contact_details, pickup_availability, service_area)
+     VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10, $11, $12)
      RETURNING *`,
     [
       name, facility_location ?? null, latitude ?? null, longitude ?? null,
       JSON.stringify(materials_accepted), authorization_status,
-      authorization_details ?? null, contact_details ?? null,
-      pickup_availability ?? null, service_area ?? null,
+      authorization_details ?? null, authorization_number ?? null, verification_source ?? null,
+      contact_details ?? null, pickup_availability ?? null, service_area ?? null,
     ]
   );
 
   return result.rows[0];
+};
+
+/**
+ * Recycler self-onboarding — records an application in 'pending' state that
+ * an admin must verify before the recycler appears as authorized.
+ * @param {Object} data
+ * @returns {Promise<Object>}
+ */
+export const onboardRecycler = async (data) => {
+  return createRecycler({
+    ...data,
+    authorization_status: 'pending',
+  });
+};
+
+/**
+ * Sign in a recycler by ID (demo auth).
+ * Only authorized recyclers may use the portal; pending/unauthorized are blocked.
+ * @param {number} id
+ * @returns {Promise<{recycler: Object, token: string}>}
+ */
+export const loginRecycler = async (id) => {
+  const recycler = await getRecyclerById(id);
+
+  if (recycler.authorization_status === 'pending') {
+    throw new ApiError(403, 'Recycler profile is pending admin verification');
+  }
+  if (recycler.authorization_status !== 'authorized') {
+    throw new ApiError(403, 'Recycler is not authorized to use the portal');
+  }
+
+  return {
+    recycler: {
+      id: recycler.id,
+      name: recycler.name,
+      facility_location: recycler.facility_location,
+      materials_accepted: recycler.materials_accepted,
+      pickup_availability: recycler.pickup_availability,
+      authorization_status: recycler.authorization_status,
+    },
+    token: `mock-recycler-login-${recycler.id}-${Date.now()}`,
+  };
 };
 
 /**

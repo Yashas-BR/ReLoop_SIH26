@@ -25,3 +25,10 @@ export const getRecyclerRatesSchema = {
     recyclerId: z.coerce.number().int().positive(),
   }),
 };
+
+export const getRecyclerRateBoardSchema = {
+  query: z.object({
+    category: materialCategory,
+    location: z.string().min(1).default('Bengaluru'),
+  }),
+};

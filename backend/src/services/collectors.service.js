@@ -15,6 +15,33 @@ export const getCollectors = async () => {
 };
 
 /**
+ * Register a new collector account (minimal fields per SIH PS: avoid
+ * unnecessary personal information).
+ * @param {Object} data { name, phone, operating_location, preferred_language }
+ * @returns {Promise<Object>}
+ */
+export const registerCollector = async (data) => {
+  const { name, phone, operating_location, preferred_language } = data;
+
+  const exists = await query('SELECT id FROM collectors WHERE phone = $1', [phone]);
+  if (exists.rows.length > 0) {
+    throw new ApiError(409, 'A collector account with this phone number already exists');
+  }
+
+  const result = await query(
+    `INSERT INTO collectors (name, phone, preferred_language, operating_location)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id, name, phone, preferred_language, operating_location, created_at`,
+    [name, phone, preferred_language ?? 'hi', operating_location ?? null]
+  );
+
+  return {
+    collector: result.rows[0],
+    token: `mock-login-${result.rows[0].id}-${Date.now()}`,
+  };
+};
+
+/**
  * Authenticate a collector by phone number.
  * A lightweight "login" for the SIH demo — identifies the account,
  * returns a mock token the frontend stores for the current session.

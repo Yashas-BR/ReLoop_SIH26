@@ -9,28 +9,45 @@ const LANG_OPTIONS = [
   { code: 'mr', label: 'मराठी' },
 ];
 
-// One portal for everyone — a single nav that serves both the Kabadiwala
-// (collector) side and the recycler side ("all in one portal just for now").
-const NAV = (t) => [
-  { to: '/collector', label: t('nav.dashboard'), icon: '' },
-  { to: '/collector/create-lot', label: t('nav.createLot'), icon: '+' },
-  { to: '/collector/prices', label: t('nav.prices'), icon: '₹' },
-  { to: '/collector/earnings', label: t('nav.earnings'), icon: '' },
-  { to: '/recycler', label: t('nav.recyclerPortal'), icon: '⊞' },
-  { to: '/safety', label: t('nav.safety'), icon: '' },
-];
+// Navigation links depend on which persona is signed in.
+// - Collector / anonymous → collector-side dashboard, create lot, prices, earnings, safety
+// - Recycler           → recycler portal, safety
+// - Admin              → admin panel, safety
+// Shared pages (safety) are reachable from every portal.
+function navFor(role, t) {
+  if (role === 'recycler') {
+    return [
+      { to: '/recycler', label: t('nav.recyclerPortal'), icon: '⊞' },
+      { to: '/recycler/scan', label: t('recyclerScan.nav'), icon: '▣' },
+      { to: '/safety', label: t('nav.safety'), icon: '' },
+    ];
+  }
+  if (role === 'admin') {
+    return [
+      { to: '/admin', label: t('nav.admin'), icon: '◎' },
+      { to: '/safety', label: t('nav.safety'), icon: '' },
+    ];
+  }
+  return [
+    { to: '/collector', label: t('nav.dashboard'), icon: '' },
+    { to: '/collector/create-lot', label: t('nav.createLot'), icon: '+' },
+    { to: '/collector/prices', label: t('nav.prices'), icon: '₹' },
+    { to: '/collector/earnings', label: t('nav.earnings'), icon: '' },
+    { to: '/safety', label: t('nav.safety'), icon: '' },
+  ];
+}
 
 export function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { t, lang, setLang } = useTranslation();
 
-  const navItems = NAV(t);
   const user = getSession();
+  const navItems = navFor(user?.role, t);
 
   function handleLogout() {
     clearSession();
-    navigate('/collector', { replace: true });
+    navigate('/', { replace: true });
   }
 
   return (
@@ -38,7 +55,7 @@ export function Navbar() {
       <div className="navbar__inner container">
         {/* Logo */}
         <Link to="/collector" className="navbar__logo" aria-label={t('nav.homeLabel')}>
-          
+
           <div className="navbar__logo-text">
             <span className="navbar__logo-name">Kabadiwala</span>
             <span className="navbar__logo-sub">Connect</span>
@@ -80,7 +97,7 @@ export function Navbar() {
           {/* Account chip */}
           {user ? (
             <div className="navbar__account">
-              <Link to={user.role === 'recycler' ? '/recycler' : '/collector'} className="navbar__user" title={`${t('login.loggedInAs')} ${user.name}`}>
+              <Link to={user.role === 'recycler' ? '/recycler' : user.role === 'admin' ? '/admin' : '/collector'} className="navbar__user" title={`${t('login.loggedInAs')} ${user.name}`}>
                 <span className="navbar__avatar" aria-hidden="true">
                   {(user.name || '?').charAt(0).toUpperCase()}
                 </span>

@@ -21,7 +21,8 @@ export const initiateHandover = async (req, res) => {
 export const confirmHandover = async (req, res) => {
   const result = await handoverService.confirmHandover(
     req.params.reference,
-    req.body.recycler_id
+    req.body.recycler_id,
+    req.body
   );
 
   res.status(200).json({
@@ -61,6 +62,34 @@ export const getLotsByCollector = async (req, res) => {
 
 export const getLotsByRecycler = async (req, res) => {
   const result = await handoverService.getLotsByRecycler(req.params.recyclerId);
+
+  res.status(200).json({
+    success: true,
+    count: result.length,
+    data: result,
+  });
+};
+
+/**
+ * GET /v1/handover/lots/:lotId/events
+ * Returns the full ordered event history for a lot, plus all lot_images rows.
+ * This is the endpoint that powers the traceability timeline page.
+ */
+export const getLotEvents = async (req, res) => {
+  const result = await handoverService.getLotEvents(req.params.lotId);
+
+  res.status(200).json({
+    success: true,
+    data: result,
+  });
+};
+
+/**
+ * GET /v1/handover/lots/:lotId/images
+ * Returns all lot_images rows for a lot (photo evidence chain).
+ */
+export const getLotImages = async (req, res) => {
+  const result = await handoverService.getLotImages(req.params.lotId);
 
   res.status(200).json({
     success: true,

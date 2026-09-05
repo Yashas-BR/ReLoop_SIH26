@@ -14,9 +14,11 @@
     "test-connection": "node src/test-connection.js",
     "migrate": "node src/migrate.js",
     "seed": "node src/seed.js",
-    "reset": "node src/reset.js"
+    "reset": "node src/reset.js",
+    "setup": "node src/setup.js"
   },
   "dependencies": {
+    "cloudinary": "^2.11.0",
     "cors": "^2.8.6",
     "csv-parse": "^7.0.2",
     "dotenv": "^16.4.5",
