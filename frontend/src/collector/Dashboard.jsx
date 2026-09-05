@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getEarningsSummary, getLotsByCollector, DEMO_COLLECTOR_ID } from '../api/client';
+import { currentCollectorId } from '../services/auth';
 import { StatCard } from '../components/StatCard';
 import { StatusBadge } from '../components/StatusBadge';
 import { PageLoader, SkeletonCard } from '../components/LoadingSpinner';
@@ -26,13 +27,15 @@ export default function CollectorDashboard() {
   const [loadingL, setLoadingL] = useState(true);
   const [error, setError] = useState('');
 
+  const collectorId = currentCollectorId() ?? DEMO_COLLECTOR_ID;
+
   useEffect(() => {
-    getEarningsSummary(DEMO_COLLECTOR_ID)
+    getEarningsSummary(collectorId)
       .then(r => setEarnings(r.data))
       .catch(() => setError(t('dashboard.backendError')))
       .finally(() => setLoadingE(false));
 
-    getLotsByCollector(DEMO_COLLECTOR_ID)
+    getLotsByCollector(collectorId)
       .then(r => setLots(Array.isArray(r.data) ? r.data.slice(0, 6) : []))
       .catch(() => {})
       .finally(() => setLoadingL(false));

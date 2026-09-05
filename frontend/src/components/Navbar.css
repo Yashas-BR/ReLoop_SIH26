@@ -300,3 +300,11 @@
     display: none;
   }
 }
+
+/* Account chip */
+.navbar__account { display: flex; align-items: center; gap: var(--space-3); }
+.navbar__user { display: flex; align-items: center; gap: var(--space-2); color: var(--color-text-primary); text-decoration: none; }
+.navbar__avatar { width: 30px; height: 30px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--color-primary), var(--color-accent)); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: var(--weight-bold); font-size: var(--text-sm); }
+.navbar__username { font-size: var(--text-sm); font-weight: var(--weight-semibold); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.navbar__logout { background: none; border: none; color: var(--color-text-muted); font-size: var(--text-sm); cursor: pointer; padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); }
+.navbar__logout:hover { color: var(--color-destructive); background: var(--color-destructive-light); }

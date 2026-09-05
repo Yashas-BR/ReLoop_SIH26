@@ -19,11 +19,11 @@ const seedFiles = [
 
 const expectedCounts = {
   recyclers: 10,
-  prices: 77,
+  prices: 71,
   collectors: 2,
   materials: 6,
   transactions: 6,
-  traceability: 3,
+  traceability: 4,
 };
 
 async function main() {

@@ -7,6 +7,7 @@ export const updatePaymentSchema = {
   body: z.object({
     payment_status: z.enum(['pending', 'paid']),
     final_price: z.coerce.number().positive().optional(),
+    payment_method: z.enum(['cash', 'upi', 'bank_transfer', 'other']).optional(),
   }),
 };
 

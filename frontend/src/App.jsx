@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { I18nProvider } from './i18n/I18nProvider';
 import { Navbar } from './components/Navbar';
 import { OfflineIndicator } from './components/OfflineIndicator';
@@ -15,17 +15,15 @@ import CollectorTraceability from './collector/Traceability';
 import EarningsLedger from './collector/Earnings';
 
 // Recycler pages
-import RecyclerDashboard from './recycler/Dashboard';
-import IncomingLots from './recycler/IncomingLots';
+import RecyclerPortal from './recycler/Portal';
 import LotDetail from './recycler/LotDetail';
-import RecyclerProfile from './recycler/Profile';
 
 // Shared pages
 import SafetyGuidance from './pages/Safety';
+import Login from './pages/Login';
 
 function AppInner() {
-  const [portal, setPortal] = useState('collector');
-  const navigate = useNavigate();
+  const location = useLocation();
 
   // Initialize sync manager once at app startup.
   // It attaches online/offline listeners and processes leftover queue items.
@@ -33,18 +31,16 @@ function AppInner() {
     initSyncManager();
   }, []);
 
-  function handlePortalSwitch(next) {
-    setPortal(next);
-    navigate(`/${next}`);
-  }
-
   return (
     <div className="page-shell">
-      <Navbar portal={portal} onPortalSwitch={handlePortalSwitch} />
+      <Navbar />
       <main className="page-content" id="main-content">
         <Routes>
           {/* Root redirect */}
           <Route path="/" element={<Navigate to="/collector" replace />} />
+
+          {/* Auth */}
+          <Route path="/login" element={<Login location={location} />} />
 
           {/* Collector routes */}
           <Route path="/collector" element={<CollectorDashboard />} />
@@ -56,11 +52,11 @@ function AppInner() {
           <Route path="/collector/lots/:lotId" element={<CollectorLotDetail />} />
           <Route path="/collector/lots/:lotId/trace" element={<CollectorTraceability />} />
 
-          {/* Recycler routes */}
-          <Route path="/recycler" element={<RecyclerDashboard />} />
-          <Route path="/recycler/lots" element={<IncomingLots />} />
+          {/* Recycler — one portal (overview + lots + profile together) */}
+          <Route path="/recycler" element={<RecyclerPortal />} />
+          <Route path="/recycler/lots" element={<Navigate to="/recycler" replace />} />
+          <Route path="/recycler/profile" element={<Navigate to="/recycler" replace />} />
           <Route path="/recycler/lots/:lotId" element={<LotDetail />} />
-          <Route path="/recycler/profile" element={<RecyclerProfile />} />
 
           {/* Shared routes — accessible from both portals */}
           <Route path="/safety" element={<SafetyGuidance />} />

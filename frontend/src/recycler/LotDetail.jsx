@@ -1,6 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getHandoversByLot, confirmHandover, DEMO_RECYCLER_ID } from '../api/client';
+import {
+  getHandoversByLot, confirmHandover,
+  updatePayment, checkTransactionAnomaly,
+  DEMO_RECYCLER_ID,
+} from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
 import { PageLoader, LoadingSpinner } from '../components/LoadingSpinner';
 import { useTranslation } from '../i18n/config.js';
@@ -31,6 +35,14 @@ export default function LotDetail() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Payment recording (PS: cash / UPI / bank are all valid)
+  const [payPrice, setPayPrice] = useState('');
+  const [payMethod, setPayMethod] = useState('cash');
+  const [payChecking, setPayChecking] = useState(false);
+  const [payAnomaly, setPayAnomaly] = useState(null);
+  const [updatingPay, setUpdatingPay] = useState(false);
+  const anomalyTimer = useRef(null);
+
   const load = useCallback(() => {
     setLoading(true);
     setError('');
@@ -60,13 +72,77 @@ export default function LotDetail() {
     }
   }
 
+  // Prefill final price from the quoted price once the lot loads.
+  useEffect(() => {
+    const first = handovers[0];
+    if (first && first.payment_status === 'pending' && first.quoted_price != null && payPrice === '') {
+      setPayPrice(String(Number(first.quoted_price).toFixed(2)));
+    }
+  }, [handovers, payPrice]);
+
+  // AI/ML use case 4 (PS §11-D): flag unusual transaction values — compare the
+  // entered final price against category stats + market range before recording.
+  const runAnomalyCheck = useCallback(async (price, h) => {
+    setPayChecking(true);
+    setPayAnomaly(null);
+    try {
+      const res = await checkTransactionAnomaly({
+        lot_id: lotId,
+        material_category: h.category,
+        quoted_price: h.quoted_price != null ? Number(h.quoted_price) : price,
+        final_price: price,
+        weight_kg: Number(h.weight_kg || 0),
+        recycler_id: DEMO_RECYCLER_ID,
+        location: h.collection_location || undefined,
+      });
+      setPayAnomaly(res.data);
+    } catch {
+      setPayAnomaly(null);
+    } finally {
+      setPayChecking(false);
+    }
+  }, [lotId]);
+
+  function handlePayPriceChange(val) {
+    setPayPrice(val);
+    const price = Number(val);
+    const h = handovers[0];
+    if (!price || price <= 0 || !h?.weight_kg) { setPayAnomaly(null); return; }
+    clearTimeout(anomalyTimer.current);
+    anomalyTimer.current = setTimeout(() => runAnomalyCheck(price, h), 450);
+  }
+
+  useEffect(() => () => clearTimeout(anomalyTimer.current), []);
+
+  async function handleRecordPayment() {
+    const price = Number(payPrice);
+    if (!price || price <= 0) { setError(t('lotDetail.payInvalid')); return; }
+    setUpdatingPay(true);
+    setError('');
+    setSuccess('');
+    try {
+      // Backend: PATCH /v1/payments/:lotId { payment_status, final_price, payment_method }
+      await updatePayment(lotId, { payment_status: 'paid', final_price: price, payment_method: payMethod });
+      setSuccess(t('lotDetail.paySuccess'));
+      load();
+    } catch (err) {
+      setError(err.message || t('lotDetail.payFail'));
+    } finally {
+      setUpdatingPay(false);
+    }
+  }
+
   // Use first handover record to populate lot summary (category, weight from traceability)
   const firstHandover = handovers[0];
+  const isHandoverConfirmed = handovers.some((h) => h.status === 'confirmed');
+  const fmtRupees = (n) => (n == null ? '—' : `₹${Number(n).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`);
+
+  const PAY_METHOD_ICONS = { cash: '₹', upi: 'UPI', bank_transfer: 'BANK' };
 
   return (
     <div className="container">
       <div className="animate-fade-in" style={{ marginBottom: 'var(--space-6)' }}>
-        <Link to="/recycler/lots" className="back-link">{t('common.back')}</Link>
+        <Link to="/recycler?section=lots" className="back-link">{t('common.back')}</Link>
         <h1 className="section-title" style={{ marginTop: 'var(--space-3)' }}>
           {t('lotDetail.title')}
         </h1>
@@ -248,6 +324,110 @@ export default function LotDetail() {
               );
             })}
           </section>
+
+          {/* Record final price + payment method (PS §14: cash / UPI / bank) */}
+          {isHandoverConfirmed && (
+            <section className="card animate-scale-in" aria-labelledby="pay-heading">
+              <h2 id="pay-heading" className="detail-section-title">{t('lotDetail.payRecord')}</h2>
+
+              {firstHandover?.payment_status === 'paid' ? (
+                <div className="confirmed-banner" role="status">
+                  
+                  {t('lotDetail.payPaid', {
+                    amount: fmtRupees(firstHandover.final_price),
+                    method: t(`lotDetail.payMethods.${firstHandover.payment_method ?? 'cash'}`),
+                  })}
+                </div>
+              ) : (
+                <>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="pay-price">{t('lotDetail.payFinalPrice')}</label>
+                    <div className="pay-price-input">
+                      <input
+                        id="pay-price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="form-input"
+                        value={payPrice}
+                        onChange={(e) => handlePayPriceChange(e.target.value)}
+                        aria-describedby="pay-price-hint"
+                      />
+                      <span className="weight-unit">₹</span>
+                    </div>
+                    {firstHandover?.quoted_price != null && (
+                      <p id="pay-price-hint" className="form-hint">
+                        {t('lotDetail.payQuotedHint', { amount: fmtRupees(firstHandover.quoted_price) })}
+                      </p>
+                    )}
+                  </div>
+
+                  {payChecking && (
+                    <p className="anomaly-checking">
+                      {t('lotDetail.payChecking')}…
+                    </p>
+                  )}
+
+                  {payAnomaly?.is_anomalous && (
+                    <div className="anomaly-banner" role="alert">
+                      <div className="anomaly-banner__head">
+                        <span className={`anomaly-sev anomaly-sev--${payAnomaly.flags?.[0]?.severity ?? 'medium'}`}>
+                          {t(`lotDetail.payAnomalySeverity.${payAnomaly.flags?.[0]?.severity ?? 'medium'}`)}
+                        </span>
+                        <strong>{t('lotDetail.payAnomalyTitle')}</strong>
+                      </div>
+                      {payAnomaly.flags?.map((f, i) => (
+                        <p key={i} className="anomaly-banner__msg">{f.message}</p>
+                      ))}
+                      {payAnomaly.market_range && (
+                        <p className="anomaly-banner__range">
+                          {t('lotDetail.payMarketRange', {
+                            low: fmtRupees(payAnomaly.market_range.low),
+                            high: fmtRupees(payAnomaly.market_range.high),
+                          })}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {!payChecking && !payAnomaly?.is_anomalous && payPrice && Number(payPrice) > 0 && (
+                    <p className="anomaly-clear">{t('lotDetail.payCheckedOk')}</p>
+                  )}
+
+                  <fieldset className="pay-methods" aria-label={t('lotDetail.payMethod')}>
+                    <legend className="form-label">{t('lotDetail.payMethod')}</legend>
+                    {['cash', 'upi', 'bank_transfer'].map((m) => (
+                      <label
+                        key={m}
+                        className={`pay-method ${payMethod === m ? 'pay-method--active' : ''}`}
+                      >
+                        <input
+                          type="radio"
+                          name="payMethod"
+                          value={m}
+                          checked={payMethod === m}
+                          onChange={() => setPayMethod(m)}
+                        />
+                        <span className="pay-method__icon" aria-hidden="true">{PAY_METHOD_ICONS[m]}</span>
+                        <span>{t(`lotDetail.payMethods.${m}`)}</span>
+                      </label>
+                    ))}
+                  </fieldset>
+
+                  <button
+                    className="btn btn-accent btn-full"
+                    onClick={handleRecordPayment}
+                    disabled={updatingPay || !payPrice || Number(payPrice) <= 0}
+                    aria-busy={updatingPay}
+                  >
+                    {updatingPay
+                      ? <><LoadingSpinner size="sm" /> {t('common.loading')}…</>
+                      : <> {t('lotDetail.payRecordBtn')}</>}
+                  </button>
+                </>
+              )}
+            </section>
+          )}
         </div>
       )}
     </div>

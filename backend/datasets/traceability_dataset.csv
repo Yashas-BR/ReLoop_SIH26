@@ -1,0 +1,5 @@
+id,lot_id,photo_refs,weight_kg,event_timestamp,gps_lat,gps_lng,handover_reference_number,recycler_confirmation,confirmation_timestamp,status
+1,LOT-2026-0002,/images/handover0002_1.jpg,2.00,Sun Aug 02 2026 12:00:00 GMT+0530 (India Standard Time),13.0284,77.5199,HOV-2026-K1L2M3,false,,pending_confirmation
+2,LOT-2026-0003,"/images/handover0003_1.jpg,/images/handover0003_2.jpg",8.00,Mon Aug 03 2026 15:00:00 GMT+0530 (India Standard Time),13.0284,77.5199,HOV-2026-A1B2C3,false,,pending_confirmation
+3,LOT-2026-0004,/images/handover0004_1.jpg,12.00,Tue Aug 04 2026 12:00:00 GMT+0530 (India Standard Time),13.0358,77.597,HOV-2026-D4E5F6,true,Tue Aug 04 2026 12:30:00 GMT+0530 (India Standard Time),confirmed
+4,LOT-2026-0005,"/images/handover0005_1.jpg,/images/handover0005_2.jpg",1.50,Wed Aug 05 2026 17:00:00 GMT+0530 (India Standard Time),12.9698,77.75,HOV-2026-G7H8I9,true,Wed Aug 05 2026 17:20:00 GMT+0530 (India Standard Time),confirmed

@@ -203,6 +203,10 @@ export const getHandoversByLot = async (lotId) => {
          t.gps_lng,
          t.event_timestamp AS created_at,
          t.confirmation_timestamp AS confirmed_at,
+         txn.collection_location,
+         txn.quoted_price,
+         txn.payment_status,
+         txn.payment_method,
          m.category,
          m.sub_category,
          m.approx_weight_kg,
@@ -210,6 +214,7 @@ export const getHandoversByLot = async (lotId) => {
          r.name AS recycler_name
        FROM traceability t
        JOIN materials m ON t.lot_id = m.lot_id
+       LEFT JOIN transactions txn ON txn.lot_id = t.lot_id
        LEFT JOIN recyclers r ON r.id = (
          SELECT recycler_id FROM transactions WHERE lot_id = t.lot_id AND recycler_id IS NOT NULL LIMIT 1
        )
@@ -229,7 +234,7 @@ export const getHandoversByLot = async (lotId) => {
 export const getLotsByCollector = async (collectorId) => {
   const result = await query(
     `SELECT m.*, 
-            t.transaction_status, t.payment_status, t.final_price,
+            t.transaction_status, t.payment_status, t.final_price, t.payment_method,
             r.name AS recycler_name
      FROM materials m
      LEFT JOIN transactions t ON m.lot_id = t.lot_id
@@ -237,6 +242,39 @@ export const getLotsByCollector = async (collectorId) => {
      WHERE m.collector_id = $1
      ORDER BY m.created_at DESC`,
     [collectorId]
+  );
+
+  return result.rows;
+};
+
+/**
+ * Get all lots assigned to a recycler (matched / handed over / confirmed).
+ * Includes the latest traceability record so the recycler can see pending
+ * confirmations from the incoming-lots list.
+ * @param {number} recyclerId
+ * @returns {Promise<Array>}
+ */
+export const getLotsByRecycler = async (recyclerId) => {
+  const result = await query(
+    `SELECT m.*,
+            t.transaction_status, t.payment_status, t.final_price, t.payment_method,
+            r.name AS recycler_name,
+            tr.handover_reference_number,
+            tr.status AS traceability_status,
+            tr.confirmation_timestamp
+     FROM materials m
+     JOIN transactions t ON m.lot_id = t.lot_id
+     LEFT JOIN recyclers r ON t.recycler_id = r.id
+     LEFT JOIN LATERAL (
+       SELECT handover_reference_number, status, confirmation_timestamp
+       FROM traceability
+       WHERE lot_id = m.lot_id
+       ORDER BY event_timestamp DESC
+       LIMIT 1
+     ) tr ON true
+     WHERE t.recycler_id = $1
+     ORDER BY m.created_at DESC`,
+    [recyclerId]
   );
 
   return result.rows;

@@ -238,6 +238,25 @@ All handovers for a lot.
 
 All lots for a collector.
 
+### `GET /handover/lots/recycler/:recyclerId`
+
+All lots **assigned to a recycler** (matched / handed_over / confirmed), joined
+with the latest traceability record so the recycler can act on pending
+confirmations directly from the incoming-lots list.
+
+Response `data` rows include:
+
+```json
+{
+  "lot_id": "LOT-2026-0002",
+  "category": "Battery",
+  "transaction_status": "matched",
+  "handover_reference_number": "HOV-2026-K1L2M3",
+  "traceability_status": "pending_confirmation",
+  "recycler_name": "E-R3 Solutions Pvt. Ltd."
+}
+```
+
 ---
 
 ## Anomaly Detection

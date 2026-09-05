@@ -54,6 +54,21 @@ async function executeOperation(item) {
   };
 
   switch (operation) {
+    case 'createLot': {
+      const res = await fetch('/v1/handover/lots', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        const err = new Error(json.message || `HTTP ${res.status}`);
+        err.status = res.status;
+        throw err;
+      }
+      return json;
+    }
+
     case 'initiateHandover': {
       const res = await fetch('/v1/handover/initiate', {
         method: 'POST',

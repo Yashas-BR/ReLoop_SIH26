@@ -1,0 +1,72 @@
+id,material_category,location,price_date,buying_price,quoted_price,unit,recycler_id,market_range_low,market_range_high
+1,PCB,Bengaluru,Fri Jun 05 2026 00:00:00 GMT+0530 (India Standard Time),220.00,,per_kg,,170.00,350.00
+2,PCB,Bengaluru,Mon Jun 15 2026 00:00:00 GMT+0530 (India Standard Time),235.00,,per_kg,,180.00,365.00
+3,PCB,Bengaluru,Thu Jun 25 2026 00:00:00 GMT+0530 (India Standard Time),228.00,,per_kg,,175.00,355.00
+4,PCB,Bengaluru,Sun Jul 05 2026 00:00:00 GMT+0530 (India Standard Time),260.00,,per_kg,,200.00,400.00
+5,PCB,Bengaluru,Wed Jul 15 2026 00:00:00 GMT+0530 (India Standard Time),255.00,,per_kg,,195.00,395.00
+6,PCB,Bengaluru,Sat Jul 25 2026 00:00:00 GMT+0530 (India Standard Time),275.00,,per_kg,,210.00,420.00
+7,PCB,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),270.00,,per_kg,,205.00,415.00
+8,Battery,Bengaluru,Fri Jun 05 2026 00:00:00 GMT+0530 (India Standard Time),72.00,,per_kg,,60.00,90.00
+9,Battery,Bengaluru,Mon Jun 15 2026 00:00:00 GMT+0530 (India Standard Time),75.00,,per_kg,,62.00,93.00
+10,Battery,Bengaluru,Thu Jun 25 2026 00:00:00 GMT+0530 (India Standard Time),74.00,,per_kg,,61.00,91.00
+11,Battery,Bengaluru,Sun Jul 05 2026 00:00:00 GMT+0530 (India Standard Time),80.00,,per_kg,,68.00,98.00
+12,Battery,Bengaluru,Wed Jul 15 2026 00:00:00 GMT+0530 (India Standard Time),85.00,,per_kg,,70.00,100.00
+13,Battery,Bengaluru,Sat Jul 25 2026 00:00:00 GMT+0530 (India Standard Time),88.00,,per_kg,,72.00,105.00
+14,Battery,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),91.00,,per_kg,,75.00,108.00
+15,Cable,Bengaluru,Fri Jun 05 2026 00:00:00 GMT+0530 (India Standard Time),310.00,,per_kg,,280.00,650.00
+16,Cable,Bengaluru,Mon Jun 15 2026 00:00:00 GMT+0530 (India Standard Time),320.00,,per_kg,,290.00,670.00
+17,Cable,Bengaluru,Thu Jun 25 2026 00:00:00 GMT+0530 (India Standard Time),315.00,,per_kg,,285.00,660.00
+18,Cable,Bengaluru,Sun Jul 05 2026 00:00:00 GMT+0530 (India Standard Time),335.00,,per_kg,,300.00,720.00
+19,Cable,Bengaluru,Wed Jul 15 2026 00:00:00 GMT+0530 (India Standard Time),340.00,,per_kg,,305.00,740.00
+20,Cable,Bengaluru,Sat Jul 25 2026 00:00:00 GMT+0530 (India Standard Time),345.00,,per_kg,,310.00,760.00
+21,Cable,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),350.00,,per_kg,,315.00,780.00
+22,Motor/Magnet Assembly,Bengaluru,Fri Jun 05 2026 00:00:00 GMT+0530 (India Standard Time),135.00,,per_kg,,110.00,160.00
+23,Motor/Magnet Assembly,Bengaluru,Mon Jun 15 2026 00:00:00 GMT+0530 (India Standard Time),140.00,,per_kg,,115.00,165.00
+24,Motor/Magnet Assembly,Bengaluru,Thu Jun 25 2026 00:00:00 GMT+0530 (India Standard Time),138.00,,per_kg,,112.00,162.00
+25,Motor/Magnet Assembly,Bengaluru,Sun Jul 05 2026 00:00:00 GMT+0530 (India Standard Time),150.00,,per_kg,,120.00,175.00
+26,Motor/Magnet Assembly,Bengaluru,Wed Jul 15 2026 00:00:00 GMT+0530 (India Standard Time),145.00,,per_kg,,118.00,170.00
+27,Motor/Magnet Assembly,Bengaluru,Sat Jul 25 2026 00:00:00 GMT+0530 (India Standard Time),155.00,,per_kg,,125.00,180.00
+28,Motor/Magnet Assembly,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),152.00,,per_kg,,122.00,178.00
+29,LCD Panel,Bengaluru,Fri Jun 05 2026 00:00:00 GMT+0530 (India Standard Time),32.00,,per_kg,,22.00,45.00
+30,LCD Panel,Bengaluru,Mon Jun 15 2026 00:00:00 GMT+0530 (India Standard Time),35.00,,per_kg,,24.00,48.00
+31,LCD Panel,Bengaluru,Thu Jun 25 2026 00:00:00 GMT+0530 (India Standard Time),30.00,,per_kg,,20.00,42.00
+32,LCD Panel,Bengaluru,Sun Jul 05 2026 00:00:00 GMT+0530 (India Standard Time),38.00,,per_kg,,26.00,50.00
+33,LCD Panel,Bengaluru,Wed Jul 15 2026 00:00:00 GMT+0530 (India Standard Time),36.00,,per_kg,,25.00,48.00
+34,LCD Panel,Bengaluru,Sat Jul 25 2026 00:00:00 GMT+0530 (India Standard Time),40.00,,per_kg,,28.00,52.00
+35,LCD Panel,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),37.00,,per_kg,,26.00,49.00
+36,CRT,Bengaluru,Fri Jun 05 2026 00:00:00 GMT+0530 (India Standard Time),14.00,,per_kg,,10.00,20.00
+37,CRT,Bengaluru,Mon Jun 15 2026 00:00:00 GMT+0530 (India Standard Time),15.00,,per_kg,,11.00,21.00
+38,CRT,Bengaluru,Thu Jun 25 2026 00:00:00 GMT+0530 (India Standard Time),13.00,,per_kg,,9.00,19.00
+39,CRT,Bengaluru,Sun Jul 05 2026 00:00:00 GMT+0530 (India Standard Time),16.00,,per_kg,,12.00,22.00
+40,CRT,Bengaluru,Wed Jul 15 2026 00:00:00 GMT+0530 (India Standard Time),15.50,,per_kg,,11.50,21.50
+41,CRT,Bengaluru,Sat Jul 25 2026 00:00:00 GMT+0530 (India Standard Time),17.00,,per_kg,,13.00,23.00
+42,CRT,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),16.50,,per_kg,,12.50,22.50
+43,Mixed Plastic,Bengaluru,Fri Jun 05 2026 00:00:00 GMT+0530 (India Standard Time),12.00,,per_kg,,8.00,16.00
+44,Mixed Plastic,Bengaluru,Mon Jun 15 2026 00:00:00 GMT+0530 (India Standard Time),13.00,,per_kg,,9.00,17.00
+45,Mixed Plastic,Bengaluru,Thu Jun 25 2026 00:00:00 GMT+0530 (India Standard Time),11.50,,per_kg,,8.00,15.50
+46,Mixed Plastic,Bengaluru,Sun Jul 05 2026 00:00:00 GMT+0530 (India Standard Time),14.00,,per_kg,,10.00,18.00
+47,Mixed Plastic,Bengaluru,Wed Jul 15 2026 00:00:00 GMT+0530 (India Standard Time),13.50,,per_kg,,9.50,17.50
+48,Mixed Plastic,Bengaluru,Sat Jul 25 2026 00:00:00 GMT+0530 (India Standard Time),15.00,,per_kg,,11.00,19.00
+49,Mixed Plastic,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),14.50,,per_kg,,10.50,18.50
+50,PCB,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),272.00,282.00,per_kg,1,205.00,415.00
+51,Cable,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),350.00,362.00,per_kg,1,315.00,780.00
+52,Motor/Magnet Assembly,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),148.00,153.00,per_kg,1,122.00,178.00
+53,PCB,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),260.00,270.00,per_kg,2,205.00,415.00
+54,Battery,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),86.00,90.00,per_kg,2,75.00,108.00
+55,LCD Panel,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),36.00,39.00,per_kg,2,26.00,49.00
+56,Cable,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),335.00,348.00,per_kg,3,315.00,780.00
+57,Mixed Plastic,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),14.00,15.50,per_kg,3,10.50,18.50
+58,CRT,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),16.00,17.00,per_kg,3,12.50,22.50
+59,PCB,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),268.00,278.00,per_kg,4,205.00,415.00
+60,Cable,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),342.00,355.00,per_kg,4,315.00,780.00
+61,Motor/Magnet Assembly,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),149.00,154.00,per_kg,4,122.00,178.00
+62,Battery,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),87.50,91.00,per_kg,4,75.00,108.00
+63,PCB,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),270.00,280.00,per_kg,5,205.00,415.00
+64,Battery,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),90.00,94.00,per_kg,5,75.00,108.00
+65,Mixed Plastic,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),15.00,16.50,per_kg,5,10.50,18.50
+66,Cable,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),352.00,365.00,per_kg,6,315.00,780.00
+67,Motor/Magnet Assembly,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),152.00,157.00,per_kg,6,122.00,178.00
+68,LCD Panel,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),37.00,40.00,per_kg,6,26.00,49.00
+69,Cable,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),345.00,358.00,per_kg,8,315.00,780.00
+70,Mixed Plastic,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),14.50,16.00,per_kg,8,10.50,18.50
+71,CRT,Bengaluru,Tue Aug 04 2026 00:00:00 GMT+0530 (India Standard Time),16.50,17.50,per_kg,8,12.50,22.50

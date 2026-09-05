@@ -1,0 +1,7 @@
+id,lot_id,category,sub_category,description,image_ref,approx_weight_kg,condition,source_type,estimated_value,collector_id,created_at
+1,LOT-2026-0001,PCB,Desktop Motherboard,Old desktop motherboards from a small repair shop,/images/lot0001.jpg,3.50,intact,commercial,857.50,1,Sat Aug 01 2026 09:15:00 GMT+0530 (India Standard Time)
+2,LOT-2026-0002,Battery,Li-ion Laptop Battery,Used laptop batteries collected from households,/images/lot0002.jpg,2.00,intact,household,224.00,1,Sun Aug 02 2026 11:30:00 GMT+0530 (India Standard Time)
+3,LOT-2026-0003,Cable,Mixed Copper Wiring,Assorted copper cabling from office renovation,/images/lot0003.jpg,8.00,damaged,commercial,1800.00,2,Mon Aug 03 2026 14:00:00 GMT+0530 (India Standard Time)
+4,LOT-2026-0004,CRT,Old TV Tube,"Old CRT television tubes, household collection",/images/lot0004.jpg,12.00,intact,household,198.00,2,Tue Aug 04 2026 10:45:00 GMT+0530 (India Standard Time)
+5,LOT-2026-0005,Motor/Magnet Assembly,Hard Drive Motors,Hard disk motors and magnets from scrapped computers,/images/lot0005.jpg,1.50,partially_dismantled,commercial,228.00,1,Wed Aug 05 2026 16:20:00 GMT+0530 (India Standard Time)
+6,LOT-2026-0006,Mixed Plastic,Casing Scrap,Plastic casings from various electronics,/images/lot0006.jpg,5.00,damaged,household,72.50,2,Thu Aug 06 2026 09:00:00 GMT+0530 (India Standard Time)

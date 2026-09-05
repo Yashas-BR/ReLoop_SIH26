@@ -58,7 +58,7 @@ describe('Recycler CRUD API', () => {
     for (const recycler of res.body.recyclers) {
       expect(recycler.authorization_status).toBe('authorized');
     }
-    expect(res.body.recyclers.length).toBe(8);
+    expect(res.body.recyclers.length).toBe(7);
   });
 
   it('GET /v1/recyclers filters by material', async () => {
@@ -79,7 +79,7 @@ describe('Recycler CRUD API', () => {
       .expect(200);
 
     expect(res.body.success).toBe(true);
-    expect(res.body.data.name).toBe('E-Parisaraa Pvt. Ltd.');
+    expect(res.body.data.name).toBe('Trishyirya Recycling India Pvt. Ltd.');
   });
 
   it('GET /v1/recyclers/:id returns 404 for missing id', async () => {
@@ -97,7 +97,7 @@ describe('Recycler CRUD API', () => {
 
     expect(res.body.success).toBe(true);
     expect(res.body.data.service_area).toBe('Bengaluru Rural + Metro');
-    expect(res.body.data.name).toBe('E-Parisaraa Pvt. Ltd.');
+    expect(res.body.data.name).toBe('Trishyirya Recycling India Pvt. Ltd.');
   });
 
   it('PUT /v1/recyclers/:id returns 404 for missing id', async () => {

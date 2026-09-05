@@ -55,12 +55,30 @@ describe('Payment Status API', () => {
     // LOT-2026-0002 is 'matched' & 'pending' for collector 1, recycler 3
     const res = await request(server)
       .patch('/v1/payments/LOT-2026-0002')
-      .send({ payment_status: 'paid', final_price: 220 })
+      .send({ payment_status: 'paid', final_price: 220, payment_method: 'cash' })
       .expect(200);
 
     expect(res.body.success).toBe(true);
     expect(res.body.data.payment_status).toBe('paid');
     expect(Number(res.body.data.final_price)).toBe(220);
+    expect(res.body.data.payment_method).toBe('cash');
+  });
+
+  it('PATCH /v1/payments/:lotId records UPI/bank method', async () => {
+    const res = await request(server)
+      .patch('/v1/payments/LOT-2026-0003')
+      .send({ payment_status: 'paid', payment_method: 'upi' })
+      .expect(200);
+
+    expect(res.body.data.payment_method).toBe('upi');
+  });
+
+  it('PATCH /v1/payments/:lotId rejects invalid payment method', async () => {
+    const res = await request(server)
+      .patch('/v1/payments/LOT-2026-0001')
+      .send({ payment_status: 'paid', payment_method: 'gold_coins' });
+
+    expect(res.status).toBe(400);
   });
 
   it('PATCH /v1/payments/:lotId returns 404 for unknown lot', async () => {

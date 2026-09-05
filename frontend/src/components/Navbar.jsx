@@ -1,5 +1,6 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/config.js';
+import { getSession, clearSession } from '../services/auth';
 import './Navbar.css';
 
 const LANG_OPTIONS = [
@@ -8,32 +9,35 @@ const LANG_OPTIONS = [
   { code: 'mr', label: 'मराठी' },
 ];
 
-export function Navbar({ portal, onPortalSwitch }) {
+// One portal for everyone — a single nav that serves both the Kabadiwala
+// (collector) side and the recycler side ("all in one portal just for now").
+const NAV = (t) => [
+  { to: '/collector', label: t('nav.dashboard'), icon: '' },
+  { to: '/collector/create-lot', label: t('nav.createLot'), icon: '+' },
+  { to: '/collector/prices', label: t('nav.prices'), icon: '₹' },
+  { to: '/collector/earnings', label: t('nav.earnings'), icon: '' },
+  { to: '/recycler', label: t('nav.recyclerPortal'), icon: '⊞' },
+  { to: '/safety', label: t('nav.safety'), icon: '' },
+];
+
+export function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { t, lang, setLang } = useTranslation();
 
-  const COLLECTOR_NAV = [
-    { to: '/collector', label: t('nav.dashboard'), icon: '' },
-    { to: '/collector/create-lot', label: t('nav.createLot'), icon: '+' },
-    { to: '/collector/prices', label: t('nav.prices'), icon: '₹' },
-    { to: '/collector/earnings', label: t('nav.earnings'), icon: '' },
-    { to: '/safety', label: t('nav.safety'), icon: '' },
-  ];
+  const navItems = NAV(t);
+  const user = getSession();
 
-  const RECYCLER_NAV = [
-    { to: '/recycler', label: t('nav.dashboard'), icon: '⊞' },
-    { to: '/recycler/lots', label: t('nav.lots'), icon: '' },
-    { to: '/recycler/profile', label: t('nav.profile'), icon: '' },
-    { to: '/safety', label: t('nav.safety'), icon: '' },
-  ];
-
-  const navItems = portal === 'collector' ? COLLECTOR_NAV : RECYCLER_NAV;
+  function handleLogout() {
+    clearSession();
+    navigate('/collector', { replace: true });
+  }
 
   return (
     <header className="navbar" role="banner">
       <div className="navbar__inner container">
         {/* Logo */}
-        <Link to={`/${portal}`} className="navbar__logo" aria-label={t('nav.homeLabel')}>
+        <Link to="/collector" className="navbar__logo" aria-label={t('nav.homeLabel')}>
           
           <div className="navbar__logo-text">
             <span className="navbar__logo-name">Kabadiwala</span>
@@ -47,7 +51,7 @@ export function Navbar({ portal, onPortalSwitch }) {
             <Link
               key={item.to}
               to={item.to}
-              className={`navbar__nav-item ${location.pathname === item.to ? 'navbar__nav-item--active' : ''}`}
+              className={`navbar__nav-item ${location.pathname.startsWith(item.to) ? 'navbar__nav-item--active' : ''}`}
             >
               <span aria-hidden="true">{item.icon}</span>
               {item.label}
@@ -55,7 +59,7 @@ export function Navbar({ portal, onPortalSwitch }) {
           ))}
         </nav>
 
-        {/* Right side: language switcher + portal switcher */}
+        {/* Right side: language switcher + account */}
         <div className="navbar__right">
           {/* Language Switcher */}
           <div className="lang-switcher" role="group" aria-label="Language / भाषा">
@@ -73,25 +77,24 @@ export function Navbar({ portal, onPortalSwitch }) {
             </select>
           </div>
 
-          {/* Portal Switcher */}
-          <div className="navbar__switcher" role="group" aria-label={t('nav.switchPortal')}>
-            <button
-              className={`navbar__switch-btn ${portal === 'collector' ? 'navbar__switch-btn--active' : ''}`}
-              onClick={() => onPortalSwitch('collector')}
-              aria-pressed={portal === 'collector'}
-            >
-              
-              {t('nav.collector')}
-            </button>
-            <button
-              className={`navbar__switch-btn ${portal === 'recycler' ? 'navbar__switch-btn--active' : ''}`}
-              onClick={() => onPortalSwitch('recycler')}
-              aria-pressed={portal === 'recycler'}
-            >
-              
-              {t('nav.recycler')}
-            </button>
-          </div>
+          {/* Account chip */}
+          {user ? (
+            <div className="navbar__account">
+              <Link to={user.role === 'recycler' ? '/recycler' : '/collector'} className="navbar__user" title={`${t('login.loggedInAs')} ${user.name}`}>
+                <span className="navbar__avatar" aria-hidden="true">
+                  {(user.name || '?').charAt(0).toUpperCase()}
+                </span>
+                <span className="navbar__username hide-mobile">{user.name}</span>
+              </Link>
+              <button className="navbar__logout" onClick={handleLogout} aria-label={t('login.logout')}>
+                {t('login.logout')}
+              </button>
+            </div>
+          ) : (
+            <Link to="/login" className="btn btn-primary btn-sm">
+              {t('login.signIn')}
+            </Link>
+          )}
         </div>
       </div>
 
@@ -101,13 +104,12 @@ export function Navbar({ portal, onPortalSwitch }) {
           <Link
             key={item.to}
             to={item.to}
-            className={`navbar__mobile-item ${location.pathname === item.to ? 'navbar__mobile-item--active' : ''}`}
+            className={`navbar__mobile-item ${location.pathname.startsWith(item.to) ? 'navbar__mobile-item--active' : ''}`}
           >
             <span className="navbar__mobile-icon" aria-hidden="true">{item.icon}</span>
             <span className="navbar__mobile-label">{item.label}</span>
           </Link>
         ))}
-        {/* Mobile language switcher — compact row above bottom nav */}
       </nav>
 
       {/* Mobile lang row — shown below logo area on small screens */}

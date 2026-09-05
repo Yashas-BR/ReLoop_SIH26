@@ -95,22 +95,30 @@ console.log(data.estimated_value);
 
 Full request/response shapes: see [API.md](./API.md).
 
-### Recommended: a dev proxy (Vite)
+### How the frontend connects (dynamic)
 
-If you use Vite, add to `vite.config.js` so you can call a clean `/v1` path and
-avoid hardcoding `localhost:3000`:
+The frontend never hardcodes a backend host. It resolves the base URL at runtime
+from `frontend/.env`:
 
-```js
-export default defineConfig({
-  server: {
-    proxy: {
-      '/v1': 'http://localhost:3000',
-    },
-  },
-});
+```
+VITE_API_BASE_URL=http://localhost:3000/v1   # full URL → call backend directly
+# or leave unset → default '/v1' through the Vite dev proxy
 ```
 
-Then in the browser fetch `/v1/...` directly — Vite forwards to the backend.
+- **Default (no var):** the frontend calls relative `/v1/...`, and Vite's dev
+  proxy forwards it to the backend. Set the proxy target with
+  `VITE_DEV_SERVER_BACKEND` (defaults to `http://localhost:3000`).
+- **Direct (var set):** the frontend calls the full URL straight from the
+  browser (backend already allows CORS `*`). Useful for a phone/emulator on the
+  same LAN, e.g. `VITE_API_BASE_URL=http://192.168.1.10:3000/v1`.
+
+Until auth exists, the app acts as a fixed collector/recycler persona. You can
+change which one without editing source via env vars:
+`VITE_DEMO_COLLECTOR_ID`, `VITE_DEMO_RECYCLER_ID`, `VITE_DEFAULT_LOCATION`,
+`VITE_DEFAULT_LAT`, `VITE_DEFAULT_LNG`.
+
+See `frontend/.env.example` for the full list. Copy it to `frontend/.env` and
+adjust as needed.
 
 ## 6. Troubleshooting
 
@@ -118,8 +126,8 @@ Then in the browser fetch `/v1/...` directly — Vite forwards to the backend.
 |----------------------------------------|------------------------------------------------------------|
 | `Unable to connect to the database`    | Postgres not running, or wrong creds in `.env` / database not created |
 | `404 Not found`                        | Route is under `/v1/...` — you hit `/api/...` by mistake   |
-| CORS blocked                           | Shouldn't happen (CORS `*`); if it does, check proxy config |
-| Port 3000 already in use               | Set `PORT=3000` free, or use another port and update proxy |
+| CORS blocked                           | Shouldn't happen (CORS `*`); if it does, check `VITE_API_BASE_URL` |
+| Port 3000 already in use               | Start backend on another port and set `VITE_DEV_SERVER_BACKEND` / `VITE_API_BASE_URL` accordingly |
 
 ## 7. Rules of thumb for the frontend
 

@@ -56,7 +56,7 @@ describe('Handover & Traceability API', () => {
 
     expect(res.body.success).toBe(true);
     expect(res.body.data.handover_reference_number).toMatch(/^HO-/);
-    expect(res.body.data.recycler.name).toBe('E-Parisaraa Pvt. Ltd.');
+    expect(res.body.data.recycler.name).toBe('Trishyirya Recycling India Pvt. Ltd.');
     handoverReference = res.body.data.handover_reference_number;
   });
 
@@ -124,6 +124,35 @@ describe('Handover & Traceability API', () => {
     for (const lot of res.body.data) {
       expect(lot.collector_id).toBe(1);
     }
+  });
+
+  it('GET /v1/handover/lots/recycler/:recyclerId returns lots assigned to the recycler', async () => {
+    const res = await request(server)
+      .get('/v1/handover/lots/recycler/3')
+      .expect(200);
+
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.length).toBeGreaterThan(0);
+    // Every returned lot must be assigned to recycler 3
+    for (const lot of res.body.data) {
+      expect(lot.transaction_status).toBe('matched');
+    }
+  });
+
+  it('GET /v1/handover/lots/recycler/:recyclerId returns pending-confirmation ref', async () => {
+    // LOT-2026-0002 (recycler 3) has a pending_confirmation traceability record
+    const res = await request(server).get('/v1/handover/lots/recycler/3').expect(200);
+
+    const lot = res.body.data.find(l => l.lot_id === 'LOT-2026-0002');
+    expect(lot).toBeDefined();
+    expect(lot.handover_reference_number).toBe('HOV-2026-K1L2M3');
+    expect(lot.traceability_status).toBe('pending_confirmation');
+    expect(lot.confirmation_timestamp).toBeNull();
+  });
+
+  it('GET /v1/handover/lots/recycler/:recyclerId rejects invalid id', async () => {
+    const res = await request(server).get('/v1/handover/lots/recycler/abc');
+    expect(res.status).toBe(400);
   });
 
   it('GET /v1/handover/:reference returns 404 for unknown reference', async () => {

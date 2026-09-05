@@ -7,6 +7,7 @@ import {
   confirmHandoverSchema,
   getHandoverSchema,
   getHandoversByLotSchema,
+  getLotsByRecyclerSchema,
 } from '../../validations/handover.validation.js';
 
 const router = express.Router();
@@ -29,6 +30,13 @@ router.get(
   '/lot/:lotId',
   validate(getHandoversByLotSchema),
   handoverController.getHandoversByLot
+);
+
+// Recycler's incoming lots — must be before /:reference wildcard
+router.get(
+  '/lots/recycler/:recyclerId',
+  validate(getLotsByRecyclerSchema),
+  handoverController.getLotsByRecycler
 );
 
 // Handover initiation

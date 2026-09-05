@@ -487,8 +487,8 @@ export default function PriceDiscovery() {
                           {r.offered_rate ? `${fmt(r.offered_rate)}/kg` : '—'}
                         </td>
                         <td>
-                          <span style={{ color: r.pickup_available ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
-                            {r.pickup_available ? ` ${t('prices.yes')}` : ` ${t('prices.no')}`}
+                          <span style={{ color: r.pickup_available === 'daily' ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
+                            {r.pickup_available === 'daily' ? ` ${t('prices.yes')}` : ` ${t('prices.no')}`}
                           </span>
                         </td>
                         <td>

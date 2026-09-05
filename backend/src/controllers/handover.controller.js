@@ -58,3 +58,13 @@ export const getLotsByCollector = async (req, res) => {
     data: result,
   });
 };
+
+export const getLotsByRecycler = async (req, res) => {
+  const result = await handoverService.getLotsByRecycler(req.params.recyclerId);
+
+  res.status(200).json({
+    success: true,
+    count: result.length,
+    data: result,
+  });
+};

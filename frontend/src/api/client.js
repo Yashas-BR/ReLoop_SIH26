@@ -1,13 +1,28 @@
-// API Client — wraps all backend calls to http://localhost:3000/v1
-// (proxied via Vite to /v1 in dev)
+// API Client — connects the frontend to the backend dynamically.
 //
-// Phase 4: Added offline-aware wrappers that:
+// Base URL resolution order:
+//   1. VITE_API_BASE_URL env var points at any backend (dev, staging, LAN,
+//      production). Example: VITE_API_BASE_URL=http://192.168.1.10:3000/v1
+//   2. Default '/v1' — same-origin, served through the Vite dev proxy (see
+//      vite.config.js) or directly by the backend in production.
+//
+// Offline-aware wrappers:
 //  1. Try the network first when online
 //  2. Cache successful responses in IndexedDB
 //  3. Fall back to cache when offline
 //  4. Queue write operations when offline
 //
 // Wrappers return { data, fromCache } so UI can show a staleness indicator.
+
+function resolveBaseUrl() {
+  const fromEnv = import.meta.env?.VITE_API_BASE_URL;
+  if (fromEnv && typeof fromEnv === 'string' && fromEnv.trim()) {
+    return fromEnv.trim().replace(/\/+$/, ''); // drop trailing slashes
+  }
+  return '/v1';
+}
+
+const BASE = resolveBaseUrl();
 
 import { isOnline } from '../services/offline/offlineUtils.js';
 import {
@@ -16,8 +31,6 @@ import {
   cacheEarnings, getCachedEarnings,
 } from '../services/offline/cache.js';
 import { enqueue } from '../services/offline/syncQueue.js';
-
-const BASE = import.meta.env.VITE_API_BASE_URL || '/v1';
 
 // Keys that hold identifiers / human-readable codes and must NEVER be coerced
 // to numbers, even if they happen to look numeric.
@@ -28,6 +41,7 @@ const SKIP_KEYS = new Set([
   'reference',
   'client_id',
   'category',
+  'phone',
 ]);
 
 function toNumberIfNumeric(value) {
@@ -108,8 +122,29 @@ export const getPriceTrends = ({ category, location, days = 90 }) => {
 };
 
 // ── Handover / Lots ──────────────────────────────────────────────────────────
-export const createLot = (data) =>
-  request('/handover/lots', { method: 'POST', body: JSON.stringify(data) });
+
+/**
+ * Create a material lot.
+ *
+ * ONLINE  → direct backend call, returns backend response.
+ * OFFLINE → operation is enqueued in IndexedDB sync queue (replayed against
+ *           POST /v1/handover/lots by the sync manager once online).
+ *           Returns { queued: true, queueItem } — NOT a confirmed response.
+ *
+ * The caller MUST check result.queued to show the correct "Saved offline" UX.
+ */
+export async function createLot(data) {
+  if (!isOnline()) {
+    const queueItem = await enqueue({
+      operation: 'createLot',
+      entity: 'lot',
+      entityId: null,
+      payload: data,
+    });
+    return { queued: true, queueItem };
+  }
+  return request('/handover/lots', { method: 'POST', body: JSON.stringify(data) });
+}
 
 /**
  * Initiate a handover.
@@ -169,7 +204,40 @@ export async function getLotsByCollector(collectorId) {
   return { data: cached, fromCache: true, count: cached.length };
 }
 
+/**
+ * Get all lots assigned to a recycler (matched / handed_over / confirmed).
+ * Unlike the collector endpoint, includes the latest traceability record
+ * (handover_reference_number, traceability_status) so the recycler can act on
+ * pending confirmations directly from the incoming-lots list.
+ */
+export async function getLotsByRecycler(recyclerId) {
+  const res = await request(`/handover/lots/recycler/${recyclerId}`);
+  return res;
+}
+
 // ── Payments ─────────────────────────────────────────────────────────────────
+
+export const updatePayment = (lotId, data) =>
+  request(`/payments/${lotId}`, { method: 'PATCH', body: JSON.stringify(data) });
+
+// ── Anomaly detection (AI/ML) ────────────────────────────────────────────────
+export const getAnomalies = ({ category } = {}) => {
+  let url = '/anomaly';
+  if (category) url += `?category=${encodeURIComponent(category)}`;
+  return request(url);
+};
+export const checkTransactionAnomaly = (payload) =>
+  request('/anomaly/check', { method: 'POST', body: JSON.stringify(payload) });
+
+// ── Auth (collector accounts) ────────────────────────────────────────────────
+// GET /v1/collectors → demo accounts shown on the login screen
+export const getCollectors = () => request('/collectors');
+
+// POST /v1/collectors/login { phone } → { data: { collector, token } }
+export const loginCollector = (phone) =>
+  request('/collectors/login', { method: 'POST', body: JSON.stringify({ phone }) });
+
+// ── Earnings summary ─────────────────────────────────────────────────────────
 
 /**
  * Get earnings summary.
@@ -219,12 +287,22 @@ export async function getPaymentHistory(collectorId) {
   return { data: cached, fromCache: true };
 }
 
-// ── Defaults ─────────────────────────────────────────────────────────────────
-export const DEMO_COLLECTOR_ID = 1;
-export const DEMO_RECYCLER_ID = 1;
-export const DEFAULT_LOCATION = 'Bengaluru';
-export const DEFAULT_LAT = 12.9716;
-export const DEFAULT_LNG = 77.5946;
+// ── App defaults ─────────────────────────────────────────────────────────────
+// These are config-driven (env) rather than hardcoded magic numbers so the app
+// can be pointed at any backend / demo identity without editing source. Until
+// auth is wired up, the app acts as a given collector and recycler persona.
+
+const envInt = (key, fallback) => {
+  const raw = import.meta.env?.[key];
+  const n = raw == null ? NaN : Number(raw);
+  return Number.isFinite(n) ? n : fallback;
+};
+
+export const DEMO_COLLECTOR_ID = envInt('VITE_DEMO_COLLECTOR_ID', 1);
+export const DEMO_RECYCLER_ID = envInt('VITE_DEMO_RECYCLER_ID', 1);
+export const DEFAULT_LOCATION = import.meta.env?.VITE_DEFAULT_LOCATION || 'Bengaluru';
+export const DEFAULT_LAT = Number(import.meta.env?.VITE_DEFAULT_LAT) || 12.9716;
+export const DEFAULT_LNG = Number(import.meta.env?.VITE_DEFAULT_LNG) || 77.5946;
 
 export const MATERIAL_CATEGORIES = [
   { id: 'CRT',    label: 'CRTs',      icon: '', sub: ['Color CRT', 'Monochrome CRT'] },

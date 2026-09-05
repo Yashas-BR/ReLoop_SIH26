@@ -8,7 +8,7 @@ import { ApiError } from '../utils/ApiError.js';
  * @returns {Promise<Object>}
  */
 export const updatePaymentStatus = async (lotId, data) => {
-  const { payment_status, final_price } = data;
+  const { payment_status, final_price, payment_method } = data;
 
   const existing = await query(
     'SELECT * FROM transactions WHERE lot_id = $1',
@@ -26,6 +26,11 @@ export const updatePaymentStatus = async (lotId, data) => {
   if (final_price !== undefined) {
     updates.push(`final_price = $${paramIndex++}`);
     params.push(final_price);
+  }
+
+  if (payment_method !== undefined) {
+    updates.push(`payment_method = $${paramIndex++}`);
+    params.push(payment_method);
   }
 
   params.push(lotId);
@@ -81,7 +86,7 @@ export const getPaymentHistory = async (collectorId) => {
   const result = await query(
     `SELECT 
        t.lot_id, t.material_category, t.quantity_weight_kg,
-       t.quoted_price, t.final_price, t.payment_status,
+       t.quoted_price, t.final_price, t.payment_status, t.payment_method,
        t.transaction_status, t.txn_datetime,
        r.name AS recycler_name
      FROM transactions t

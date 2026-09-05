@@ -16,10 +16,38 @@
     "profile": "Profile",
     "collector": "Collector",
     "recycler": "Recycler",
+    "recyclerPortal": "Recycler Portal",
     "switchPortal": "Switch portal",
     "mainNav": "Main navigation",
     "mobileNav": "Mobile navigation",
     "homeLabel": "Kabadiwala Connect Home"
+  },
+
+  "login": {
+    "title": "Welcome to Kabadiwala Connect",
+    "subtitle": "Sign in to manage scrap collection, lots, and earnings",
+    "kabadiwala": "Kabadiwala (Collector)",
+    "phoneLabel": "Mobile number",
+    "phonePlaceholder": "Enter 10-digit mobile number",
+    "signIn": "Sign in",
+    "signingIn": "Signing in…",
+    "demoAccounts": "Or tap one of the demo Kabadiwala accounts:",
+    "phoneHint": "Use a 10-digit Indian mobile number, e.g. 9876543210",
+    "phoneRequired": "Please enter your 10-digit mobile number",
+    "recycler": "Recycler (Scrap Dealer)",
+    "recyclerHint": "Head to the recycler side without an account (portal unification work in progress)",
+    "enterRecycler": "Enter Recycler Portal",
+    "loginFailed": "Could not sign in. Check your mobile number and try again.",
+    "browseWithoutLogin": "Browse without signing in",
+    "loggedInAs": "Signed in as",
+    "logout": "Sign out"
+  },
+
+  "recyclerPortal": {
+    "nav": "Recycler portal sections",
+    "overview": "Overview",
+    "incomingLots": "Incoming Lots",
+    "profile": "Profile"
   },
 
   "common": {
@@ -155,6 +183,26 @@
       "addPhoto": "Add photo",
       "removePhoto": "Remove photo {{n}}"
     },
+    "classification": {
+      "analyzing": "Looking at your photo to suggest a type…",
+      "suggested": "Suggested type",
+      "autoSuggest": "We suggest selecting the type below. You can change it anytime.",
+      "confidenceHigh": "High confidence",
+      "confidenceMedium": "Medium confidence",
+      "confidenceLow": "Low confidence — please check",
+      "use": "Use suggestion",
+      "dismiss": "Dismiss",
+      "alternatives": "Other possibilities",
+      "noSuggestion": "Couldn't suggest a type from this photo. Please select manually.",
+      "detected": "Detected: {{label}}",
+      "pipeline": {
+        "capture": "Capturing frame",
+        "segment": "Segmentation",
+        "featExtract": "Extracting features",
+        "hueMap": "Hue · edge map",
+        "classify": "Classifying"
+      }
+    },
     "category": {
       "heading": "Select Material Type",
       "label": "Material categories",
@@ -217,6 +265,12 @@
       "selectCategory": "Please select a material category.",
       "validWeight": "Enter a valid weight greater than 0.",
       "submitFailed": "Failed to create lot. Please try again."
+    },
+    "offlineSaved": {
+      "title": "Lot saved offline",
+      "desc": "You are offline, so this lot is saved on your device. It will sync automatically when you are back online.",
+      "queueNote": "Pending syncs appear in the status chip at the bottom of the screen.",
+      "action": "Back to Dashboard"
     }
   },
 
@@ -293,6 +347,8 @@
     "distance": "Distance",
     "rate": "Rate",
     "pickup": "Pickup Available",
+    "pickupYes": "Yes",
+    "pickupNo": "No",
     "authorized": "Authorized",
     "matchScore": "Match Score",
     "handingOver": "Initiating…",
@@ -338,7 +394,29 @@
     "noHandover": "No handover initiated yet.",
     "loadError": "Could not load lot details.",
     "traceability": "Traceability",
-    "photos": "Photos"
+    "photos": "Photos",
+    "payRecord": "Record Payment",
+    "payFinalPrice": "Final price paid to collector",
+    "payQuotedHint": "Quoted price: {{amount}}",
+    "payMethod": "Payment method",
+    "payMethods": {
+      "cash": "Cash",
+      "upi": "UPI",
+      "bank_transfer": "Bank Transfer"
+    },
+    "payRecordBtn": "Record Payment",
+    "payPaid": "Paid {{amount}} via {{method}}",
+    "payInvalid": "Enter a valid final price.",
+    "paySuccess": "Payment recorded successfully.",
+    "payFail": "Failed to record payment.",
+    "payChecking": "Checking price against market data",
+    "payCheckedOk": "Price is within the normal market range.",
+    "payAnomalyTitle": "Unusual transaction value detected",
+    "payAnomalySeverity": {
+      "high": "High concern",
+      "medium": "Review"
+    },
+    "payMarketRange": "Market range: {{low}} – {{high}}/kg"
   },
 
   "traceability": {
@@ -559,6 +637,8 @@
     "confirmTitle": "Confirm Handover",
     "confirmDesc": "Confirm that you have received lot {{lotId}}.",
     "confirmed": "Confirmed",
+    "needsConfirmation": "Awaiting your confirmation",
+    "confirmNow": "Review & confirm",
     "filterAll": "All Matched",
     "filterPending": "Pending",
     "filterConfirmed": "Confirmed",

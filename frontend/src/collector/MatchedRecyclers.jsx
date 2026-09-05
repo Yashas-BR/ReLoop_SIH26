@@ -4,8 +4,10 @@ import {
   getMatchedRecyclers, initiateHandover,
   DEFAULT_LAT, DEFAULT_LNG, DEMO_COLLECTOR_ID,
 } from '../api/client';
+import { currentCollectorId } from '../services/auth';
 import { StatusBadge } from '../components/StatusBadge';
 import { PageLoader, LoadingSpinner } from '../components/LoadingSpinner';
+import RecyclersMap from './RecyclersMap';
 import { useTranslation } from '../i18n/config.js';
 import './MatchedRecyclers.css';
 
@@ -25,6 +27,7 @@ export default function MatchedRecyclers() {
 
   const [lat, setLat] = useState(DEFAULT_LAT);
   const [lng, setLng] = useState(DEFAULT_LNG);
+  const [selectedId, setSelectedId] = useState(null);
 
   // Try to get user location, fall back to Bengaluru
   useEffect(() => {
@@ -61,7 +64,7 @@ export default function MatchedRecyclers() {
       // OFFLINE: Returns { queued: true, queueItem } — operation saved to IndexedDB for sync later
       const result = await initiateHandover({
         lot_id: lotId,
-        collector_id: DEMO_COLLECTOR_ID,
+        collector_id: currentCollectorId() ?? DEMO_COLLECTOR_ID,
         recycler_id: recyclerId,
         photo_refs: [],
         weight_kg: valuation?.lot?.approx_weight_kg || 1,
@@ -211,7 +214,17 @@ export default function MatchedRecyclers() {
           <p>{t('recyclers.noMatchDesc')}</p>
         </div>
       ) : (
-        <div className="recycler-list">
+        <>
+          <div className="map-wrap card">
+            <RecyclersMap
+              recyclers={recyclers}
+              center={[lat, lng]}
+              radiusKm={50}
+              selectedId={selectedId}
+              onSelect={(id) => setSelectedId(id)}
+            />
+          </div>
+          <div className="recycler-list">
           {recyclers.map((r, i) => {
             // Matching API returns `id` as the recycler primary key
             const recyclerId = r.id ?? r.recycler_id;
@@ -221,8 +234,9 @@ export default function MatchedRecyclers() {
             return (
               <div
                 key={recyclerId}
-                className="recycler-card card card-clickable stagger-item"
+                className={`recycler-card card card-clickable stagger-item ${selectedId === recyclerId ? 'recycler-card--selected' : ''}`}
                 style={{ animationDelay: `${i * 70}ms` }}
+                onClick={() => setSelectedId(recyclerId)}
               >
                 <div className="recycler-card__header">
                   <div className="recycler-card__name-wrap">
@@ -273,11 +287,11 @@ export default function MatchedRecyclers() {
                     </div>
                   </div>
                   <div className="recycler-stat">
-                    
+                    <span className="recycler-stat__icon" aria-hidden="true">✓</span>
                     <div>
                       <p className="recycler-stat__label">{t('recyclers.pickup')}</p>
-                      <p className="recycler-stat__value">
-                        {r.pickup_availability || '—'}
+                      <p className={`recycler-stat__value ${r.pickup_availability === 'daily' ? 'text-success' : 'text-muted'}`}>
+                        {r.pickup_availability === 'daily' ? t('recyclers.pickupYes') : t('recyclers.pickupNo')}
                       </p>
                     </div>
                   </div>
@@ -310,7 +324,8 @@ export default function MatchedRecyclers() {
               </div>
             );
           })}
-        </div>
+          </div>
+        </>
       )}
     </div>
   );

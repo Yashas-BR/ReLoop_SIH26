@@ -14,6 +14,8 @@ DROP TABLE IF EXISTS collectors CASCADE;
 -- COLLECTORS
 CREATE TABLE collectors (
     id SERIAL PRIMARY KEY,
+    name TEXT,
+    phone VARCHAR(15) UNIQUE,
     preferred_language VARCHAR(5) NOT NULL DEFAULT 'hi',
     operating_location TEXT,
     created_at TIMESTAMP DEFAULT NOW()
@@ -64,9 +66,6 @@ CREATE TABLE prices (
     recycler_id INTEGER REFERENCES recyclers(id),
     market_range_low NUMERIC(10,2),
     market_range_high NUMERIC(10,2),
-    -- Enables idempotent bulk upsert of recycler/market rates. NULL recycler_id
-    -- is treated as distinct in Postgres UNIQUE, so market rows (recycler_id NULL)
-    -- and per-recycler rows do not collide with each other.
     CONSTRAINT prices_category_location_date_recycler_unique
         UNIQUE (material_category, location, price_date, recycler_id)
 );
@@ -86,6 +85,8 @@ CREATE TABLE transactions (
     txn_datetime TIMESTAMP DEFAULT NOW(),
     payment_status VARCHAR(20) DEFAULT 'pending'
         CHECK (payment_status IN ('pending', 'paid')),
+    payment_method VARCHAR(20) NOT NULL DEFAULT 'cash'
+        CHECK (payment_method IN ('cash', 'upi', 'bank_transfer', 'other')),
     transaction_status VARCHAR(20) DEFAULT 'quoted'
         CHECK (transaction_status IN ('quoted', 'matched', 'handed_over', 'confirmed'))
 );
@@ -112,14 +113,3 @@ CREATE INDEX idx_recyclers_auth_status ON recyclers(authorization_status);
 CREATE INDEX idx_transactions_collector ON transactions(collector_id);
 CREATE INDEX idx_transactions_status ON transactions(transaction_status);
 CREATE INDEX idx_traceability_lot ON traceability(lot_id);
-
--- SYNC LOG (for offline-sync duplicate detection)
-DROP TABLE IF EXISTS sync_log CASCADE;
-CREATE TABLE sync_log (
-    id SERIAL PRIMARY KEY,
-    client_id VARCHAR(100) UNIQUE NOT NULL,
-    record_type VARCHAR(20) NOT NULL,
-    server_lot_id VARCHAR(30),
-    synced_at TIMESTAMP DEFAULT NOW()
-);
-CREATE INDEX idx_sync_log_client ON sync_log(client_id);

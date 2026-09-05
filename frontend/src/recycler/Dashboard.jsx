@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getLotsByCollector, getRecycler, DEMO_COLLECTOR_ID, DEMO_RECYCLER_ID } from '../api/client';
+import { getLotsByRecycler, getRecycler, DEMO_RECYCLER_ID } from '../api/client';
 import { StatCard } from '../components/StatCard';
 import { StatusBadge } from '../components/StatusBadge';
 import { PageLoader, SkeletonCard } from '../components/LoadingSpinner';
@@ -23,8 +23,8 @@ export default function RecyclerDashboard() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // For Phase 1 demo: load all lots (Phase 1 has no auth, so we show everything)
-    getLotsByCollector(DEMO_COLLECTOR_ID)
+    // Show lots assigned to this recycler (matched / handed_over / confirmed)
+    getLotsByRecycler(DEMO_RECYCLER_ID)
       .then(r => setLots(Array.isArray(r.data) ? r.data : []))
       .catch(() => setError(t('recyclerDash.loadError')))
       .finally(() => setLoadingLots(false));
@@ -51,7 +51,7 @@ export default function RecyclerDashboard() {
             {recycler ? `${recycler.facility_location} · ${recycler.authorization_status}` : t('recyclerDash.subtitle')}
           </p>
         </div>
-        <Link to="/recycler/profile" className="btn btn-outline">
+        <Link to="/recycler?section=profile" className="btn btn-outline">
           
           {t('recyclerProfile.title')}
         </Link>
@@ -85,12 +85,12 @@ export default function RecyclerDashboard() {
           {t('dashboard.quickActions')}
         </h2>
         <div className="quick-actions__grid">
-          <Link to="/recycler/lots" className="quick-action-card">
+          <Link to="/recycler?section=lots" className="quick-action-card">
             
             <span className="quick-action-card__label">{t('recyclerDash.incomingLots')}</span>
             <span className="quick-action-card__desc">{t('recyclerDash.incomingLotsDesc')}</span>
           </Link>
-          <Link to="/recycler/profile" className="quick-action-card">
+          <Link to="/recycler?section=profile" className="quick-action-card">
             
             <span className="quick-action-card__label">{t('recyclerDash.myProfile')}</span>
             <span className="quick-action-card__desc">{t('recyclerDash.myProfileDesc')}</span>
@@ -107,7 +107,7 @@ export default function RecyclerDashboard() {
       <section className="animate-fade-in" aria-labelledby="rlots-heading">
         <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-4)' }}>
           <h2 id="rlots-heading" className="section-title">{t('recyclerDash.incomingLots')}</h2>
-          <Link to="/recycler/lots" className="btn btn-ghost btn-sm">{t('recyclerDash.viewAll')} →</Link>
+          <Link to="/recycler?section=lots" className="btn btn-ghost btn-sm">{t('recyclerDash.viewAll')} →</Link>
         </div>
 
         {loadingLots ? (

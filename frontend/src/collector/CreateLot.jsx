@@ -1,9 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
 import {
   createLot, getInstantValuation,
   DEMO_COLLECTOR_ID, DEFAULT_LOCATION, MATERIAL_CATEGORIES,
 } from '../api/client';
+import { currentCollectorId } from '../services/auth';
+import { classifyFile } from '../services/classification/analyze';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useTranslation } from '../i18n/config.js';
 import './CreateLot.css';
@@ -26,6 +28,9 @@ export default function CreateLot() {
   const fileInputRef = useRef();
   const cameraInputRef = useRef();
 
+  // Creating a lot requires a logged-in Kabadiwala account.
+  const collectorId = currentCollectorId();
+
   const STEPS = [
     t('createLot.steps.photoCategory'),
     t('createLot.steps.weightValue'),
@@ -40,14 +45,41 @@ export default function CreateLot() {
   const [location, setLocation] = useState(DEFAULT_LOCATION);
   const [description, setDescription] = useState('');
 
+  const [classify, setClassify] = useState(null);
+  const [classifying, setClassifying] = useState(false);
+  const [classifyDismissed, setClassifyDismissed] = useState(false);
+  const [scanStep, setScanStep] = useState(0);
+  const [scanProgress, setScanProgress] = useState(0);
+
+  // Pipeline reticle staged through while the classifier runs. Pure framing —
+  // the actual classification is the offline canvas heuristic in
+  // services/classification/analyze.js.
+  const PIPELINE = [
+    'createLot.classification.pipeline.capture',
+    'createLot.classification.pipeline.segment',
+    'createLot.classification.pipeline.featExtract',
+    'createLot.classification.pipeline.hueMap',
+    'createLot.classification.pipeline.classify',
+  ];
+
   const [valuation, setValuation] = useState(null);
   const [loadingVal, setLoadingVal] = useState(false);
   const [valError, setValError] = useState('');
 
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
+  const [offlineSaved, setOfflineSaved] = useState(false);
 
   const catObj = MATERIAL_CATEGORIES.find(c => c.id === category);
+
+  const catMeta = (id) => MATERIAL_CATEGORIES.find(c => c.id === id);
+
+  function applySuggestion(id) {
+    setCategory(id);
+    setSubCategory('');
+    setError('');
+    setClassifyDismissed(true);
+  }
 
   function addPhotos(files) {
     const remaining = MAX_PHOTOS - photos.length;
@@ -56,6 +88,7 @@ export default function CreateLot() {
       preview: URL.createObjectURL(file),
     }));
     setPhotos(prev => [...prev, ...toAdd]);
+    if (toAdd.length) setClassifyDismissed(false);
   }
 
   function removePhoto(idx) {
@@ -74,6 +107,31 @@ export default function CreateLot() {
   useEffect(() => {
     return () => photos.forEach(p => URL.revokeObjectURL(p.preview));
   }, []); // eslint-disable-line
+
+  useEffect(() => {
+    const file = photos[0]?.file;
+    if (!file || category || classifyDismissed) return;
+    let cancelled = false;
+    setClassifying(true);
+    setClassify(null);
+    setScanStep(0);
+    setScanProgress(0);
+
+    // Drive the reticle animation while the real heuristic analysis runs.
+    const tick = setInterval(() => {
+      if (cancelled) return;
+      setScanProgress((p) => Math.min(96, (p ?? 0) + (7 + Math.random() * 14)));
+      setScanStep((s) => Math.min(PIPELINE.length - 1, s + 1));
+    }, 280);
+
+    classifyFile(file)
+      .then(res => { if (!cancelled) { setScanProgress(100); setClassify(res); } })
+      .catch(() => { if (!cancelled) setClassify(null); })
+      .finally(() => {
+        if (!cancelled) { clearInterval(tick); setClassifying(false); }
+      });
+    return () => { cancelled = true; clearInterval(tick); };
+  }, [photos[0]?.file]); // eslint-disable-line
 
   const fetchValuation = useCallback(async (w, cat, loc) => {
     if (!cat || !w || Number(w) <= 0) return;
@@ -138,12 +196,18 @@ export default function CreateLot() {
       if (description) descParts.push(description);
 
       const r = await createLot({
-        collector_id: DEMO_COLLECTOR_ID,
+        collector_id: collectorId ?? DEMO_COLLECTOR_ID,
         category,
         approx_weight_kg: Number(weight),
         location,
         description: descParts.join(' | ') || undefined,
       });
+
+      if (r.queued) {
+        setOfflineSaved(true);
+        setCreating(false);
+        return;
+      }
 
       navigate('/collector/matched-recyclers', {
         state: {
@@ -169,6 +233,10 @@ export default function CreateLot() {
         / (valuation.market_range_high - valuation.market_range_low || 1)) * 100)
     : 0;
 
+  if (!collectorId) {
+    return <Navigate to="/login" replace state={{ from: '/collector/create-lot' }} />;
+  }
+
   return (
     <div className="container">
       <div className="animate-fade-in" style={{ marginBottom: 'var(--space-6)' }}>
@@ -176,6 +244,28 @@ export default function CreateLot() {
         <p className="section-subtitle">{t('createLot.subtitle')}</p>
       </div>
 
+      {/* Offline-first: lot captured and queued locally */}
+      {offlineSaved && (
+        <div className="step-panel animate-scale-in" role="status">
+          <section className="card p2-offline-saved">
+            <div className="p2-offline-saved__icon" aria-hidden="true"></div>
+            <h2 className="p2-section-title" style={{ textAlign: 'center' }}>
+              {t('createLot.offlineSaved.title')}
+            </h2>
+            <p className="p2-offline-saved__desc">
+              {t('createLot.offlineSaved.desc')}
+            </p>
+            <p className="p2-offline-saved__queue">
+              {t('createLot.offlineSaved.queueNote')}
+            </p>
+            <Link to="/collector" className="btn btn-primary btn-lg btn-full">
+              {t('createLot.offlineSaved.action')}
+            </Link>
+          </section>
+        </div>
+      )}
+
+      {!offlineSaved && (<>
       {/* Stepper */}
       <div className="stepper animate-fade-in" role="list" aria-label="Progress steps">
         {STEPS.map((s, i) => (
@@ -269,6 +359,36 @@ export default function CreateLot() {
                       
                     </button>
                     {idx === 0 && <span className="p2-photo-primary-badge">{t('createLot.photos.primary')}</span>}
+
+                    {/* AI scanning reticle overlay on the primary photo */}
+                    {idx === 0 && (classifying) && (
+                      <div className="p2-scan p2-scan--active" aria-hidden="true">
+                        <div className="p2-scan__scanline" />
+                        <div className="p2-scan__corner p2-scan__corner--tl" />
+                        <div className="p2-scan__corner p2-scan__corner--tr" />
+                        <div className="p2-scan__corner p2-scan__corner--bl" />
+                        <div className="p2-scan__corner p2-scan__corner--br" />
+                        <div className="p2-scan__progress" style={{ width: `${scanProgress}%` }} />
+                        <div className="p2-scan__status">
+                          <span className="p2-scan__dot" />
+                          {t(PIPELINE[scanStep])}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Detection result chip once analysed */}
+                    {idx === 0 && classify && !classifyDismissed && category !== classify.category && !classifying && (
+                      <div className="p2-scan p2-scan--done" aria-hidden="true">
+                        <div className="p2-scan__done-ring" style={{ ['--conf' ]: classify.confidence }}>
+                          <span className="p2-scan__done-pct">
+                            {Math.round(classify.confidence * 100)}%
+                          </span>
+                        </div>
+                        <div className="p2-scan__done-label">
+                          {catObj && t('createLot.classification.detected', { label: catObj.label })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
                 {photos.length < MAX_PHOTOS && (
@@ -286,6 +406,58 @@ export default function CreateLot() {
               </div>
             )}
           </section>
+
+          {(classifying || (classify && !classifyDismissed && category !== classify.category)) && (
+            <section className="card p2-classify" aria-live="polite" aria-label={t('createLot.classification.suggested')}>
+              {classifying ? (
+                <div className="p2-classify-row p2-classify-row--busy">
+                  <div className="p2-classify-busy">
+                    <LoadingSpinner size="sm" />
+                    <span className="p2-classify-busy__step">{t(PIPELINE[scanStep])}</span>
+                    <span className="p2-classify-busy__progress">{Math.round(scanProgress)}%</span>
+                  </div>
+                  <div className="p2-classify-busy__bar">
+                    <div className="p2-classify-busy__bar-fill" style={{ width: `${scanProgress}%` }} />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="p2-classify-head">
+                    <span className="p2-classify-badge">{t('createLot.classification.autoSuggest')}</span>
+                    <span className={`p2-classify-conf p2-classify-conf--${classify.verdict}`}>
+                      {classify.verdict === 'high' && t('createLot.classification.confidenceHigh')}
+                      {classify.verdict === 'medium' && t('createLot.classification.confidenceMedium')}
+                      {classify.verdict === 'low' && t('createLot.classification.confidenceLow')}
+                    </span>
+                  </div>
+                  <div className="p2-classify-pick">
+                    {(() => { const m = catMeta(classify.category); return (
+                      <button className="p2-classify-main" onClick={() => applySuggestion(classify.category)}>
+                        <span className="category-btn__icon" aria-hidden="true">{m?.icon}</span>
+                        <span className="p2-classify-main__label">{m?.label}</span>
+                      </button>
+                    ); })()}
+                    <button className="btn btn-primary btn-sm" onClick={() => applySuggestion(classify.category)}>
+                      {t('createLot.classification.use')}
+                    </button>
+                    <button className="btn btn-outline btn-sm" onClick={() => setClassifyDismissed(true)}>
+                      {t('createLot.classification.dismiss')}
+                    </button>
+                  </div>
+                  <div className="p2-classify-alts">
+                    <span className="p2-classify-alts__label">{t('createLot.classification.alternatives')}:</span>
+                    {classify.candidates.slice(1).map(c => { const m = catMeta(c.category); return (
+                      <button key={c.category} className="p2-classify-alt" onClick={() => applySuggestion(c.category)}>
+                        <span className="p2-classify-alt__bar" style={{ width: `${Math.round(c.confidence * 100)}%` }} />
+                        <span className="p2-classify-alt__label">{m?.icon} {m?.label}</span>
+                        <span className="p2-classify-alt__pct">{Math.round(c.confidence * 100)}%</span>
+                      </button>
+                    ); })}
+                  </div>
+                </>
+              )}
+            </section>
+          )}
 
           <section className="card" aria-labelledby="cat-heading">
             <div className="p2-section-header">
@@ -611,6 +783,8 @@ export default function CreateLot() {
             </button>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );

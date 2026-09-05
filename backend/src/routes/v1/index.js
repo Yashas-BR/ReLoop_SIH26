@@ -7,6 +7,7 @@ import anomalyRoute from './anomaly.route.js';
 import syncRoute from './sync.route.js';
 import paymentRoute from './payment.route.js';
 import priceIngestRoute from './priceIngest.route.js';
+import collectorsRoute from './collectors.route.js';
 
 const router = express.Router();
 
@@ -42,6 +43,10 @@ const defaultRoutes = [
   {
     path: '/prices/ingest',
     route: priceIngestRoute,
+  },
+  {
+    path: '/collectors',
+    route: collectorsRoute,
   },
 ];
 

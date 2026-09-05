@@ -17,6 +17,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { getEarningsSummary, getPaymentHistory, DEMO_COLLECTOR_ID } from '../api/client';
+import { currentCollectorId } from '../services/auth';
 import { StatusBadge } from '../components/StatusBadge';
 import { PageLoader, SkeletonCard } from '../components/LoadingSpinner';
 import { useTranslation } from '../i18n/config.js';
@@ -61,6 +62,8 @@ export default function CollectorEarnings() {
   const [filter, setFilter] = useState('all');
   const [expandedRow, setExpandedRow] = useState(null);
 
+  const collectorId = currentCollectorId() ?? DEMO_COLLECTOR_ID;
+
   const load = useCallback(async () => {
     setLoadingS(true);
     setLoadingR(true);
@@ -68,8 +71,8 @@ export default function CollectorEarnings() {
 
     try {
       const [sumRes, histRes] = await Promise.all([
-        getEarningsSummary(DEMO_COLLECTOR_ID),
-        getPaymentHistory(DEMO_COLLECTOR_ID),
+        getEarningsSummary(collectorId),
+        getPaymentHistory(collectorId),
       ]);
       setSummary(sumRes.data);
       setRows(Array.isArray(histRes.data) ? histRes.data : []);
@@ -80,7 +83,7 @@ export default function CollectorEarnings() {
       setLoadingS(false);
       setLoadingR(false);
     }
-  }, []);
+  }, [collectorId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { load(); }, [load]);
 
@@ -252,7 +255,12 @@ export default function CollectorEarnings() {
                       <td>{row.material_category}</td>
                       <td>{row.quantity_weight_kg ?? '—'} {t('common.kg')}</td>
                       <td>{row.recycler_name ?? '—'}</td>
-                      <td className="ledger-price">{fmt(row.final_price)}</td>
+                      <td className="ledger-price-cell">
+                        <span className="ledger-price">{fmt(row.final_price)}</span>
+                        {row.payment_method && row.payment_status === 'paid' && (
+                          <span className="ledger-method">{t(`lotDetail.payMethods.${row.payment_method}`)}</span>
+                        )}
+                      </td>
                       <td><StatusBadge status={row.payment_status || 'pending'} /></td>
                       <td className="ledger-date">{fmtDate(row.txn_datetime, lang)}</td>
                       <td>
@@ -304,7 +312,12 @@ export default function CollectorEarnings() {
 
                   <div className="ledger-card__row">
                     <span className="ledger-card__label">{t('earnings.table.amount')}</span>
-                    <span className="ledger-price">{fmt(row.final_price)}</span>
+                    <span className="ledger-price-cell">
+                      <span className="ledger-price">{fmt(row.final_price)}</span>
+                      {row.payment_method && row.payment_status === 'paid' && (
+                        <span className="ledger-method">{t(`lotDetail.payMethods.${row.payment_method}`)}</span>
+                      )}
+                    </span>
                   </div>
 
                   <Link

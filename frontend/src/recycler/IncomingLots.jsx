@@ -1,16 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { getLotsByCollector, DEMO_COLLECTOR_ID } from '../api/client';
+import { getLotsByRecycler, DEMO_RECYCLER_ID } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
 import { PageLoader } from '../components/LoadingSpinner';
 import { useTranslation } from '../i18n/config.js';
 import './IncomingLots.css';
-
-// BACKEND BLOCKER (documented):
-// There is no GET /v1/handover/lots/recycler/:recyclerId endpoint yet.
-// As a workaround, we fetch all lots via the collector endpoint and filter
-// to only show lots that have a recycler assigned (matched/handed_over status).
-// Once the backend adds /v1/handover/lots/recycler/:id, replace the fetch call below.
 
 // transaction_status values from DB schema: quoted | matched | handed_over | confirmed
 const ALL_FILTER = 'all';
@@ -41,18 +35,12 @@ export default function IncomingLots() {
 
   const load = useCallback(() => {
     setLoading(true);
-    // Workaround: fetch all collector's lots, filter to only those with a recycler assigned.
-    // These are lots in matched/handed_over/confirmed states — the recycler's incoming view.
-    getLotsByCollector(DEMO_COLLECTOR_ID)
+    // GET /v1/handover/lots/recycler/:recyclerId returns only lots assigned
+    // to this recycler (matched / handed_over / confirmed), including the
+    // latest handover reference and traceability status.
+    getLotsByRecycler(DEMO_RECYCLER_ID)
       .then(r => {
-        const all = Array.isArray(r.data) ? r.data : [];
-        // Only show lots that have been matched to a recycler
-        const matched = all.filter(l =>
-          l.transaction_status === 'matched' ||
-          l.transaction_status === 'handed_over' ||
-          l.transaction_status === 'confirmed'
-        );
-        setLots(matched);
+        setLots(Array.isArray(r.data) ? r.data : []);
       })
       .catch(() => setError(t('incomingLots.loadError')))
       .finally(() => setLoading(false));

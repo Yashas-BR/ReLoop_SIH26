@@ -52,3 +52,9 @@ export const getHandoversByLotSchema = {
     lotId: z.string().min(1),
   }),
 };
+
+export const getLotsByRecyclerSchema = {
+  params: z.object({
+    recyclerId: z.coerce.number().int().positive(),
+  }),
+};

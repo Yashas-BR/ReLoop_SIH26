@@ -5,6 +5,7 @@ import {
   getHandoversByLot,
   DEMO_COLLECTOR_ID,
 } from '../api/client';
+import { currentCollectorId } from '../services/auth';
 import { StatusBadge } from '../components/StatusBadge';
 import { PageLoader } from '../components/LoadingSpinner';
 import { useTranslation } from '../i18n/config.js';
@@ -37,8 +38,9 @@ export default function CollectorLotDetail() {
     setLoading(true);
     setError('');
     try {
+      const collectorId = currentCollectorId() ?? DEMO_COLLECTOR_ID;
       const [lotsRes, handoversRes] = await Promise.all([
-        getLotsByCollector(DEMO_COLLECTOR_ID),
+        getLotsByCollector(collectorId),
         getHandoversByLot(lotId),
       ]);
 
@@ -51,7 +53,7 @@ export default function CollectorLotDetail() {
     } finally {
       setLoading(false);
     }
-  }, [lotId]);
+  }, [lotId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { load(); }, [load]);
 
