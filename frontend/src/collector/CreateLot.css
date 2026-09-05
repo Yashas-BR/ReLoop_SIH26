@@ -29,15 +29,28 @@
   display: flex;
   align-items: center;
   gap: 0;
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--space-6);
+}
+
+@media (max-width: 480px) {
+  .stepper {
+    margin-bottom: var(--space-4);
+    gap: 0;
+  }
 }
 
 .stepper__step {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   flex: 1;
   position: relative;
+}
+
+@media (max-width: 480px) {
+  .stepper__step {
+    gap: var(--space-1);
+  }
 }
 
 .stepper__step:not(:last-child)::after {
@@ -45,8 +58,14 @@
   flex: 1;
   height: 2px;
   background: var(--color-border);
-  margin: 0 var(--space-3);
+  margin: 0 var(--space-2);
   transition: background var(--transition-base);
+}
+
+@media (max-width: 480px) {
+  .stepper__step:not(:last-child)::after {
+    margin: 0 var(--space-1);
+  }
 }
 
 .stepper__step--done:not(:last-child)::after,
@@ -55,8 +74,8 @@
 }
 
 .stepper__dot {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius-full);
   display: flex;
   align-items: center;
@@ -68,6 +87,14 @@
   color: var(--color-text-muted);
   flex-shrink: 0;
   transition: all var(--transition-base);
+}
+
+@media (max-width: 480px) {
+  .stepper__dot {
+    width: 28px;
+    height: 28px;
+    font-size: var(--text-xs);
+  }
 }
 
 .stepper__step--active .stepper__dot {
@@ -102,6 +129,12 @@
   gap: var(--space-6);
   max-width: 720px;
   margin: 0 auto;
+}
+
+@media (max-width: 640px) {
+  .step-panel {
+    gap: var(--space-4);
+  }
 }
 
 /* ── Photo Upload ── */

@@ -103,7 +103,7 @@ export default function AdminLogin() {
         </section>
 
         <p className="login-foot">
-          <Link to="/login">{t('login.backToLogin') || 'Back to Login'}</Link>
+          <Link to="/">{t('login.backToLogin') || 'Back to Home'}</Link>
         </p>
       </div>
     </div>

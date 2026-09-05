@@ -7,7 +7,19 @@
   display: flex;
   gap: var(--space-4);
   flex-wrap: wrap;
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--space-6);
+}
+
+@media (max-width: 640px) {
+  .p2-pd-controls {
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+
+  .p2-pd-controls .form-group {
+    min-width: 100%;
+  }
 }
 
 /* Section header row */
@@ -135,9 +147,16 @@
 /* ── Stat chips row ── */
 .p2-stat-chips {
   display: flex;
-  gap: var(--space-3);
+  gap: var(--space-2);
   flex-wrap: wrap;
   margin-bottom: var(--space-6);
+}
+
+@media (max-width: 640px) {
+  .p2-stat-chips {
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+  }
 }
 
 .p2-stat-chip {
@@ -145,12 +164,20 @@
   flex-direction: column;
   align-items: center;
   gap: var(--space-1);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-2) var(--space-3);
   background: var(--color-surface-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  min-width: 80px;
+  min-width: 70px;
   text-align: center;
+}
+
+@media (max-width: 640px) {
+  .p2-stat-chip {
+    padding: var(--space-2) var(--space-2);
+    min-width: 60px;
+    flex: 1;
+  }
 }
 
 .p2-stat-chip--accent {

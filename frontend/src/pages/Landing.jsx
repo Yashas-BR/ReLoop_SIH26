@@ -133,7 +133,7 @@ export default function Landing() {
           <div className="cta__content animate-fade-in">
             <h2 className="cta__title">{t('landing.ctaTitle')}</h2>
             <p className="cta__desc">{t('landing.ctaDesc')}</p>
-            <Link to="/login" className="btn btn-accent btn-lg">{t('landing.getStarted')}</Link>
+            <Link to="/login/collector" className="btn btn-accent btn-lg">{t('landing.getStarted')}</Link>
           </div>
         </div>
       </section>

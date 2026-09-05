@@ -210,3 +210,7 @@
 .checklist-step--done { border-color: var(--color-success); background: var(--color-success-light); }
 .checklist-step--done .checklist-step__dot { border-color: var(--color-success); background: var(--color-success); color: #fff; }
 .checklist-step--done .checklist-step__label { color: var(--color-success); }
+
+.collection-evidence { margin-top: var(--space-4); }
+.collection-evidence__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3); margin-top: var(--space-2); }
+.collection-evidence__grid .collection-photo img { max-width: 100%; aspect-ratio: 1 / 1; object-fit: cover; }

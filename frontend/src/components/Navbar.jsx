@@ -1,3 +1,5 @@
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/config.js';
 import { getSession, clearSession } from '../services/auth';
@@ -9,11 +11,6 @@ const LANG_OPTIONS = [
   { code: 'mr', label: 'मराठी' },
 ];
 
-// Navigation links depend on which persona is signed in.
-// - Collector / anonymous → collector-side dashboard, create lot, prices, earnings, safety
-// - Recycler           → recycler portal, safety
-// - Admin              → admin panel, safety
-// Shared pages (safety) are reachable from every portal.
 function navFor(role, t) {
   if (role === 'recycler') {
     return [
@@ -44,31 +41,53 @@ export function Navbar() {
 
   const user = getSession();
   const navItems = navFor(user?.role, t);
+  const homePath = user?.role === 'recycler' ? '/recycler' : user?.role === 'admin' ? '/admin' : '/collector';
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const closeButtonRef = useRef(null);
+
+  const isActive = (to) => location.pathname === to || location.pathname.startsWith(`${to}/`);
 
   function handleLogout() {
     clearSession();
+    setDrawerOpen(false);
     navigate('/', { replace: true });
   }
+
+  function handleNav() {
+    setDrawerOpen(false);
+  }
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    function onKey(e) {
+      if (e.key === 'Escape') setDrawerOpen(false);
+    }
+    document.addEventListener('keydown', onKey);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    closeButtonRef.current?.focus();
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [drawerOpen]);
 
   return (
     <header className="navbar" role="banner">
       <div className="navbar__inner container">
-        {/* Logo */}
-        <Link to="/collector" className="navbar__logo" aria-label={t('nav.homeLabel')}>
-
+        <Link to={homePath} className="navbar__logo" aria-label={t('nav.homeLabel')} onClick={() => setDrawerOpen(false)}>
           <div className="navbar__logo-text">
             <span className="navbar__logo-name">Kabadiwala</span>
             <span className="navbar__logo-sub">Connect</span>
           </div>
         </Link>
 
-        {/* Desktop Nav */}
         <nav className="navbar__nav hide-mobile" aria-label={t('nav.mainNav')}>
           {navItems.map(item => (
             <Link
               key={item.to}
               to={item.to}
-              className={`navbar__nav-item ${location.pathname.startsWith(item.to) ? 'navbar__nav-item--active' : ''}`}
+              className={`navbar__nav-item ${isActive(item.to) ? 'navbar__nav-item--active' : ''}`}
             >
               <span aria-hidden="true">{item.icon}</span>
               {item.label}
@@ -76,10 +95,8 @@ export function Navbar() {
           ))}
         </nav>
 
-        {/* Right side: language switcher + account */}
         <div className="navbar__right">
-          {/* Language Switcher */}
-          <div className="lang-switcher" role="group" aria-label="Language / भाषा">
+          <div className="lang-switcher hide-mobile" role="group" aria-label="Language / भाषा">
             <select
               className="lang-dropdown"
               value={lang}
@@ -94,56 +111,100 @@ export function Navbar() {
             </select>
           </div>
 
-          {/* Account chip */}
           {user ? (
             <div className="navbar__account">
-              <Link to={user.role === 'recycler' ? '/recycler' : user.role === 'admin' ? '/admin' : '/collector'} className="navbar__user" title={`${t('login.loggedInAs')} ${user.name}`}>
+              <Link
+                to={user.role === 'recycler' ? '/recycler' : user.role === 'admin' ? '/admin' : '/collector'}
+                className="navbar__user"
+                title={`${t('login.loggedInAs')} ${user.name}`}
+                onClick={() => setDrawerOpen(false)}
+              >
                 <span className="navbar__avatar" aria-hidden="true">
                   {(user.name || '?').charAt(0).toUpperCase()}
                 </span>
                 <span className="navbar__username hide-mobile">{user.name}</span>
               </Link>
-              <button className="navbar__logout" onClick={handleLogout} aria-label={t('login.logout')}>
+              <button className="navbar__logout hide-mobile" onClick={handleLogout} aria-label={t('login.logout')}>
                 {t('login.logout')}
               </button>
             </div>
           ) : (
-            <Link to="/login" className="btn btn-primary btn-sm">
+            <Link to="/login" className="btn btn-primary btn-sm hide-mobile" onClick={() => setDrawerOpen(false)}>
               {t('login.signIn')}
             </Link>
           )}
+
+          <button
+            className="navbar__hamburger"
+            onClick={() => setDrawerOpen((open) => !open)}
+            aria-label={drawerOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={drawerOpen}
+            aria-controls="mobile-navigation"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
         </div>
       </div>
 
-      {/* Mobile Bottom Nav */}
-      <nav className="navbar__mobile-nav show-mobile-only" aria-label={t('nav.mobileNav')}>
-        {navItems.map(item => (
-          <Link
-            key={item.to}
-            to={item.to}
-            className={`navbar__mobile-item ${location.pathname.startsWith(item.to) ? 'navbar__mobile-item--active' : ''}`}
-          >
-            <span className="navbar__mobile-icon" aria-hidden="true">{item.icon}</span>
-            <span className="navbar__mobile-label">{item.label}</span>
-          </Link>
-        ))}
-      </nav>
+      {drawerOpen && createPortal(<>
+        <div id="mobile-navigation" className="navbar__drawer" role="dialog" aria-modal="true" aria-label={t('nav.mobileNav')}>
+        <div className="navbar__drawer-inner">
+          <div className="navbar__drawer-head">
+            <div>
+              <p className="navbar__drawer-greet">{t('login.loggedInAs')}</p>
+              <p className="navbar__drawer-name">{user?.name || 'Guest'}</p>
+            </div>
+            <button ref={closeButtonRef} className="navbar__drawer-close" onClick={() => setDrawerOpen(false)} aria-label="Close menu">
+              ✕
+            </button>
+          </div>
 
-      {/* Mobile lang row — shown below logo area on small screens */}
-      <div className="mobile-lang-row show-mobile-only" role="group" aria-label="Language / भाषा">
-        <select
-          className="mobile-lang-dropdown"
-          value={lang}
-          onChange={(e) => setLang(e.target.value)}
-          aria-label="Select Language"
-        >
-          {LANG_OPTIONS.map((opt) => (
-            <option key={opt.code} value={opt.code}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </div>
+          <nav className="navbar__drawer-nav" aria-label={t('nav.mobileNav')}>
+            {navItems.map(item => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`navbar__drawer-item ${isActive(item.to) ? 'navbar__drawer-item--active' : ''}`}
+                onClick={handleNav}
+              >
+                <span aria-hidden="true">{item.icon}</span>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="navbar__drawer-foot">
+            <div className="mobile-lang-row" role="group" aria-label="Language / भाषा">
+              <select
+                className="mobile-lang-dropdown"
+                value={lang}
+                onChange={(e) => { setLang(e.target.value); }}
+                aria-label="Select Language"
+              >
+                {LANG_OPTIONS.map((opt) => (
+                  <option key={opt.code} value={opt.code}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {user ? (
+              <button className="btn btn-outline btn-full" onClick={handleLogout}>
+                {t('login.logout')}
+              </button>
+            ) : (
+              <Link to="/login" className="btn btn-primary btn-full" onClick={handleNav}>
+                {t('login.signIn')}
+              </Link>
+            )}
+          </div>
+        </div>
+        </div>
+
+        <button className="navbar__backdrop" onClick={() => setDrawerOpen(false)} aria-label="Close menu" />
+      </>, document.body)}
     </header>
   );
 }

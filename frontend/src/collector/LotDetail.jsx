@@ -5,6 +5,7 @@ import {
   getHandoversByLot,
   getOffersByLot,
   getLotEvents,
+  getLotImages,
   acceptOffer,
   rejectOffer,
   DEMO_COLLECTOR_ID,
@@ -38,6 +39,7 @@ export default function CollectorLotDetail() {
   const [handovers, setHandovers] = useState([]);
   const [offers, setOffers] = useState([]);
   const [lotEventTypes, setLotEventTypes] = useState(new Set()); // set of fired event_type strings
+  const [lotImages, setLotImages] = useState([]);
   const [offerBusy, setOfferBusy] = useState(null);
   const [offersError, setOffersError] = useState('');
   const [quoteToast, setQuoteToast] = useState('');
@@ -49,11 +51,12 @@ export default function CollectorLotDetail() {
     setError('');
     try {
       const collectorId = currentCollectorId() ?? DEMO_COLLECTOR_ID;
-      const [lotsRes, handoversRes, offersRes, eventsRes] = await Promise.all([
+      const [lotsRes, handoversRes, offersRes, eventsRes, imagesRes] = await Promise.all([
         getLotsByCollector(collectorId),
         getHandoversByLot(lotId),
         getOffersByLot(lotId),
         getLotEvents(lotId).catch(() => null), // non-blocking — events table may not exist yet
+        getLotImages(lotId).catch(() => ({ data: [] })),
       ]);
 
       const allLots = Array.isArray(lotsRes.data) ? lotsRes.data : [];
@@ -61,6 +64,7 @@ export default function CollectorLotDetail() {
       setLot(foundLot);
       setHandovers(Array.isArray(handoversRes.data) ? handoversRes.data : []);
       setOffers(Array.isArray(offersRes.data) ? offersRes.data : []);
+      setLotImages(Array.isArray(imagesRes.data) ? imagesRes.data : []);
 
       // Build a set of event types that have actually fired, for the checklist
       const evData = eventsRes?.data ?? eventsRes;
@@ -78,6 +82,7 @@ export default function CollectorLotDetail() {
   const latestHandover = handovers[0] ?? null;
   const acceptedOffer = offers.find(o => o.offer_status === 'accepted') ?? null;
   const openOffers = offers.filter(o => o.offer_status === 'offered');
+  const collectionImages = lotImages.filter((image) => image.image_type === 'COLLECTION');
 
   // ── Handover checklist ────────────────────────────────────────────────────
   // Each step is satisfied by either a lot_events entry (preferred — direct
@@ -335,7 +340,19 @@ export default function CollectorLotDetail() {
                 </p>
               </div>
             </div>
-            {lot.image_ref && (
+            {collectionImages.length > 0 ? (
+              <section className="collection-evidence" aria-label="Collection photo evidence">
+                <p className="detail-item__label">Collection photos ({collectionImages.length})</p>
+                <div className="collection-evidence__grid">
+                  {collectionImages.map((image, index) => (
+                    <figure key={image.id} className="collection-photo">
+                      <img src={image.image_url} alt={`Collection evidence photo ${index + 1}`} loading="lazy" />
+                      <figcaption className="text-muted text-sm">Collection photo {index + 1}</figcaption>
+                    </figure>
+                  ))}
+                </div>
+              </section>
+            ) : lot.image_ref && (
               <figure className="collection-photo" style={{ marginTop: 'var(--space-4)' }}>
                 <img src={lot.image_ref} alt={t('verify.collectionPhotoAlt')} />
                 <figcaption className="text-muted text-sm">{t('verify.collectionPhotoLabel')}</figcaption>

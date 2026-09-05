@@ -25,9 +25,21 @@
 .profile-header {
   display: flex;
   align-items: center;
-  gap: var(--space-5);
+  gap: var(--space-4);
   margin-top: var(--space-4);
   flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .profile-header {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--space-3);
+  }
+
+  .profile-header .btn {
+    width: 100%;
+  }
 }
 
 .profile-avatar {
@@ -122,6 +134,12 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--space-3);
+}
+
+@media (max-width: 480px) {
+  .materials-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .material-toggle {

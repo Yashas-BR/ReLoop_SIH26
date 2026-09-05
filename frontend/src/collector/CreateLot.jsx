@@ -252,9 +252,9 @@ export default function CreateLot() {
       if (subCategory) descParts.push(`Sub-category: ${subCategory}`);
       if (description) descParts.push(description);
 
-      // Step 1-2: submit compressed collection evidence; the API uploads it
-      // to Cloudinary before creating the immutable lot-image record.
-      const image_ref = photos[0]?.file ? await fileToDataUrl(photos[0].file) : undefined;
+      // Every selected collection photo becomes its own immutable Cloudinary
+      // evidence record. The first URL remains the lot cover image.
+      const image_refs = await Promise.all(photos.map((photo) => fileToDataUrl(photo.file)));
 
       const r = await createLot({
         collector_id: collectorId ?? DEMO_COLLECTOR_ID,
@@ -262,7 +262,7 @@ export default function CreateLot() {
         approx_weight_kg: Number(weight),
         location,
         description: descParts.join(' | ') || undefined,
-        image_ref,
+        image_refs: image_refs.filter(Boolean),
       });
 
       if (r.queued) {

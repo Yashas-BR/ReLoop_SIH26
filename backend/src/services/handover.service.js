@@ -136,15 +136,17 @@ const insertLotImage = async (lotId, imageUrl, imageType, uploaderRole, collecto
 export const createLot = async (data) => {
   const {
     collector_id, category, sub_category, description,
-    image_ref, approx_weight_kg, condition, source_type,
+    image_ref, image_refs, approx_weight_kg, condition, source_type,
     location, collection_lat, collection_lng,
   } = data;
 
   const lot_id = generateLotId(category);
   const display_lot_id = await generateDisplayLotId(location);
-  const collectionImageUrl = image_ref
-    ? await uploadLotImage(image_ref, { lotId: lot_id, imageType: 'COLLECTION' })
-    : null;
+  const collectionImages = image_refs?.length ? image_refs : (image_ref ? [image_ref] : []);
+  const uploadedCollectionImages = await Promise.all(collectionImages.map((image, index) =>
+    uploadLotImage(image, { lotId: lot_id, imageType: `COLLECTION-${index + 1}` })
+  ));
+  const collectionImageUrl = uploadedCollectionImages[0] ?? null;
 
   let estimated_value = null;
   try {
@@ -199,13 +201,16 @@ export const createLot = async (data) => {
   }, collectionGps, lot.created_at);
 
   // ── Store collection photo + emit IMAGE_UPLOADED event ──────────────────────
-  if (collectionImageUrl) {
-    await insertLotImage(
-      lot_id, collectionImageUrl, 'COLLECTION', 'collector',
-      collector_id, null, collectionGps
-    );
+  if (uploadedCollectionImages.length > 0) {
+    for (const imageUrl of uploadedCollectionImages) {
+      await insertLotImage(
+        lot_id, imageUrl, 'COLLECTION', 'collector',
+        collector_id, null, collectionGps
+      );
+    }
     await emitEvent(lot_id, 'IMAGE_UPLOADED', 'collector', collector_id, {
       image_type: 'COLLECTION',
+      image_count: uploadedCollectionImages.length,
       display_lot_id,
     }, collectionGps);
   }

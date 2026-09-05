@@ -148,7 +148,7 @@
 }
 
 .chart-wrap {
-  height: 280px;
+  height: clamp(200px, 40vw, 280px);
   position: relative;
 }
 

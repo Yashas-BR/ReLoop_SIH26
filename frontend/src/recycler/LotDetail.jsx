@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import {
   getHandoversByLot, initiateHandover, confirmHandover,
   updatePayment, checkTransactionAnomaly,
-  getOffersByLot, getLotsByRecycler, getInstantValuation, quoteLot,
+  getOffersByLot, getLotsByRecycler, getLotImages, getInstantValuation, quoteLot,
 } from '../api/client';
 import { resolveRecyclerId } from '../services/auth';
 import { StatusBadge } from '../components/StatusBadge';
@@ -37,13 +37,6 @@ function hasScanEvidence(h) {
   );
 }
 
-// First verification photograph (data-URL evidence) recorded at confirmation.
-function verificationPhotoUrl(h) {
-  if (!Array.isArray(h?.photo_refs)) return null;
-  const photos = h.photo_refs.filter((p) => typeof p === 'string' && p.startsWith('data:image'));
-  return photos[photos.length - 1] || null;
-}
-
 // Original collection photograph — the immutable evidence the recycler compares
 // against the physical material (per the SIH image-lifecycle spec).
 function collectionImgUrl(h) {
@@ -58,6 +51,7 @@ export default function LotDetail() {
   const [handovers, setHandovers] = useState([]);
   const [lotMeta, setLotMeta] = useState(null);
   const [offers, setOffers] = useState([]);
+  const [lotImages, setLotImages] = useState([]);
   const [marketEstimate, setMarketEstimate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState(null); // reference being confirmed
@@ -96,12 +90,14 @@ export default function LotDetail() {
       getHandoversByLot(lotId),
       getLotsByRecycler(recyclerId),
       getOffersByLot(lotId),
+      getLotImages(lotId),
     ])
-      .then(([handRes, lotsRes, offersRes]) => {
+      .then(([handRes, lotsRes, offersRes, imagesRes]) => {
         setHandovers(Array.isArray(handRes.data) ? handRes.data : []);
         const allLots = Array.isArray(lotsRes.data) ? lotsRes.data : [];
         setLotMeta(allLots.find((l) => l.lot_id === lotId) ?? null);
         setOffers(Array.isArray(offersRes.data) ? offersRes.data : []);
+        setLotImages(Array.isArray(imagesRes.data) ? imagesRes.data : []);
       })
       .catch(() => setError(t('lotDetail.loadError')))
       .finally(() => setLoading(false));
@@ -116,6 +112,8 @@ export default function LotDetail() {
         ? { id: lotMeta.open_offer_id, offer_status: lotMeta.open_offer_status, offered_price: lotMeta.open_offer_price }
         : null);
   const acceptedOffer = myOffer?.offer_status === 'accepted' ? myOffer : null;
+  const collectionImages = lotImages.filter((image) => image.image_type === 'COLLECTION');
+  const confirmationImages = lotImages.filter((image) => image.image_type === 'RECYCLER_CONFIRMATION');
 
   // Prefill the quote with a live market estimate for the lot category/weight.
   useEffect(() => {
@@ -505,7 +503,19 @@ export default function LotDetail() {
                 )}
               </div>
             </div>
-            {collectionImgUrl(firstHandover ?? lotMeta) && (
+            {collectionImages.length > 0 ? (
+              <section className="collection-evidence" aria-label="Collector collection photos">
+                <p className="detail-item__label">Collector collection evidence ({collectionImages.length})</p>
+                <div className="collection-evidence__grid">
+                  {collectionImages.map((image, index) => (
+                    <figure key={image.id} className="collection-photo">
+                      <img src={image.image_url} alt={`Collector evidence photo ${index + 1}`} loading="lazy" />
+                      <figcaption className="text-muted text-sm">Collection photo {index + 1}</figcaption>
+                    </figure>
+                  ))}
+                </div>
+              </section>
+            ) : collectionImgUrl(firstHandover ?? lotMeta) && (
               <figure className="collection-photo" style={{ marginTop: 'var(--space-4)' }}>
                 <img src={collectionImgUrl(firstHandover ?? lotMeta)} alt={t('verify.collectionPhotoAlt')} />
                 <figcaption className="text-muted text-sm">{t('verify.collectionPhotoLabel')}</figcaption>
@@ -633,7 +643,19 @@ export default function LotDetail() {
 
               {/* Original evidence — compare the physical material against this,
                   not against anything the QR holds (QR = identifier only) */}
-              {collectionImgUrl(firstHandover ?? lotMeta) && (
+              {collectionImages.length > 0 ? (
+                <section className="collection-evidence" aria-label="Collector collection photos for verification" style={{ marginBottom: 'var(--space-4)' }}>
+                  <p className="detail-item__label">Compare all collector photos ({collectionImages.length})</p>
+                  <div className="collection-evidence__grid">
+                    {collectionImages.map((image, index) => (
+                      <figure key={image.id} className="collection-photo">
+                        <img src={image.image_url} alt={`Collector collection evidence photo ${index + 1}`} loading="lazy" />
+                        <figcaption className="text-muted text-sm">Collection photo {index + 1}</figcaption>
+                      </figure>
+                    ))}
+                  </div>
+                </section>
+              ) : collectionImgUrl(firstHandover ?? lotMeta) && (
                 <figure className="collection-photo collection-photo--lg" style={{ marginBottom: 'var(--space-4)' }}>
                   <img src={collectionImgUrl(firstHandover ?? lotMeta)} alt={t('verify.collectionPhotoAlt')} />
                   <figcaption className="text-muted text-sm">{t('verify.collectionPhotoLabel')}</figcaption>
@@ -812,8 +834,8 @@ export default function LotDetail() {
                 </div>
                 <div className="detail-item">
                   <p className="detail-item__label">{t('verify.photoLabel')}</p>
-                  {verificationPhotoUrl(firstHandover) ? (
-                    <img src={verificationPhotoUrl(firstHandover)} alt={t('verify.photoCapturedAlt')} className="verify-photo-preview verify-photo-preview--lg" />
+                  {confirmationImages.length > 0 ? (
+                    <img src={confirmationImages[confirmationImages.length - 1].image_url} alt={t('verify.photoCapturedAlt')} className="verify-photo-preview verify-photo-preview--lg" />
                   ) : (
                     <p className="detail-item__value">{t('verify.notRecorded')}</p>
                   )}

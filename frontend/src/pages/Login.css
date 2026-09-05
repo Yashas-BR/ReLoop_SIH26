@@ -137,6 +137,7 @@
 
   .demo-chip {
     padding: var(--space-2) var(--space-3);
+    flex-wrap: wrap;
   }
 
   .demo-chip__name {

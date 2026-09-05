@@ -11,7 +11,10 @@ export const createLotSchema = {
     category: materialCategory,
     sub_category: z.string().optional(),
     description: z.string().optional(),
+    // A collector may submit up to three collection-evidence photos. The
+    // legacy image_ref field stays supported for offline queue compatibility.
     image_ref: z.string().optional(),
+    image_refs: z.array(z.string()).min(1).max(3).optional(),
     approx_weight_kg: z.coerce.number().positive('Weight must be positive'),
     condition: z.string().optional(),
     source_type: z.string().optional(),

@@ -35,10 +35,10 @@
 .earnings-cards-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .earnings-cards-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
@@ -51,11 +51,19 @@
   border: 1.5px solid var(--color-card-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-  padding: var(--space-5);
+  padding: var(--space-4);
   display: flex;
   align-items: flex-start;
-  gap: var(--space-4);
+  gap: var(--space-3);
   transition: box-shadow var(--transition-base), transform var(--transition-base);
+}
+
+@media (max-width: 480px) {
+  .earnings-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: var(--space-4);
+  }
 }
 
 .earnings-card:hover {
