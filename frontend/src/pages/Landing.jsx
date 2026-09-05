@@ -6,11 +6,33 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from '../i18n/config.js';
 import './Landing.css';
 
+const LANG_OPTIONS = [
+  { code: 'en', label: 'EN' },
+  { code: 'hi', label: 'हिंदी' },
+  { code: 'mr', label: 'मराठी' },
+];
+
 export default function Landing() {
-  const { t } = useTranslation();
+  const { t, lang, setLang } = useTranslation();
 
   return (
     <div className="landing-page">
+      {/* Language Selector - Top Right */}
+      <div className="landing-lang">
+        <select
+          className="lang-dropdown"
+          value={lang}
+          onChange={(e) => setLang(e.target.value)}
+          aria-label="Select Language"
+        >
+          {LANG_OPTIONS.map((opt) => (
+            <option key={opt.code} value={opt.code}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* Hero Section */}
       <section className="hero">
         <div className="hero__bg"></div>
@@ -24,7 +46,7 @@ export default function Landing() {
               {t('landing.tagline')}
             </p>
             <div className="hero__actions animate-fade-in" style={{ animationDelay: '200ms' }}>
-              <Link to="/login" className="btn btn-accent btn-lg">
+              <Link to="/login/collector" className="btn btn-accent btn-lg">
                 {t('landing.getStarted')}
               </Link>
               <Link to="/safety" className="btn btn-outline btn-lg">
@@ -87,19 +109,19 @@ export default function Landing() {
               <div className="user-type-card__icon">📦</div>
               <h3 className="user-type-card__title">{t('landing.collector')}</h3>
               <p className="user-type-card__desc">{t('landing.collectorDesc')}</p>
-              <Link to="/login" className="btn btn-primary">{t('landing.loginAsCollector')}</Link>
+              <Link to="/login/collector" className="btn btn-primary">{t('landing.loginAsCollector')}</Link>
             </div>
             <div className="user-type-card animate-fade-in" style={{ animationDelay: '200ms' }}>
               <div className="user-type-card__icon">♻️</div>
               <h3 className="user-type-card__title">{t('landing.recycler')}</h3>
               <p className="user-type-card__desc">{t('landing.recyclerDesc')}</p>
-              <Link to="/login" className="btn btn-primary">{t('landing.loginAsRecycler')}</Link>
+              <Link to="/login/recycler" className="btn btn-primary">{t('landing.loginAsRecycler')}</Link>
             </div>
             <div className="user-type-card animate-fade-in" style={{ animationDelay: '300ms' }}>
               <div className="user-type-card__icon">⚙️</div>
               <h3 className="user-type-card__title">{t('landing.admin')}</h3>
               <p className="user-type-card__desc">{t('landing.adminDesc')}</p>
-              <Link to="/login" className="btn btn-outline">{t('landing.loginAsAdmin')}</Link>
+              <Link to="/login/admin" className="btn btn-outline">{t('landing.loginAsAdmin')}</Link>
             </div>
           </div>
         </div>

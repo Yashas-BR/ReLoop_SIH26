@@ -3,6 +3,7 @@ import { useNavigate, Link, Navigate } from 'react-router-dom';
 import {
   createLot, getInstantValuation,
   DEMO_COLLECTOR_ID, DEFAULT_LOCATION, MATERIAL_CATEGORIES,
+  submitAiFeedback, updateAiFeedback,
 } from '../api/client';
 import { currentCollectorId } from '../services/auth';
 import { classifyFile } from '../services/classification/analyze';
@@ -48,6 +49,7 @@ export default function CreateLot() {
   const [classify, setClassify] = useState(null);
   const [classifying, setClassifying] = useState(false);
   const [classifyDismissed, setClassifyDismissed] = useState(false);
+  const [aiFeedbackId, setAiFeedbackId] = useState(null);
   const [scanStep, setScanStep] = useState(0);
   const [scanProgress, setScanProgress] = useState(0);
 
@@ -79,6 +81,11 @@ export default function CreateLot() {
     setSubCategory('');
     setError('');
     setClassifyDismissed(true);
+    // Record human outcome: accepted if same as AI prediction, corrected otherwise
+    if (aiFeedbackId && classify) {
+      const outcome = id === classify.category ? 'accepted' : 'corrected';
+      updateAiFeedback(aiFeedbackId, { human_category: id, outcome }).catch(() => {});
+    }
   }
 
   function addPhotos(files) {
@@ -152,7 +159,24 @@ export default function CreateLot() {
     }, 280);
 
     classifyFile(file)
-      .then(res => { if (!cancelled) { setScanProgress(100); setClassify(res); } })
+      .then(res => {
+        if (!cancelled) {
+          setScanProgress(100);
+          setClassify(res);
+          // Fire-and-forget: record the AI prediction to the feedback dataset
+          submitAiFeedback({
+            collector_id: collectorId ?? null,
+            ai_predicted_category: res.category,
+            ai_confidence: res.confidence,
+            ai_verdict: res.verdict,
+            ai_candidates: res.candidates,
+            ai_features: res.features,
+            outcome: 'pending',
+          }).then(r => {
+            if (r?.data?.id) setAiFeedbackId(r.data.id);
+          }).catch(() => {});
+        }
+      })
       .catch(() => { if (!cancelled) setClassify(null); })
       .finally(() => {
         if (!cancelled) { clearInterval(tick); setClassifying(false); }
@@ -204,6 +228,12 @@ export default function CreateLot() {
   function goToStep2() {
     if (!category) { setError(t('createLot.errors.selectCategory')); return; }
     setError('');
+    // If collector manually picked a category without using the AI suggestion, record dismissal
+    if (aiFeedbackId && classify && !classifyDismissed) {
+      const outcome = category === classify.category ? 'accepted' : 'corrected';
+      updateAiFeedback(aiFeedbackId, { human_category: category, outcome }).catch(() => {});
+      setClassifyDismissed(true);
+    }
     setStep(1);
     if (weight && Number(weight) > 0) fetchValuation(weight, category, location);
   }
@@ -794,6 +824,59 @@ export default function CreateLot() {
                     {photos.length} {photos.length !== 1 ? t('common.photos') : t('common.photo')}
                   </strong>
                 </div>
+              </div>
+            )}
+
+            {/* AI Explainability card — shows what data drove the estimate */}
+            {(classify || valuation) && (
+              <div className="p2-ai-explain" role="region" aria-label="AI analysis summary">
+                <div className="p2-ai-explain__header">
+                  <span className="p2-ai-explain__icon" aria-hidden="true">🤖</span>
+                  <span className="p2-ai-explain__title">AI Analysis Summary</span>
+                </div>
+                <ul className="p2-ai-explain__list">
+                  {classify && (
+                    <li>
+                      <span className="p2-ai-explain__check">✓</span>
+                      <span>
+                        Material detected: <strong>{catObj?.label ?? classify.category}</strong>
+                        {' '}({Math.round(classify.confidence * 100)}% confidence
+                        {' — '}
+                        {classify.verdict === 'high' && 'high'}
+                        {classify.verdict === 'medium' && 'medium'}
+                        {classify.verdict === 'low' && 'low — please verify'})
+                      </span>
+                    </li>
+                  )}
+                  {valuation && (
+                    <>
+                      <li>
+                        <span className="p2-ai-explain__check">✓</span>
+                        <span>Weight: <strong>{weight} kg</strong></span>
+                      </li>
+                      <li>
+                        <span className="p2-ai-explain__check">✓</span>
+                        <span>
+                          Market data: <strong>{valuation.price_samples ?? 1} price record{valuation.price_samples !== 1 ? 's' : ''}</strong>
+                          {' '}in {valuation.location}
+                        </span>
+                      </li>
+                      <li>
+                        <span className="p2-ai-explain__check">✓</span>
+                        <span>
+                          Weighted avg price: <strong>{fmtRupees(valuation.unit_price)}/kg</strong>
+                          {' '}(range {fmtRupees(valuation.market_range_low)}–{fmtRupees(valuation.market_range_high)})
+                        </span>
+                      </li>
+                    </>
+                  )}
+                  <li>
+                    <span className="p2-ai-explain__note" aria-hidden="true">ℹ️</span>
+                    <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)' }}>
+                      This is an estimate. The recycler’s quote determines the final price.
+                    </span>
+                  </li>
+                </ul>
               </div>
             )}
           </section>

@@ -22,7 +22,9 @@ import RecyclerScan from './recycler/Scan';
 
 // Shared pages
 import SafetyGuidance from './pages/Safety';
-import Login from './pages/Login';
+import CollectorLogin from './pages/CollectorLogin';
+import RecyclerLogin from './pages/RecyclerLogin';
+import AdminLogin from './pages/AdminLogin';
 import Register from './pages/Register';
 import Admin from './pages/Admin';
 import Landing from './pages/Landing';
@@ -58,13 +60,14 @@ function AppInner() {
       <main className="page-content" id="main-content">
         <Routes>
           <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login location={location} />} />
+          <Route path="/login" element={<Navigate to="/login/collector" replace />} />
+          <Route path="/login/collector" element={<CollectorLogin />} />
+          <Route path="/login/recycler" element={<RecyclerLogin />} />
+          <Route path="/login/admin" element={<AdminLogin />} />
           <Route path="/collector/register" element={<Register />} />
 
-          {/* Admin */}
-          <Route path="/admin" element={
-            <ProtectedRoute role="admin"><Admin /></ProtectedRoute>
-          } />
+          {/* Admin - handles its own auth */}
+          <Route path="/admin" element={<Admin />} />
 
           {/* Collector routes */}
           <Route path="/collector" element={

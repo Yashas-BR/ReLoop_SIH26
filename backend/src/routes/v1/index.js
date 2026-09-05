@@ -10,6 +10,7 @@ import priceIngestRoute from './priceIngest.route.js';
 import collectorsRoute from './collectors.route.js';
 import offersRoute from './offers.route.js';
 import adminRoute from './admin.route.js';
+import aiRoute from './ai.route.js';
 
 const router = express.Router();
 
@@ -57,6 +58,10 @@ const defaultRoutes = [
   {
     path: '/admin',
     route: adminRoute,
+  },
+  {
+    path: '/ai',
+    route: aiRoute,
   },
 ];
 

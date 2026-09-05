@@ -237,6 +237,18 @@ export async function getLotsByRecycler(recyclerId) {
 export const updatePayment = (lotId, data) =>
   request(`/payments/${lotId}`, { method: 'PATCH', body: JSON.stringify(data) });
 
+// ── AI feedback loop (SIH26229 dataset generation) ─────────────────────────
+// POST /v1/ai/feedback — record a CV prediction immediately after classification
+export const submitAiFeedback = (payload) =>
+  request('/ai/feedback', { method: 'POST', body: JSON.stringify(payload) });
+
+// PATCH /v1/ai/feedback/:id — update with human outcome
+export const updateAiFeedback = (id, payload) =>
+  request(`/ai/feedback/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+
+// GET /v1/ai/stats — per-category accuracy (admin / dataset governance)
+export const getAiStats = () => request('/ai/stats');
+
 // ── Anomaly detection (AI/ML) ────────────────────────────────────────────────
 export const getAnomalies = ({ category } = {}) => {
   let url = '/anomaly';
@@ -257,6 +269,10 @@ export const loginCollector = (phone) =>
 // POST /v1/recyclers/login { recycler_id } → { data: { recycler, token } }
 export const loginRecycler = (recyclerId) =>
   request('/recyclers/login', { method: 'POST', body: JSON.stringify({ recycler_id: recyclerId }) });
+
+// POST /v1/recyclers/onboard — submit a new recycler application (status = pending, admin must approve)
+export const onboardRecycler = (data) =>
+  request('/recyclers/onboard', { method: 'POST', body: JSON.stringify(data) });
 
 // ── Collector registration ──────────────────────────────────────────────────
 // POST /v1/collectors/register { name, phone, operating_location, preferred_language }
