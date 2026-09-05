@@ -83,6 +83,7 @@ export default function CollectorLotDetail() {
   const acceptedOffer = offers.find(o => o.offer_status === 'accepted') ?? null;
   const openOffers = offers.filter(o => o.offer_status === 'offered');
   const collectionImages = lotImages.filter((image) => image.image_type === 'COLLECTION');
+  const confirmationImages = lotImages.filter((image) => image.image_type === 'RECYCLER_CONFIRMATION');
 
   // ── Handover checklist ────────────────────────────────────────────────────
   // Each step is satisfied by either a lot_events entry (preferred — direct
@@ -498,6 +499,69 @@ export default function CollectorLotDetail() {
                     <p className="detail-item__value">{latestHandover.weight_kg} {t('common.kg')}</p>
                   </div>
                 )}
+              </div>
+            </section>
+          )}
+
+          {/* Digital handover record — shown to collector once recycler confirms */}
+          {latestHandover?.status === 'confirmed' && (
+            <section className="card animate-scale-in" aria-labelledby="collector-record-heading">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+                <h2 id="collector-record-heading" className="detail-section-title" style={{ marginBottom: 0 }}>
+                  {t('verify.recordTitle')}
+                </h2>
+                <StatusBadge status="confirmed" size="md" />
+              </div>
+              <div className="detail-grid">
+                <div className="detail-item">
+                  <p className="detail-item__label">{t('traceability.details.ref')}</p>
+                  <p className="detail-item__value font-mono" style={{ fontSize: 'var(--text-sm)' }}>
+                    {latestHandover.handover_reference_number || latestHandover.handover_reference}
+                  </p>
+                </div>
+                <div className="detail-item">
+                  <p className="detail-item__label">{t('verify.collectionWeight')}</p>
+                  <p className="detail-item__value">{latestHandover.approx_weight_kg ?? '—'} {t('common.kg')}</p>
+                </div>
+                <div className="detail-item">
+                  <p className="detail-item__label">{t('verify.finalWeight')}</p>
+                  <p className="detail-item__value">{latestHandover.weight_kg ?? '—'} {t('common.kg')}</p>
+                </div>
+                <div className="detail-item">
+                  <p className="detail-item__label">{t('verify.timestamp')}</p>
+                  <p className="detail-item__value" style={{ fontSize: 'var(--text-sm)' }}>
+                    {fmtDate(latestHandover.confirmed_at || latestHandover.confirmation_timestamp)}
+                  </p>
+                </div>
+                <div className="detail-item">
+                  <p className="detail-item__label">GPS</p>
+                  <p className="detail-item__value" style={{ fontSize: 'var(--text-sm)' }}>
+                    {latestHandover.gps_lat != null && latestHandover.gps_lng != null
+                      ? `${Number(latestHandover.gps_lat).toFixed(4)}, ${Number(latestHandover.gps_lng).toFixed(4)}`
+                      : t('verify.notRecorded')}
+                  </p>
+                </div>
+                <div className="detail-item">
+                  <p className="detail-item__label">{t('verify.qrScanLabel')}</p>
+                  <p className="detail-item__value">
+                    {latestHandover.scan_verified ? ` ${t('verify.qrScanned')}` : t('verify.qrManual')}
+                  </p>
+                </div>
+                <div className="detail-item">
+                  <p className="detail-item__label">{t('verify.photoLabel')}</p>
+                  {confirmationImages.length > 0 ? (
+                    <img
+                      src={confirmationImages[confirmationImages.length - 1].image_url}
+                      alt={t('verify.photoCapturedAlt')}
+                      className="verify-photo-preview verify-photo-preview--lg"
+                    />
+                  ) : (
+                    <p className="detail-item__value">{t('verify.notRecorded')}</p>
+                  )}
+                </div>
+              </div>
+              <div className="confirmed-banner" role="status" style={{ marginTop: 'var(--space-4)' }}>
+                {t('verify.recordComplete')}
               </div>
             </section>
           )}

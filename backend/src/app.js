@@ -22,7 +22,12 @@ app.use(express.json({ limit: '7mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Enable CORS
-app.use(cors());
+// In production restrict to the deployed frontend origin (set CORS_ORIGIN env var).
+// Falls back to open wildcard in development so local Vite proxy still works.
+const corsOrigin = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
+  : true;
+app.use(cors({ origin: corsOrigin, credentials: true }));
 
 // HTTP request logging
 app.use(pinoHttp({ logger }));

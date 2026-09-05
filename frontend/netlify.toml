@@ -1,0 +1,30 @@
+[build]
+  base    = "frontend"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# ── SPA fallback ─────────────────────────────────────────────────────────────
+# All routes are handled by React Router — send every non-asset request to
+# index.html so deep links and page refreshes work correctly.
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
+
+# ── API proxy to backend ──────────────────────────────────────────────────────
+# Once the backend is deployed on Render, you can either:
+#   A) Set VITE_API_BASE_URL in Netlify env vars (simpler — no proxy needed), OR
+#   B) Uncomment the block below to proxy /v1/* through Netlify to avoid CORS.
+#
+# [[redirects]]
+#   from   = "/v1/*"
+#   to     = "https://kabadiwala-backend.onrender.com/v1/:splat"
+#   status = 200
+#   force  = true
+
+[dev]
+  command = "npm run dev"
+  port    = 5173

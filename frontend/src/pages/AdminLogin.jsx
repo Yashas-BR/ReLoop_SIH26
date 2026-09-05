@@ -26,7 +26,7 @@ export default function AdminLogin() {
   async function handleAdminLogin() {
     const code = String(adminCode ?? '').trim().toUpperCase();
     if (!code) {
-      setError(t('login.adminCodeRequired') || 'Please enter admin code');
+      setError(t('admin.codeRequired'));
       return;
     }
     setError('');
@@ -43,7 +43,7 @@ export default function AdminLogin() {
         });
         navigate('/admin', { replace: true });
       } else {
-        setError(t('login.invalidAdminCode') || 'Invalid admin code. Try: KBC-ADMIN-2026');
+        setError(t('admin.loginFail'));
       }
       setBusy(false);
     }, 500);
@@ -54,8 +54,8 @@ export default function AdminLogin() {
       <div className="login-card card animate-scale-in">
         <div className="login-card__head login-card__head--admin">
           <div className="login-card__logo login-card__logo--admin" aria-hidden="true">⚙️</div>
-          <h1 className="section-title">{t('login.adminTitle') || 'Admin Login'}</h1>
-          <p className="section-subtitle">{t('login.adminSubtitle') || 'Manage platform operations'}</p>
+          <h1 className="section-title">{t('adminLogin.title')}</h1>
+          <p className="section-subtitle">{t('adminLogin.subtitle')}</p>
         </div>
 
         {error && (
@@ -65,18 +65,14 @@ export default function AdminLogin() {
         )}
 
         <section className="login-panel" aria-labelledby="admin-heading">
-          <h2 id="admin-heading" className="login-panel__title">
-            {t('login.admin') || 'Administrator'}
-          </h2>
-
           <label className="form-label" htmlFor="admin-code">
-            {t('login.adminCodeLabel') || 'Admin Code'}
+            {t('adminLogin.codeLabel')}
           </label>
           <input
             id="admin-code"
             className="form-input"
             type="text"
-            placeholder={t('login.adminCodePlaceholder') || 'Enter admin code'}
+            placeholder={t('adminLogin.codePlaceholder')}
             value={adminCode}
             onChange={(e) => setAdminCode(e.target.value.toUpperCase())}
             onKeyDown={(e) => { if (e.key === 'Enter') handleAdminLogin(); }}
@@ -88,11 +84,11 @@ export default function AdminLogin() {
             disabled={busy}
             aria-busy={busy}
           >
-            {busy ? t('common.loading') + '…' : t('login.signIn')}
+            {busy ? t('common.loading') : t('adminLogin.signIn')}
           </button>
 
           <div className="login-demo" role="group">
-            <p className="login-demo__label">{t('login.demoAdmin') || 'Demo Code:'}</p>
+            <p className="login-demo__label">{t('adminLogin.demoCode')}</p>
             <button
               className="demo-chip"
               onClick={() => setAdminCode(DEMO_ADMIN.admin_code)}
@@ -103,7 +99,7 @@ export default function AdminLogin() {
         </section>
 
         <p className="login-foot">
-          <Link to="/">{t('login.backToLogin') || 'Back to Home'}</Link>
+          <Link to="/">{t('adminLogin.backToLogin')}</Link>
         </p>
       </div>
     </div>

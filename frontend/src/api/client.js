@@ -108,7 +108,7 @@ export const getMatchedRecyclers = ({ category, lat, lng, maxDistanceKm }) => {
 
 export const getAllRecyclers = () => request('/recyclers').then(r => ({
   ...r,
-  data: r.data ?? r.recyclers ?? [],
+  data: Array.isArray(r.data) ? r.data : (r.data?.recyclers ?? r.recyclers ?? []),
 }));
 export const getRecycler = (id) => request(`/recyclers/${id}`);
 export const updateRecycler = (id, data) =>

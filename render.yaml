@@ -1,0 +1,48 @@
+databases:
+  - name: kabadiwala-db
+    databaseName: kabadiwala_connect
+    user: kabadiwala
+    plan: free
+    region: singapore
+
+services:
+  - type: web
+    name: kabadiwala-backend
+    runtime: node
+    region: singapore
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run migrate && npm run seed
+    startCommand: npm start
+    healthCheckPath: /v1/health
+
+    envVars:
+      # Render auto-injects DATABASE_URL from the linked database above.
+      # All other vars must be set manually in the Render dashboard.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: kabadiwala-db
+          property: connectionString
+
+      - key: NODE_ENV
+        value: production
+
+      - key: PORT
+        value: 3000
+
+      # Admin passphrase — override in Render dashboard, never commit real value
+      - key: ADMIN_CODE
+        value: KBC-ADMIN-2026
+
+      # Cloudinary — set these in Render dashboard (Environment → Add env var)
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+      # CORS — set to your Netlify frontend URL once deployed
+      # e.g. https://kabadiwala-connect.netlify.app
+      - key: CORS_ORIGIN
+        sync: false
