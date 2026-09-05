@@ -15,7 +15,8 @@
     "migrate": "node src/migrate.js",
     "seed": "node src/seed.js",
     "reset": "node src/reset.js",
-    "setup": "node src/setup.js"
+    "setup": "node src/setup.js",
+    "setup:force": "node src/setup.js -- --force"
   },
   "dependencies": {
     "cloudinary": "^2.11.0",

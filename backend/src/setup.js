@@ -1,7 +1,11 @@
 // src/setup.js
-// All-in-one script: runs migrations + seeds all data
-// Run: npm run setup
-// Or:   node src/setup.js
+// One-shot database bootstrap: migrate every table then seed all data.
+//
+// Usage:
+//   npm run setup                  — full migrate + seed + verify
+//   npm run setup -- --skip-seed   — migrate only (no data)
+//   npm run setup -- --skip-verify — migrate + seed, skip row-count check
+//   npm run setup -- --force       — drop and recreate everything (DESTRUCTIVE)
 
 import fs from 'fs';
 import path from 'path';
@@ -11,69 +15,62 @@ import { pool } from './db.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const sqlDir = path.join(__dirname, '..', 'sql');
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MIGRATION FILES (in order)
-const migrationFiles = [
-  '01_schema.sql',      // Core tables
-  '06_lot_system.sql',  // Lot system additions
+// ── Migration files — run in strict order ────────────────────────────────────
+const MIGRATIONS = [
+  { file: '01_schema.sql',                   label: 'Core schema (all base tables)' },
+  { file: '06_lot_system.sql',               label: 'Lot system (display IDs, events, images, AI feedback)' },
+  { file: '06_ai_feedback.sql',              label: 'AI feedback table' },
+  { file: '05_national_recyclers_schema.sql',label: 'National recyclers reference table' },
 ];
 
-// OPTIONAL: Uncomment to include national recyclers data
-// const nationalSchemaFile = '05_national_recyclers_schema.sql';
-
-// SEED FILES (in dependency order)
-const seedFiles = [
-  '02_seed_recyclers_prices.sql',  // Recyclers + prices + price sources
-  '03_seed_transactions.sql',      // Collectors + materials + transactions + traceability
-  '05_seed_recycler_rates.sql',    // Recycler-specific rates
+// ── Seed files — run in dependency order ─────────────────────────────────────
+const SEEDS = [
+  { file: '02_seed_recyclers_prices.sql',  label: 'Recyclers, prices, price sources' },
+  { file: '03_seed_transactions.sql',      label: 'Collectors, lots, transactions, traceability' },
+  { file: '05_seed_recycler_rates.sql',    label: 'Recycler-specific offered rates' },
 ];
 
-// Expected row counts after seeding
-const expectedCounts = {
-  recyclers: 10,
-  prices: 71,
-  collectors: 2,
-  materials: 6,
-  transactions: 6,
-  traceability: 4,
+// ── Expected row counts after seeding ────────────────────────────────────────
+const EXPECTED = {
+  recyclers:    10,
+  prices:       71,
+  collectors:    2,
+  materials:     6,
+  transactions:  6,
+  traceability:  4,
   price_sources: 4,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function runSqlFile(filename) {
+function readSql(filename) {
   const filePath = path.join(sqlDir, filename);
   if (!fs.existsSync(filePath)) {
-    console.warn(`  ⚠️  File not found: ${filename}, skipping...`);
-    return false;
+    throw new Error(`SQL file not found: ${filename}`);
   }
-  const sql = fs.readFileSync(filePath, 'utf8');
-  await pool.query(sql);
-  return true;
+  return fs.readFileSync(filePath, 'utf8');
 }
 
-async function verifyCounts() {
-  console.log('\n📊 Verifying row counts...');
-  const res = await pool.query(`
-    SELECT
-      (SELECT COUNT(*) FROM recyclers)    AS recyclers,
-      (SELECT COUNT(*) FROM prices)       AS prices,
-      (SELECT COUNT(*) FROM collectors)   AS collectors,
-      (SELECT COUNT(*) FROM materials)    AS materials,
-      (SELECT COUNT(*) FROM transactions) AS transactions,
-      (SELECT COUNT(*) FROM traceability) AS traceability,
-      (SELECT COUNT(*) FROM price_sources) AS price_sources
-  `);
+async function runFile(filename, label) {
+  process.stdout.write(`  ▶  ${label} ... `);
+  const sql = readSql(filename);
+  await pool.query(sql);
+  console.log('✅');
+}
 
-  const actual = res.rows[0];
-  let allMatch = true;
-  for (const [table, expected] of Object.entries(expectedCounts)) {
-    const got = Number(actual[table]);
-    const ok = got === expected;
-    if (!ok) allMatch = false;
-    console.log(`  ${ok ? '✅' : '❌'} ${table}: expected ${expected}, got ${got}`);
-  }
-  return allMatch;
+async function dropAll() {
+  console.log('\n⚠️  --force: dropping all tables and sequences...');
+  await pool.query(`
+    DO $$ DECLARE
+      r RECORD;
+    BEGIN
+      FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
+        EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
+      END LOOP;
+    END $$;
+    DROP SEQUENCE IF EXISTS lot_display_seq CASCADE;
+  `);
+  console.log('  ✅ All tables dropped.\n');
 }
 
 async function listTables() {
@@ -84,66 +81,88 @@ async function listTables() {
   return res.rows.map(r => r.table_name);
 }
 
+async function verifyCounts() {
+  console.log('\n📊 Verifying row counts...');
+  const res = await pool.query(`
+    SELECT
+      (SELECT COUNT(*) FROM recyclers)     AS recyclers,
+      (SELECT COUNT(*) FROM prices)        AS prices,
+      (SELECT COUNT(*) FROM collectors)    AS collectors,
+      (SELECT COUNT(*) FROM materials)     AS materials,
+      (SELECT COUNT(*) FROM transactions)  AS transactions,
+      (SELECT COUNT(*) FROM traceability)  AS traceability,
+      (SELECT COUNT(*) FROM price_sources) AS price_sources
+  `);
+  const actual = res.rows[0];
+  let allOk = true;
+  for (const [table, expected] of Object.entries(EXPECTED)) {
+    const got = Number(actual[table]);
+    const ok = got >= expected; // >= so re-runs with extra data still pass
+    if (!ok) allOk = false;
+    console.log(`  ${ok ? '✅' : '❌'} ${table.padEnd(14)} expected ≥ ${expected}, got ${got}`);
+  }
+  return allOk;
+}
+
 async function main() {
   const args = process.argv.slice(2);
-  const skipSeed = args.includes('--skip-seed');
+  const skipSeed   = args.includes('--skip-seed');
   const skipVerify = args.includes('--skip-verify');
+  const force      = args.includes('--force');
+
+  console.log('');
+  console.log('╔══════════════════════════════════════════════════╗');
+  console.log('║   Kabadiwala Connect — Database Setup             ║');
+  console.log('╚══════════════════════════════════════════════════╝');
+  console.log('');
 
   try {
-    console.log('🚀 Kabadiwala Connect - Database Setup\n');
-    console.log('─'.repeat(50));
+    // ── Optional: wipe everything first ────────────────────────────────────
+    if (force) await dropAll();
 
-    // ─── MIGRATIONS ───────────────────────────────────────────────────────────
-    console.log('\n📦 Running migrations...\n');
-    
-    for (const file of migrationFiles) {
-      console.log(`  ▶ ${file}`);
-      await runSqlFile(file);
-      console.log(`    ✅ Done`);
+    // ── Migrations ──────────────────────────────────────────────────────────
+    console.log('📦 Running migrations...\n');
+    for (const { file, label } of MIGRATIONS) {
+      await runFile(file, label);
     }
-
-    // Optional: National recyclers schema
-    // console.log('\n  ▶ 05_national_recyclers_schema.sql');
-    // await runSqlFile('05_national_recyclers_schema.sql');
-    // console.log('    ✅ Done');
 
     const tables = await listTables();
-    console.log(`\n📋 Tables created: ${tables.join(', ')}`);
+    console.log(`\n📋 Tables present: ${tables.join(', ')}\n`);
 
-    // ─── SEED DATA ─────────────────────────────────────────────────────────────
-    if (!skipSeed) {
-      console.log('\n🌱 Seeding data...\n');
-      
-      for (const file of seedFiles) {
-        console.log(`  ▶ ${file}`);
-        await runSqlFile(file);
-        console.log(`    ✅ Done`);
+    // ── Seeds ───────────────────────────────────────────────────────────────
+    if (skipSeed) {
+      console.log('⏭️  Skipping seed data (--skip-seed)\n');
+    } else {
+      console.log('🌱 Seeding data...\n');
+      for (const { file, label } of SEEDS) {
+        await runFile(file, label);
       }
 
-      // ─── VERIFY ─────────────────────────────────────────────────────────────
       if (!skipVerify) {
-        const allMatch = await verifyCounts();
-        if (allMatch) {
-          console.log('\n✅ All seed data loaded correctly!');
-        } else {
-          console.log('\n❌ Row count mismatch detected!');
+        const ok = await verifyCounts();
+        if (!ok) {
+          console.error('\n❌ Row count mismatch — check for failed inserts above.');
           process.exit(1);
         }
+        console.log('\n✅ All seed data verified.');
       }
-    } else {
-      console.log('\n⏭️  Skipping seed (--skip-seed flag)');
     }
 
-    console.log('\n' + '─'.repeat(50));
-    console.log('🎉 Setup complete!\n');
-    console.log('Next steps:');
-    console.log('  • npm start          - Start the server');
-    console.log('  • npm run reset      - Clear all data (keep schema)');
-    console.log('  • npm run seed       - Reseed data only');
+    // ── Done ────────────────────────────────────────────────────────────────
+    console.log('');
+    console.log('╔══════════════════════════════════════════════════╗');
+    console.log('║   ✅  Setup complete!                             ║');
+    console.log('╚══════════════════════════════════════════════════╝');
+    console.log('');
+    console.log('  npm start              start the API server');
+    console.log('  npm run setup          re-run this script');
+    console.log('  npm run setup -- --force   wipe + rebuild from scratch');
+    console.log('  npm run reset          clear data, keep schema');
     console.log('');
 
   } catch (err) {
     console.error('\n❌ Setup failed:', err.message);
+    if (process.env.DEBUG_SQL) console.error(err);
     process.exit(1);
   } finally {
     await pool.end();
