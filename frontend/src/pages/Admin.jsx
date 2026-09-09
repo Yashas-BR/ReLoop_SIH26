@@ -1209,7 +1209,7 @@ export default function Admin() {
                         </td>
                         <td>
                           <span className="font-mono" style={{ fontWeight: '600', display: 'block' }}>
-                            {s.display_lot_id || s.lot_id ? `Lot #${s.display_lot_id || s.lot_id}` : `Sample #${s.id}`}
+                            {s.display_lot_id || s.lot_id || `Sample #${s.id}`}
                           </span>
                           {s.collector_name && <span className="admin-table__sub">👤 {s.collector_name}</span>}
                         </td>
@@ -1220,12 +1220,14 @@ export default function Admin() {
                           </span>
                         </td>
                         <td>
-                          {s.human_category ? (
-                            <span style={{ fontWeight: '600', color: s.human_category !== s.ai_predicted_category ? '#c2410c' : '#15803d' }}>
-                              {s.human_category}
+                          {s.human_category || s.effective_category ? (
+                            <span style={{ fontWeight: '600', color: (s.human_category || s.effective_category) !== s.ai_predicted_category ? '#c2410c' : '#15803d' }}>
+                              {s.human_category || s.effective_category}
                             </span>
                           ) : (
-                            <span className="text-muted">—</span>
+                            <span style={{ fontWeight: '600', color: '#15803d' }}>
+                              {s.ai_predicted_category}
+                            </span>
                           )}
                         </td>
                         <td>
@@ -1415,7 +1417,7 @@ export default function Admin() {
 
             <div style={{ background: 'var(--color-surface-alt, #f8fafc)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', fontSize: '0.88rem' }}>
               <div style={{ fontWeight: '600', marginBottom: '4px' }}>📋 Sample Context & Metadata</div>
-              <div>• <strong>Lot Reference:</strong> {inspectSample.display_lot_id || inspectSample.lot_id ? `Lot #${inspectSample.display_lot_id || inspectSample.lot_id}` : `Scan Sample #${inspectSample.id} (Unlinked)`}</div>
+              <div>• <strong>Lot Reference:</strong> {inspectSample.display_lot_id || inspectSample.lot_id || `Scan Sample #${inspectSample.id} (Unlinked)`}</div>
               {inspectSample.collector_name && <div>• <strong>Collector:</strong> {inspectSample.collector_name}</div>}
               <div>• <strong>Recorded Date:</strong> {fmtDate(inspectSample.created_at)}</div>
               {inspectSample.correction_reason && (

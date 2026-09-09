@@ -191,6 +191,10 @@ export const createLot = async (data) => {
   );
   const lot = result.rows[0];
 
+  if (data.ai_feedback_id) {
+    await query(`UPDATE ai_feedback SET lot_id = $1 WHERE id = $2`, [lot_id, data.ai_feedback_id]).catch(() => {});
+  }
+
   // ── Create the initial transaction record (status: 'quoted') ────────────────
   await query(
     `INSERT INTO transactions
@@ -493,19 +497,9 @@ export const confirmHandover = async (reference, recyclerId, extra = {}) => {
   
   let acceptedRate = null;
   if (offer?.offered_price != null) {
-    const rawOffer = Number(offer.offered_price);
-    if (initialWeight && initialWeight > 1 && rawOffer > 300) {
-      acceptedRate = Math.round((rawOffer / initialWeight) * 100) / 100;
-    } else {
-      acceptedRate = rawOffer;
-    }
+    acceptedRate = Number(offer.offered_price);
   } else if (txn?.quoted_price != null) {
-    const rawQuoted = Number(txn.quoted_price);
-    if (initialWeight && initialWeight > 1 && rawQuoted > 300) {
-      acceptedRate = Math.round((rawQuoted / initialWeight) * 100) / 100;
-    } else {
-      acceptedRate = rawQuoted;
-    }
+    acceptedRate = Number(txn.quoted_price);
   }
 
   let finalSaleValue = null;

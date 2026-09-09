@@ -320,7 +320,17 @@ export default function CreateLot() {
         collection_lng: collectionLng != null ? Number(collectionLng) : undefined,
         description: descParts.join(' | ') || undefined,
         image_refs: image_refs.filter(Boolean),
+        ai_feedback_id: aiFeedbackId || undefined,
       });
+
+      if (aiFeedbackId && r.data?.lot?.lot_id) {
+        const outcome = classify && category === classify.category ? 'accepted' : 'corrected';
+        updateAiFeedback(aiFeedbackId, {
+          lot_id: r.data.lot.lot_id,
+          human_category: category,
+          outcome,
+        }).catch(() => {});
+      }
 
       if (r.queued) {
         setOfflineSaved(true);

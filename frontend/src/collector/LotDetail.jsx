@@ -102,9 +102,7 @@ export default function CollectorLotDetail() {
   const rawOfferPrice = acceptedOffer?.offered_price != null
     ? Number(acceptedOffer.offered_price)
     : (latestHandover?.quoted_price != null ? Number(latestHandover.quoted_price) : null);
-  const acceptedUnitRate = rawOfferPrice != null
-    ? (approxWeight > 1 && rawOfferPrice > 300 ? Math.round((rawOfferPrice / approxWeight) * 100) / 100 : rawOfferPrice)
-    : null;
+  const acceptedUnitRate = rawOfferPrice != null ? rawOfferPrice : null;
   const acceptedTotalEst = acceptedUnitRate != null && approxWeight > 0
     ? Math.round(acceptedUnitRate * approxWeight)
     : null;
@@ -714,9 +712,7 @@ export default function CollectorLotDetail() {
                 </div>
                 <ul className="quote-list">
                   {openOffers.map((o) => {
-                    const offerRate = Number(o.offered_price) > 300 && approxWeight > 1
-                      ? Math.round((Number(o.offered_price) / approxWeight) * 100) / 100
-                      : Number(o.offered_price);
+                    const offerRate = Number(o.offered_price);
                     const offerEstTotal = approxWeight > 0
                       ? Math.round(offerRate * approxWeight)
                       : null;

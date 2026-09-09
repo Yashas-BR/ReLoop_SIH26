@@ -349,19 +349,13 @@ export default function LotDetail() {
   const rawQuotedPrice = firstHandover?.quoted_price != null 
     ? Number(firstHandover.quoted_price) 
     : (acceptedOffer?.offered_price != null ? Number(acceptedOffer.offered_price) : null);
-  const unitAcceptedRate = rawQuotedPrice != null
-    ? (collectionWeight > 1 && rawQuotedPrice > 300 ? Math.round((rawQuotedPrice / collectionWeight) * 100) / 100 : rawQuotedPrice)
-    : null;
+  const unitAcceptedRate = rawQuotedPrice != null ? rawQuotedPrice : null;
   const currentWeighedKg = Number(finalWeight) || (firstHandover?.approx_weight_kg != null ? Number(firstHandover.approx_weight_kg) : (lotMeta?.approx_weight_kg != null ? Number(lotMeta.approx_weight_kg) : 0));
   const liveSettlement = unitAcceptedRate != null && currentWeighedKg > 0
     ? Math.round(unitAcceptedRate * currentWeighedKg * 100) / 100
     : null;
 
-  const computedFinalPrice = liveSettlement != null
-    ? String(liveSettlement)
-    : (rawQuotedPrice != null
-        ? String(collectionWeight > 0 && rawQuotedPrice <= 300 ? Math.round(rawQuotedPrice * collectionWeight * 100) / 100 : rawQuotedPrice)
-        : '');
+  const computedFinalPrice = liveSettlement != null ? String(liveSettlement) : '';
 
   // Automatically sync payPrice whenever calculated final price or weight updates
   useEffect(() => {

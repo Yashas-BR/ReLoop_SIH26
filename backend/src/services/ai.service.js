@@ -47,6 +47,13 @@ export const initAiDatasetSchema = async () => {
       ALTER TABLE ai_feedback ADD COLUMN IF NOT EXISTS reviewed_by VARCHAR(50);
       ALTER TABLE ai_feedback ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP;
       ALTER TABLE ai_feedback DROP CONSTRAINT IF EXISTS ai_feedback_outcome_check;
+
+      UPDATE ai_feedback f
+      SET lot_id = m.lot_id
+      FROM materials m
+      WHERE f.lot_id IS NULL
+        AND (f.collector_id = m.collector_id OR f.collector_id IS NULL)
+        AND (f.ai_predicted_category = m.category OR f.human_category = m.category);
     `);
   } catch (err) {
     // Non-fatal if table not created yet
@@ -58,18 +65,19 @@ initAiDatasetSchema().catch(() => {});
 /**
  * Update an existing feedback row when admin/user validates or corrects.
  */
-export const updateAiFeedback = async (id, { human_category, outcome, correction_reason, reviewed_by = 'admin' }) => {
+export const updateAiFeedback = async (id, { lot_id, human_category, outcome, correction_reason, reviewed_by = 'admin' }) => {
   await initAiDatasetSchema();
   const result = await query(
     `UPDATE ai_feedback
-     SET human_category = COALESCE($1, human_category),
-         outcome = $2,
-         correction_reason = COALESCE($3, correction_reason),
-         reviewed_by = COALESCE($4, reviewed_by),
+     SET lot_id = COALESCE($1, lot_id),
+         human_category = COALESCE($2, human_category),
+         outcome = COALESCE($3, outcome),
+         correction_reason = COALESCE($4, correction_reason),
+         reviewed_by = COALESCE($5, reviewed_by),
          reviewed_at = NOW()
-     WHERE id = $5
+     WHERE id = $6
      RETURNING *`,
-    [human_category ?? null, outcome, correction_reason ?? null, reviewed_by, id]
+    [lot_id ?? null, human_category ?? null, outcome ?? null, correction_reason ?? null, reviewed_by, id]
   );
   return result.rows[0];
 };
