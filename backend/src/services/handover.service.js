@@ -3,6 +3,7 @@ import { query } from '../db.js';
 import { ApiError } from '../utils/ApiError.js';
 import { calculateInstantValuation } from './valuation.service.js';
 import { uploadLotImage } from './cloudinary.service.js';
+import { updateObservationStatus } from './priceObservation.service.js';
 
 const generateHandoverRef = () => {
   const timestamp = Date.now().toString(36).toUpperCase();

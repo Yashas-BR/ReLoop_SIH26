@@ -132,20 +132,7 @@ export const calculateInstantValuation = async (category, location, weight) => {
   }
 
   if (priceResult.rows.length === 0) {
-    return {
-      benchmark_available: false,
-      estimated_value: null,
-      unit_price: null,
-      market_benchmark: null,
-      market_range_low: null,
-      market_range_high: null,
-      unit: 'per_kg',
-      weight_kg: weight,
-      category,
-      location: normalizedLoc || location,
-      price_samples: 0,
-      benchmark_notice: 'Market benchmark unavailable. We will collect recycler quotes to establish a market reference.',
-    };
+    throw new ApiError(404, `No pricing data found for ${category} in ${location}`);
   }
 
   const rows = priceResult.rows;
