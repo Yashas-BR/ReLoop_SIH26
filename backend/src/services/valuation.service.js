@@ -138,21 +138,19 @@ export const calculateInstantValuation = async (category, location, weight) => {
   const rows = priceResult.rows;
   const n = rows.length;
 
-  // Weight = (n + 1 - rank), so rank-1 (newest) gets weight n, rank-n (oldest) gets weight 1
-  let weightedSum = 0;
-  let totalWeight = 0;
-  for (const row of rows) {
-    const w = n + 1 - Number(row.recency_rank);
-    weightedSum += parseFloat(row.buying_price) * w;
-    totalWeight += w;
-  }
-  const unitPrice = weightedSum / totalWeight;
+  // Authoritative current market benchmark: latest price record
+  const latestPrice = parseFloat(rows[0].buying_price);
+  const unitPrice = Math.round(latestPrice * 100) / 100;
 
-  // Market range: min of all range_lows, max of all range_highs across the window
-  const rangeLow  = Math.min(...rows.map(r => parseFloat(r.market_range_low  ?? r.buying_price)));
-  const rangeHigh = Math.max(...rows.map(r => parseFloat(r.market_range_high ?? r.buying_price)));
+  // Filtered market range representing normal observed market prices (±10% to ±15% of benchmark)
+  const rawMin = Math.min(...rows.map(r => parseFloat(r.market_range_low ?? r.buying_price)));
+  const rawMax = Math.max(...rows.map(r => parseFloat(r.market_range_high ?? r.buying_price)));
 
-  const estimatedValue = unitPrice * weight;
+  // Trim abnormal outliers (restrict range to normal trading band around benchmark)
+  const rangeLow = Math.max(Math.round(unitPrice * 0.88 * 100) / 100, Math.round(rawMin * 100) / 100);
+  const rangeHigh = Math.min(Math.round(unitPrice * 1.12 * 100) / 100, Math.round(rawMax * 100) / 100);
+
+  const estimatedValue = Math.round(unitPrice * weight * 100) / 100;
 
   return {
     benchmark_available: true,

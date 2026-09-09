@@ -38,15 +38,38 @@ export const recordAiFeedback = async ({
 };
 
 /**
- * Update an existing feedback row when the collector makes their final choice.
+ * Ensure table schema columns and views are initialized.
  */
-export const updateAiFeedback = async (id, { human_category, outcome }) => {
+export const initAiDatasetSchema = async () => {
+  try {
+    await query(`
+      ALTER TABLE ai_feedback ADD COLUMN IF NOT EXISTS correction_reason TEXT;
+      ALTER TABLE ai_feedback ADD COLUMN IF NOT EXISTS reviewed_by VARCHAR(50);
+      ALTER TABLE ai_feedback ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP;
+      ALTER TABLE ai_feedback DROP CONSTRAINT IF EXISTS ai_feedback_outcome_check;
+    `);
+  } catch (err) {
+    // Non-fatal if table not created yet
+  }
+};
+
+initAiDatasetSchema().catch(() => {});
+
+/**
+ * Update an existing feedback row when admin/user validates or corrects.
+ */
+export const updateAiFeedback = async (id, { human_category, outcome, correction_reason, reviewed_by = 'admin' }) => {
+  await initAiDatasetSchema();
   const result = await query(
     `UPDATE ai_feedback
-     SET human_category = $1, outcome = $2
-     WHERE id = $3
-     RETURNING id, outcome`,
-    [human_category ?? null, outcome, id]
+     SET human_category = COALESCE($1, human_category),
+         outcome = $2,
+         correction_reason = COALESCE($3, correction_reason),
+         reviewed_by = COALESCE($4, reviewed_by),
+         reviewed_at = NOW()
+     WHERE id = $5
+     RETURNING *`,
+    [human_category ?? null, outcome, correction_reason ?? null, reviewed_by, id]
   );
   return result.rows[0];
 };

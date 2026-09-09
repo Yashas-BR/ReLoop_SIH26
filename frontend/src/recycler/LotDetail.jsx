@@ -288,14 +288,6 @@ export default function LotDetail() {
     if (galleryInputRef.current) galleryInputRef.current.value = '';
   }
 
-  // Prefill final price from the quoted price once the lot loads.
-  useEffect(() => {
-    const first = handovers[0];
-    if (first && first.payment_status === 'pending' && first.quoted_price != null && payPrice === '') {
-      setPayPrice(String(Number(first.quoted_price).toFixed(2)));
-    }
-  }, [handovers, payPrice]);
-
   // AI/ML use case 4 (PS §11-D): flag unusual transaction values — compare the
   // entered final price against category stats + market range before recording.
   const runAnomalyCheck = useCallback(async (price, h) => {
@@ -364,6 +356,19 @@ export default function LotDetail() {
   const liveSettlement = unitAcceptedRate != null && currentWeighedKg > 0
     ? Math.round(unitAcceptedRate * currentWeighedKg * 100) / 100
     : null;
+
+  const computedFinalPrice = liveSettlement != null
+    ? String(liveSettlement)
+    : (rawQuotedPrice != null
+        ? String(collectionWeight > 0 && rawQuotedPrice <= 300 ? Math.round(rawQuotedPrice * collectionWeight * 100) / 100 : rawQuotedPrice)
+        : '');
+
+  // Automatically sync payPrice whenever calculated final price or weight updates
+  useEffect(() => {
+    if (firstHandover && firstHandover.payment_status !== 'paid' && computedFinalPrice) {
+      setPayPrice(computedFinalPrice);
+    }
+  }, [computedFinalPrice, firstHandover]);
 
   const PAY_METHOD_ICONS = { cash: '₹', upi: 'UPI', bank_transfer: 'BANK' };
 
@@ -1078,7 +1083,20 @@ export default function LotDetail() {
               ) : (
                 <>
                   <div className="form-group">
-                    <label className="form-label" htmlFor="pay-price">{t('lotDetail.payFinalPrice')}</label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-1)' }}>
+                      <label className="form-label" htmlFor="pay-price" style={{ margin: 0 }}>{t('lotDetail.payFinalPrice')}</label>
+                      {computedFinalPrice && payPrice !== computedFinalPrice && (
+                        <button
+                          type="button"
+                          className="btn btn-outline"
+                          style={{ padding: '2px 8px', fontSize: '0.75rem', height: 'auto' }}
+                          onClick={() => handlePayPriceChange(computedFinalPrice)}
+                          title="Re-sync with calculated total price"
+                        >
+                          🔄 Sync to ₹{computedFinalPrice}
+                        </button>
+                      )}
+                    </div>
                     <div className="pay-price-input">
                       <input
                         id="pay-price"
@@ -1092,9 +1110,10 @@ export default function LotDetail() {
                       />
                       <span className="weight-unit">₹</span>
                     </div>
-                    {firstHandover?.quoted_price != null && (
-                      <p id="pay-price-hint" className="form-hint">
-                        {t('lotDetail.payQuotedHint', { amount: fmtRupees(firstHandover.quoted_price) })}
+                    {computedFinalPrice && (
+                      <p id="pay-price-hint" className="form-hint" style={{ color: 'var(--color-primary)', fontWeight: '500', marginTop: '4px' }}>
+                        ⚡ Automatically synced: <strong>₹{computedFinalPrice}</strong>
+                        {currentWeighedKg > 0 && unitAcceptedRate ? ` (${currentWeighedKg} kg × ₹${unitAcceptedRate}/kg)` : ''}
                       </p>
                     )}
                   </div>
