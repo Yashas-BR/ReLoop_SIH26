@@ -323,6 +323,8 @@ export const getAiDatasetSamples = ({ outcome, category, limit, offset } = {}) =
   return request(`/ai/dataset/samples?${q.toString()}`);
 };
 
+export const getAiDatasetExportUrl = () => `${BASE}/ai/dataset/export`;
+
 // ── Anomaly detection (AI/ML) ────────────────────────────────────────────────
 export const getAnomalies = ({ category } = {}) => {
   let url = '/anomaly';

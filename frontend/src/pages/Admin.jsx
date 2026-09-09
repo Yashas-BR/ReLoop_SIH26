@@ -14,7 +14,7 @@ import { Link } from 'react-router-dom';
 import {
   adminLogin, getAdminSummary, getAllRecyclers,
   adminVerifyRecycler, getPriceSources, getAdminLots, getAdminAuditEvents,
-  getAiDatasetSummary, getAiDatasetSamples, getAnomalies,
+  getAiDatasetSummary, getAiDatasetSamples, getAnomalies, getAiDatasetExportUrl,
 } from '../api/client';
 import { getSession, saveSession, clearSession } from '../services/auth';
 import { StatusBadge } from '../components/StatusBadge';
@@ -131,6 +131,33 @@ export default function Admin() {
     clearSession();
     setAuthed(false);
     setCode('');
+  }
+
+  async function handleExportCsv(e) {
+    if (e) e.preventDefault();
+    try {
+      const url = getAiDatasetExportUrl();
+      const session = getSession();
+      const headers = {};
+      if (session?.token) {
+        headers['Authorization'] = `Bearer ${session.token}`;
+      }
+      const res = await fetch(url, { headers });
+      if (!res.ok) {
+        throw new Error(`Export failed (${res.status} ${res.statusText})`);
+      }
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = 'ai_training_dataset.csv';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      setError(err.message || 'Failed to download dataset CSV');
+    }
   }
 
   const expiring = recyclers.filter((r) => {
@@ -418,10 +445,10 @@ export default function Admin() {
                     <th>Material</th>
                     <th>Weight</th>
                     <th>Final Price</th>
-                    <th>Unit Price</th>
-                    <th>Expected (Avg)</th>
+                    <th>Unit Price vs Avg</th>
                     <th>Z-Score</th>
                     <th>Severity</th>
+                    <th>Explainable AI (XAI) Root Cause</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -432,13 +459,29 @@ export default function Admin() {
                       <td><span className="admin-table__name">{a.material_category}</span></td>
                       <td>{a.quantity_weight_kg} kg</td>
                       <td>₹{Number(a.final_price).toLocaleString('en-IN')}</td>
-                      <td className="font-mono">₹{a.unit_price}/kg</td>
-                      <td className="font-mono text-muted">₹{a.avg_unit_price}/kg</td>
-                      <td className="font-mono">{a.z_score != null ? a.z_score : '—'}</td>
+                      <td className="font-mono">
+                        ₹{a.unit_price}/kg
+                        <span className="admin-table__sub">
+                          {Number(a.sample_count || 0) >= 5 ? `Hist Avg: ₹${a.avg_unit_price}/kg` : `Mkt Bench: ₹${a.avg_unit_price}/kg`}
+                        </span>
+                      </td>
+                      <td className="font-mono" style={{ fontWeight: '600', color: Math.abs(Number(a.z_score)) > 2 ? 'var(--color-error, #dc2626)' : 'inherit' }}>
+                        {a.z_score != null ? `${Number(a.z_score) > 0 ? '+' : ''}${a.z_score}σ` : '—'}
+                      </td>
                       <td>
                         <span className={`dataset-outcome dataset-outcome--${a.severity === 'high' ? 'dismissed' : 'corrected'}`} style={{ color: a.severity === 'high' ? 'var(--color-error, #dc2626)' : 'var(--color-warning, #b45309)' }}>
                           {a.severity?.toUpperCase()}
                         </span>
+                      </td>
+                      <td style={{ minWidth: '280px' }}>
+                        <div style={{ fontSize: '0.85rem', lineHeight: '1.4' }}>
+                          <span style={{ fontWeight: '600', color: 'var(--color-primary)', display: 'block' }}>
+                            🤖 {a.anomaly_label || a.anomaly_code || 'AI Flagged'}
+                          </span>
+                          <span className="text-muted" style={{ display: 'block', marginTop: '2px' }}>
+                            {a.ai_explanation || 'Unit price violates statistical or market benchmark tolerances.'}
+                          </span>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -528,15 +571,14 @@ export default function Admin() {
             </div>
           )}
 
-          <a
+          <button
+            type="button"
             className="btn btn-outline"
             style={{ marginTop: 'var(--space-4)' }}
-            href="/v1/ai/dataset/export"
-            target="_blank"
-            rel="noreferrer"
+            onClick={handleExportCsv}
           >
             {t('admin.dataset.exportCsv')}
-          </a>
+          </button>
         </div>
       ) : (
         <div className="animate-fade-in">
