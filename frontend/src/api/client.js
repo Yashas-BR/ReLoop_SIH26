@@ -405,11 +405,17 @@ export const adminLogin = (code) =>
 // GET /v1/admin/summary → dashboard counts + alerts
 export const getAdminSummary = () => request('/admin/summary');
 
-// POST /v1/admin/recyclers/:id/verify { decision, verification_source? }
-export const adminVerifyRecycler = (id, decision, verification_source) =>
+export const renewRecyclerAuthorization = (id, data) =>
+  request(`/recyclers/${id}/renew`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+// POST /v1/admin/recyclers/:id/verify { decision, verification_source?, rejection_reason? }
+export const adminVerifyRecycler = (id, decision, verification_source, rejection_reason) =>
   request(`/admin/recyclers/${id}/verify`, {
     method: 'POST',
-    body: JSON.stringify({ decision, verification_source }),
+    body: JSON.stringify({ decision, verification_source, rejection_reason }),
   });
 
 // GET /v1/admin/price-sources → provenance registry

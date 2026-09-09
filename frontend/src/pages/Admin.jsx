@@ -47,6 +47,10 @@ export default function Admin() {
   const [summary, setSummary] = useState(null);
   const [recyclers, setRecyclers] = useState([]);
   const [locationFilter, setLocationFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedRecyclerDoc, setSelectedRecyclerDoc] = useState(null);
+  const [rejectTargetRecycler, setRejectTargetRecycler] = useState(null);
+  const [rejectionReasonInput, setRejectionReasonInput] = useState('');
   const [priceSources, setPriceSources] = useState([]);
   const [lots, setLots] = useState([]);
   const [auditEvents, setAuditEvents] = useState([]);
@@ -113,12 +117,14 @@ export default function Admin() {
     if (authed) loadAll();
   }, [authed]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function handleVerify(id, decision) {
+  async function handleVerify(id, decision, reason) {
     setVerifyBusy(id);
     setError('');
     try {
-      await adminVerifyRecycler(id, decision, 'SPCB authorization check — ' + new Date().toISOString().slice(0, 10));
+      await adminVerifyRecycler(id, decision, 'SPCB verification check — ' + new Date().toISOString().slice(0, 10), reason);
       flash(decision === 'authorized' ? t('admin.approved') : t('admin.rejected'));
+      setRejectTargetRecycler(null);
+      setRejectionReasonInput('');
       loadAll();
     } catch (err) {
       setError(err.message || t('admin.verifyFail'));
@@ -161,20 +167,38 @@ export default function Admin() {
   }
 
   const expiring = recyclers.filter((r) => {
-    if (!r.authorization_valid_until || r.authorization_status !== 'authorized') return false;
+    if (!r.authorization_valid_until) return false;
     const until = new Date(r.authorization_valid_until);
     const windowEnd = new Date(TODAY.getTime() + EXPIRY_WINDOW_DAYS * 86400000);
-    return until >= TODAY && until <= windowEnd;
+    return (r.authorization_status === 'expiring_soon' || r.authorization_status === 'expired' || (until >= TODAY && until <= windowEnd));
   });
 
   const q = locationFilter.trim().toLowerCase();
-  const filteredRecyclers = !q
-    ? recyclers
-    : recyclers.filter((r) =>
-        (r.service_area || '').toLowerCase().includes(q) ||
-        (r.facility_location || '').toLowerCase().includes(q) ||
-        (r.name || '').toLowerCase().includes(q)
-      );
+  const filteredRecyclers = recyclers.filter((r) => {
+    if (q) {
+      const matchLoc = (r.service_area || '').toLowerCase().includes(q) ||
+                       (r.facility_location || '').toLowerCase().includes(q) ||
+                       (r.name || '').toLowerCase().includes(q) ||
+                       (r.authorization_number || '').toLowerCase().includes(q);
+      if (!matchLoc) return false;
+    }
+    if (statusFilter === 'pending') {
+      return r.account_status === 'PENDING' || r.authorization_status === 'pending';
+    }
+    if (statusFilter === 'renewal_pending') {
+      return r.authorization_status === 'renewal_pending';
+    }
+    if (statusFilter === 'expiring') {
+      return r.authorization_status === 'expiring_soon' || r.authorization_status === 'expired' || r.account_status === 'SUSPENDED';
+    }
+    if (statusFilter === 'active') {
+      return (r.account_status === 'ACTIVE' || !r.account_status) && (r.authorization_status === 'authorized' || r.authorization_status === 'valid');
+    }
+    if (statusFilter === 'rejected') {
+      return r.account_status === 'REJECTED' || r.authorization_status === 'unauthorized';
+    }
+    return true;
+  });
 
   // ── Admin login gate ──────────────────────────────────────────────────────
   if (!authed) {
@@ -314,7 +338,10 @@ export default function Admin() {
                         {t('admin.expiryHint', { date: fmtDate(r.authorization_valid_until) })}
                       </span>
                     </div>
-                    <StatusBadge status="authorized" size="md" />
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      <StatusBadge status={r.account_status || 'ACTIVE'} size="md" />
+                      <StatusBadge status={r.authorization_status || 'pending'} size="md" />
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -324,18 +351,41 @@ export default function Admin() {
       ) : tab === 'recyclers' ? (
         <div className="animate-fade-in">
           <p className="quote-section__empty">{t('admin.verifyDesc')}</p>
+          
+          {/* Status Sub-filter Bar */}
+          <div className="filter-tabs" style={{ marginBottom: 'var(--space-3)' }}>
+            {[
+              { id: 'all', label: 'All Recyclers' },
+              { id: 'pending', label: 'Pending Approval' },
+              { id: 'renewal_pending', label: 'Renewal Pending' },
+              { id: 'expiring', label: 'Expiring / Expired' },
+              { id: 'active', label: 'Active Authorized' },
+              { id: 'rejected', label: 'Rejected' },
+            ].map(st => (
+              <button
+                key={st.id}
+                type="button"
+                className={`filter-tab ${statusFilter === st.id ? 'filter-tab--active' : ''}`}
+                onClick={() => setStatusFilter(st.id)}
+              >
+                {st.label}
+              </button>
+            ))}
+          </div>
+
           <div className="admin-filter-bar">
-            <label className="admin-filter-bar__label" htmlFor="admin-location-filter">Filter by location (city / state):</label>
+            <label className="admin-filter-bar__label" htmlFor="admin-location-filter">Filter by location / name / license #:</label>
             <input
               id="admin-location-filter"
               className="admin-filter-bar__input"
               type="search"
-              placeholder="e.g. Delhi, Maharashtra, Peenya…"
+              placeholder="e.g. Delhi, SPCB/2026, Peenya…"
               value={locationFilter}
               onChange={(e) => setLocationFilter(e.target.value)}
             />
             <span className="admin-filter-bar__count">{filteredRecyclers.length} of {recyclers.length}</span>
           </div>
+
           <div className="admin-table-wrap card">
             <table className="admin-table">
               <thead>
@@ -343,14 +393,15 @@ export default function Admin() {
                   <th>{t('admin.table.name')}</th>
                   <th>{t('admin.table.location')}</th>
                   <th>{t('admin.table.authNumber')}</th>
-                  <th>{t('admin.table.validUntil')}</th>
-                  <th>{t('admin.table.status')}</th>
+                  <th>Valid Until</th>
+                  <th>Account Status</th>
+                  <th>Authorization</th>
                   <th>{t('admin.table.actions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredRecyclers.map((r) => (
-                  <tr key={r.id} className={r.authorization_status === 'pending' ? 'admin-row--pending' : ''}>
+                  <tr key={r.id} className={r.authorization_status === 'pending' || r.authorization_status === 'renewal_pending' ? 'admin-row--pending' : ''}>
                     <td>
                       <span className="admin-table__name">{r.name}</span>
                       {r.verification_source && (
@@ -364,11 +415,21 @@ export default function Admin() {
                       )}
                     </td>
                     <td className="font-mono">{r.authorization_number || '—'}</td>
-                    <td>{fmtDate(r.authorization_valid_until)}</td>
+                    <td className="font-mono">{fmtDate(r.authorization_valid_until)}</td>
+                    <td><StatusBadge status={r.account_status || 'ACTIVE'} size="md" /></td>
                     <td><StatusBadge status={r.authorization_status || 'pending'} size="md" /></td>
                     <td>
-                      <div className="quote-item__actions">
+                      <div className="quote-item__actions" style={{ gap: '6px' }}>
                         <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          title="View Authorization Details & Document"
+                          onClick={() => setSelectedRecyclerDoc(r)}
+                        >
+                          📄 Docs
+                        </button>
+                        <button
+                          type="button"
                           className="btn btn-accent btn-sm"
                           disabled={!!verifyBusy}
                           onClick={() => handleVerify(r.id, 'authorized')}
@@ -377,9 +438,13 @@ export default function Admin() {
                           {t('admin.approve')}
                         </button>
                         <button
+                          type="button"
                           className="btn btn-outline btn-sm"
                           disabled={!!verifyBusy}
-                          onClick={() => handleVerify(r.id, 'unauthorized')}
+                          onClick={() => {
+                            setRejectTargetRecycler(r);
+                            setRejectionReasonInput(r.rejection_reason || 'Authorization document or registration is invalid');
+                          }}
                         >
                           {t('admin.reject')}
                         </button>
@@ -390,6 +455,132 @@ export default function Admin() {
               </tbody>
             </table>
           </div>
+
+          {/* Document & Details Modal */}
+          {selectedRecyclerDoc && (
+            <div className="modal-backdrop animate-fade-in" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+              <div className="card animate-scale-in" style={{ width: '90%', maxWidth: '560px', background: 'var(--color-bg, #fff)', padding: '24px', borderRadius: '12px' }}>
+                <h2 className="section-title" style={{ fontSize: '1.25rem', marginBottom: '12px' }}>
+                  📜 Recycler Verification & Document Details
+                </h2>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                  <div>
+                    <span className="detail-item__label">Facility Name</span>
+                    <p style={{ fontWeight: '600' }}>{selectedRecyclerDoc.name}</p>
+                  </div>
+                  <div>
+                    <span className="detail-item__label">Facility Location</span>
+                    <p>{selectedRecyclerDoc.facility_location || '—'}</p>
+                  </div>
+                  <div>
+                    <span className="detail-item__label">SPCB License #</span>
+                    <p className="font-mono">{selectedRecyclerDoc.authorization_number || '—'}</p>
+                  </div>
+                  <div>
+                    <span className="detail-item__label">Issue Date</span>
+                    <p>{fmtDate(selectedRecyclerDoc.authorization_issue_date)}</p>
+                  </div>
+                  <div>
+                    <span className="detail-item__label">Valid Until (Expiry)</span>
+                    <p className="font-mono">{fmtDate(selectedRecyclerDoc.authorization_valid_until)}</p>
+                  </div>
+                  <div>
+                    <span className="detail-item__label">Verification Source</span>
+                    <p>{selectedRecyclerDoc.verification_source || 'SPCB Portal'}</p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+                  <div>
+                    <span className="detail-item__label" style={{ display: 'block', marginBottom: '4px' }}>Account Status</span>
+                    <StatusBadge status={selectedRecyclerDoc.account_status || 'ACTIVE'} size="md" />
+                  </div>
+                  <div>
+                    <span className="detail-item__label" style={{ display: 'block', marginBottom: '4px' }}>Auth Status</span>
+                    <StatusBadge status={selectedRecyclerDoc.authorization_status || 'pending'} size="md" />
+                  </div>
+                </div>
+
+                {selectedRecyclerDoc.authorization_document_url ? (
+                  <div style={{ padding: '12px', background: 'var(--color-bg-alt, #f8fafc)', borderRadius: '8px', marginBottom: '16px' }}>
+                    <span className="detail-item__label" style={{ display: 'block', marginBottom: '6px' }}>Submitted Certificate Document</span>
+                    <a href={selectedRecyclerDoc.authorization_document_url} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm">
+                      📎 Open Document ({selectedRecyclerDoc.authorization_document_url})
+                    </a>
+                  </div>
+                ) : (
+                  <div className="alert-banner alert-banner--warn" style={{ fontSize: '0.85rem', marginBottom: '16px' }}>
+                    No PDF/Image link was uploaded for this authorization.
+                  </div>
+                )}
+
+                {selectedRecyclerDoc.rejection_reason && (
+                  <div className="alert-banner alert-banner--error" style={{ fontSize: '0.85rem', marginBottom: '16px' }}>
+                    <strong>Rejection Reason:</strong> {selectedRecyclerDoc.rejection_reason}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                  <button type="button" className="btn btn-outline" onClick={() => setSelectedRecyclerDoc(null)}>
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-accent"
+                    onClick={() => {
+                      const recId = selectedRecyclerDoc.id;
+                      setSelectedRecyclerDoc(null);
+                      handleVerify(recId, 'authorized');
+                    }}
+                  >
+                    Approve Recycler
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Rejection Reason Modal */}
+          {rejectTargetRecycler && (
+            <div className="modal-backdrop animate-fade-in" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+              <div className="card animate-scale-in" style={{ width: '90%', maxWidth: '480px', background: 'var(--color-bg, #fff)', padding: '24px', borderRadius: '12px' }}>
+                <h2 className="section-title" style={{ fontSize: '1.25rem', marginBottom: '8px' }}>
+                  🚫 Reject Recycler Application
+                </h2>
+                <p className="section-subtitle" style={{ fontSize: '0.9rem', marginBottom: '16px' }}>
+                  Rejecting <strong>{rejectTargetRecycler.name}</strong> will set account status to REJECTED and remove them from match results.
+                </p>
+
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label className="form-label">Reason for Rejection</label>
+                  <textarea
+                    className="form-input"
+                    rows={3}
+                    required
+                    placeholder="Enter reason for rejection (e.g. SPCB Certificate Expired / Unmatched License Number)"
+                    value={rejectionReasonInput}
+                    onChange={(e) => setRejectionReasonInput(e.target.value)}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                  <button type="button" className="btn btn-outline" onClick={() => setRejectTargetRecycler(null)} disabled={!!verifyBusy}>
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    style={{ borderColor: 'var(--color-destructive, #dc2626)', color: 'var(--color-destructive, #dc2626)' }}
+                    disabled={!!verifyBusy || !rejectionReasonInput.trim()}
+                    onClick={() => handleVerify(rejectTargetRecycler.id, 'unauthorized', rejectionReasonInput.trim())}
+                  >
+                    Confirm Rejection
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : tab === 'lots' ? (
         <div className="animate-fade-in">
