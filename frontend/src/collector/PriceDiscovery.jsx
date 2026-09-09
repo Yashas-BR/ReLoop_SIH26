@@ -468,12 +468,12 @@ export default function PriceDiscovery() {
                     <div className="p2-price-card__icon" aria-hidden="true">{cat.icon}</div>
                     <div className="p2-price-card__label">{cat.label}</div>
                     <div className="region-card__row">
-                      <span>{t('priceDiscovery.unitPrice')}</span>
-                      <span className="region-card__val font-mono">{card ? fmt(card.unit_price) : t('common.noData')} <span className="text-muted">/ {t('common.kg')}</span></span>
+                      <span>Current Market Benchmark</span>
+                      <span className="region-card__val font-mono">{card ? fmt(card.market_benchmark ?? card.unit_price) : t('common.noData')} <span className="text-muted">/ {t('common.kg')}</span></span>
                     </div>
-                    {card && (
+                    {card && card.market_range_low != null && card.market_range_high != null && (
                       <div className="region-card__row">
-                        <span>{t('priceDiscovery.marketRange')}</span>
+                        <span>Market Range</span>
                         <span className="region-card__val font-mono">{fmt(card.market_range_low)}–{fmt(card.market_range_high)}</span>
                       </div>
                     )}
@@ -506,13 +506,19 @@ export default function PriceDiscovery() {
 
         <div className="price-hero card">
           <div className="price-hero__info">
-            <p className="price-hero__label">
-              {t('prices.priceCard', { category: catLabel, location })}
+            <span className="text-xs text-muted" style={{ textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '2px' }}>
+              Current Market Benchmark
+            </span>
+            <p className="price-hero__label" style={{ margin: '0 0 6px' }}>
+              {catLabel} · {location}
             </p>
             <div className="price-main-stat__content">
               <span className="price-main-stat__value">{stats?.latest ? fmt(stats.latest) : loadingTrend ? '…' : t('common.noData')}</span>
               {stats?.latest && <span className="price-main-stat__unit">/ {t('common.kg')}</span>}
             </div>
+            <p className="text-xs text-muted" style={{ marginTop: '4px', fontSize: '0.78rem' }}>
+              Platform reference rate based on commodity scrap indices and verified observations.
+            </p>
             {stats?.change != null && (
               <p className={`p2-price-change ${stats.change >= 0 ? 'p2-price-change--up' : 'p2-price-change--down'}`}>
                 <span aria-hidden="true">{stats.change >= 0 ? '▲' : '▼'}</span>
@@ -525,7 +531,7 @@ export default function PriceDiscovery() {
             onClick={speaking ? stopSpeaking : speakPrice}
             aria-label={speaking ? t('priceDiscovery.stopAudio') : t('priceDiscovery.speakPrice')}
           >
-            <span aria-hidden="true">{speaking ? '' : ''}</span>
+            <span aria-hidden="true">{speaking ? '🔊' : '🔉'}</span>
             <span>{speaking ? t('priceDiscovery.stopAudio') : t('priceDiscovery.speakPrice')}</span>
           </button>
         </div>

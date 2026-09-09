@@ -231,15 +231,38 @@ export const getPriceAnalytics = async (category, location = 'Bengaluru', days =
   const totalQuoteCount = parseInt(obsData.total_quotes, 10) || 0;
   const activeRecyclersCount = parseInt(recData.active_recyclers, 10) || 0;
 
+  // Anomaly / outlier protection: check if quotes contain abnormal spikes (e.g. ₹500/kg when median is ₹53/kg)
+  const medianQuote = parseFloat(obsData.median_quoted_rate) || parseFloat(recData.median_recycler_rate) || (bench.buying_price ? parseFloat(bench.buying_price) : null);
+
+  let nonOutlierAvgQuote = totalQuoteCount > 0 ? parseFloat(obsData.avg_quoted_rate) : (activeRecyclersCount > 0 ? parseFloat(recData.avg_recycler_rate) : null);
+
+  if (medianQuote && totalQuoteCount > 2) {
+    // Only consider quotes within 40% of median for benchmark updating
+    const trimmedRes = await query(
+      `SELECT AVG(quoted_rate) AS trimmed_avg, COUNT(*) AS trimmed_count
+       FROM price_observations
+       WHERE ${categoryConditions}
+         AND location = $2
+         AND observed_at >= CURRENT_DATE - ($3 || ' days')::INTERVAL
+         AND quoted_rate BETWEEN $4 AND $5`,
+      [category, resolvedLoc, days, medianQuote * 0.6, medianQuote * 1.4]
+    );
+    if (trimmedRes.rows[0]?.trimmed_count > 0 && trimmedRes.rows[0].trimmed_avg != null) {
+      nonOutlierAvgQuote = parseFloat(trimmedRes.rows[0].trimmed_avg);
+    }
+  }
+
   // Composite dynamic benchmark rate:
-  // If recycler quotes exist, average them into the benchmark index
+  // New Benchmark = 70% Base Regional Benchmark + 30% Non-outlier Recycler Quotes
   let blendedAvgRate = null;
-  if (totalQuoteCount > 0) {
-    blendedAvgRate = Math.round(parseFloat(obsData.avg_quoted_rate) * 100) / 100;
-  } else if (activeRecyclersCount > 0) {
-    blendedAvgRate = Math.round(parseFloat(recData.avg_recycler_rate) * 100) / 100;
-  } else if (bench.buying_price != null) {
-    blendedAvgRate = parseFloat(bench.buying_price);
+  const baseBench = bench.buying_price != null ? parseFloat(bench.buying_price) : null;
+
+  if (baseBench != null && nonOutlierAvgQuote != null && totalQuoteCount > 0) {
+    blendedAvgRate = Math.round((baseBench * 0.7 + nonOutlierAvgQuote * 0.3) * 100) / 100;
+  } else if (baseBench != null) {
+    blendedAvgRate = baseBench;
+  } else if (nonOutlierAvgQuote != null) {
+    blendedAvgRate = Math.round(nonOutlierAvgQuote * 100) / 100;
   }
 
   const minPrice = Math.min(
@@ -260,8 +283,10 @@ export const getPriceAnalytics = async (category, location = 'Bengaluru', days =
 
   const qAvg = parseFloat(obsData.avg_quoted_rate) || (parseFloat(recData.avg_recycler_rate) || blendedAvgRate);
   const qMed = parseFloat(obsData.median_quoted_rate) || parseFloat(recData.median_recycler_rate) || blendedAvgRate;
-  const compAvg = parseFloat(obsData.avg_completed_rate) || null;
   const compCount = parseInt(obsData.completed_count, 10) || 0;
+  const compAvg = (compCount > 0 && parseFloat(obsData.avg_completed_rate) > 0)
+    ? Math.round(parseFloat(obsData.avg_completed_rate) * 100) / 100
+    : null;
 
   return {
     category,

@@ -348,10 +348,22 @@ export default function LotDetail() {
     }
   }
 
-  // Use first handover record to populate lot summary (category, weight from traceability)
   const firstHandover = handovers[0];
   const isHandoverConfirmed = handovers.some((h) => h.status === 'confirmed');
   const fmtRupees = (n) => (n == null ? '—' : `₹${Number(n).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`);
+
+  // 4-Tier pricing & live settlement calculations
+  const collectionWeight = Number(firstHandover?.approx_weight_kg ?? lotMeta?.approx_weight_kg ?? 0);
+  const rawQuotedPrice = firstHandover?.quoted_price != null 
+    ? Number(firstHandover.quoted_price) 
+    : (acceptedOffer?.offered_price != null ? Number(acceptedOffer.offered_price) : null);
+  const unitAcceptedRate = rawQuotedPrice != null
+    ? (collectionWeight > 1 && rawQuotedPrice > 300 ? Math.round((rawQuotedPrice / collectionWeight) * 100) / 100 : rawQuotedPrice)
+    : null;
+  const currentWeighedKg = Number(finalWeight) || (firstHandover?.approx_weight_kg != null ? Number(firstHandover.approx_weight_kg) : (lotMeta?.approx_weight_kg != null ? Number(lotMeta.approx_weight_kg) : 0));
+  const liveSettlement = unitAcceptedRate != null && currentWeighedKg > 0
+    ? Math.round(unitAcceptedRate * currentWeighedKg * 100) / 100
+    : null;
 
   const PAY_METHOD_ICONS = { cash: '₹', upi: 'UPI', bank_transfer: 'BANK' };
 
@@ -413,7 +425,7 @@ export default function LotDetail() {
                 <>
                   <p className="quote-section__empty">{t('quotes.submitDesc')}</p>
                   <div className="form-group" style={{ marginTop: 'var(--space-4)' }}>
-                    <label className="form-label" htmlFor="quote-price">{t('quotes.yourPrice')}</label>
+                    <label className="form-label" htmlFor="quote-price">{t('quotes.yourPrice')} (Rate per kg)</label>
                     <div className="pay-price-input">
                       <input
                         id="quote-price"
@@ -421,17 +433,26 @@ export default function LotDetail() {
                         min="0"
                         step="0.01"
                         className="form-input"
+                        placeholder="e.g. 59"
                         value={quotePrice}
                         onChange={(e) => setQuotePrice(e.target.value)}
                         aria-describedby="quote-price-hint"
                       />
-                      <span className="weight-unit">₹</span>
+                      <span className="weight-unit">₹ / kg</span>
                     </div>
+                    {Number(quotePrice) > 0 && lotMeta?.approx_weight_kg && (
+                      <div style={{ marginTop: '6px', fontSize: 'var(--text-xs)', color: 'var(--color-primary)', fontWeight: 'var(--weight-semibold)' }}>
+                        Estimated Total Payout: ₹{(Number(quotePrice) * Number(lotMeta.approx_weight_kg)).toLocaleString('en-IN', { maximumFractionDigits: 2 })} ({lotMeta.approx_weight_kg} kg × ₹{quotePrice}/kg)
+                      </div>
+                    )}
                     {(marketEstimate || lotMeta?.estimated_value) && (
-                      <p id="quote-price-hint" className="form-hint">
+                      <p id="quote-price-hint" className="form-hint" style={{ marginTop: '4px' }}>
                         {t('quotes.marketEstimateHint', {
                           amount: fmtRupees(marketEstimate ?? lotMeta?.estimated_value),
                         })}
+                        {lotMeta?.approx_weight_kg && (marketEstimate || lotMeta?.estimated_value) && (
+                          <span> (Market Benchmark: ₹{Math.round(Number(marketEstimate ?? lotMeta.estimated_value) / Number(lotMeta.approx_weight_kg))}/kg)</span>
+                        )}
                       </p>
                     )}
                   </div>
@@ -581,8 +602,10 @@ export default function LotDetail() {
                 </p>
               </div>
               <div className="detail-item">
-                <p className="detail-item__label">{t('verify.quotedPrice')}</p>
-                <p className="detail-item__value">{fmtRupees(lotMeta?.quoted_price ?? firstHandover?.quoted_price)}</p>
+                <p className="detail-item__label">Accepted Unit Rate</p>
+                <p className="detail-item__value">
+                  {unitAcceptedRate ? `₹${unitAcceptedRate} / kg` : fmtRupees(lotMeta?.quoted_price ?? firstHandover?.quoted_price)}
+                </p>
               </div>
               <div className="detail-item">
                 <p className="detail-item__label">{t('verify.handover')}</p>
@@ -793,8 +816,10 @@ export default function LotDetail() {
                   <p className="detail-item__value">{firstHandover.collection_location ?? lotMeta?.collection_location ?? '—'}</p>
                 </div>
                 <div className="detail-item">
-                  <p className="detail-item__label">{t('verify.quotedPrice')}</p>
-                  <p className="detail-item__value">{fmtRupees(firstHandover.quoted_price)}</p>
+                  <p className="detail-item__label">Accepted Unit Rate</p>
+                  <p className="detail-item__value" style={{ color: 'var(--color-primary)', fontWeight: 'var(--weight-semibold)' }}>
+                    {unitAcceptedRate ? `₹${unitAcceptedRate} / kg` : fmtRupees(firstHandover.quoted_price)}
+                  </p>
                 </div>
                 <div className="detail-item">
                   <p className="detail-item__label">{t('common.lotId')}</p>
@@ -821,6 +846,34 @@ export default function LotDetail() {
                   />
                   <span className="weight-unit">{t('common.kg')}</span>
                 </div>
+              </div>
+
+              {/* Live Settlement Calculation */}
+              <div style={{ margin: 'var(--space-3) 0 var(--space-4)', padding: '12px 14px', background: 'var(--color-surface-alt, #f8fafc)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', fontWeight: 'var(--weight-semibold)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Settlement Calculation
+                  </span>
+                  {unitAcceptedRate && (
+                    <span className="badge badge--muted" style={{ fontSize: 'var(--text-xs)' }}>
+                      Accepted Rate: ₹{unitAcceptedRate} / kg
+                    </span>
+                  )}
+                </div>
+                
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ fontSize: 'var(--text-sm)' }}>
+                    <span className="font-mono">{currentWeighedKg.toFixed(1)} kg</span>
+                    <span className="text-muted"> (Physical Scale) × </span>
+                    <span className="font-mono">{unitAcceptedRate ? `₹${unitAcceptedRate}/kg` : '—'}</span>
+                  </div>
+                  <div style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-bold)', color: 'var(--color-success, #16a34a)' }}>
+                    Final Sale Value: {liveSettlement != null ? fmtRupees(liveSettlement) : '—'}
+                  </div>
+                </div>
+                <p className="text-muted text-xs" style={{ margin: '6px 0 0' }}>
+                  ℹ️ Final settlement is calculated solely from physical scale weight and accepted unit rate.
+                </p>
               </div>
 
               {/* Handover photograph */}
