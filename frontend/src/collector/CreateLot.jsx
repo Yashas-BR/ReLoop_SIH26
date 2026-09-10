@@ -551,38 +551,133 @@ export default function CreateLot() {
             )}
 
             {!classifying && classify && !classifyDismissed && (
-              <div className="p2-ai-banner p2-ai-banner--suggest animate-slide-up" role="region" aria-label="AI classification suggestion">
-                <div className="p2-ai-banner__top">
-                  <div className="p2-ai-banner__sparkle" aria-hidden="true">✨</div>
-                  <div className="p2-ai-banner__body">
-                    <div className="p2-ai-banner__category">
-                      {t('createLot.classification.detected', { label: catMeta(classify.category)?.label || classify.category })}
-                      <span className={`p2-ai-pill p2-ai-pill--${classify.verdict}`}>
-                        {Math.round(classify.confidence * 100)}% {t('createLot.classification.match')}
-                      </span>
+              <div
+                className={`p2-ai-banner p2-ai-banner--${
+                  classify.verdict === 'unreadable' ? 'warn'
+                  : classify.verdict === 'low'      ? 'warn'
+                  : 'suggest'
+                } animate-slide-up`}
+                role="region"
+                aria-label="AI classification suggestion"
+              >
+                {/* ── Unreadable image ─────────────────────────────────── */}
+                {classify.verdict === 'unreadable' && (
+                  <div className="p2-ai-banner__top">
+                    <div className="p2-ai-banner__sparkle" aria-hidden="true" style={{ fontSize: '1.2rem' }}>⚠️</div>
+                    <div className="p2-ai-banner__body">
+                      <strong style={{ display: 'block', marginBottom: '4px' }}>Unable to identify the product accurately</strong>
+                      <p className="p2-ai-banner__reason" style={{ color: 'var(--color-danger, #dc2626)' }}>
+                        {classify.reason || 'Please upload a clearer, well-lit photo of the item.'}
+                      </p>
                     </div>
-                    {classify.reason && (
-                      <p className="p2-ai-banner__reason">{classify.reason}</p>
-                    )}
                   </div>
-                </div>
+                )}
 
-                <div className="p2-ai-banner__actions">
-                  <button
-                    type="button"
-                    className="btn btn-accent btn-sm"
-                    onClick={() => applySuggestion(classify.category)}
-                  >
-                    ✓ {t('createLot.classification.useCategory', { name: catMeta(classify.category)?.label || classify.category })}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => setClassifyDismissed(true)}
-                  >
-                    {t('createLot.classification.chooseOther')}
-                  </button>
-                </div>
+                {/* ── Low confidence (result shown but user warned) ─────── */}
+                {classify.verdict === 'low' && classify.category && (
+                  <div className="p2-ai-banner__top">
+                    <div className="p2-ai-banner__sparkle" aria-hidden="true">✨</div>
+                    <div className="p2-ai-banner__body">
+                      <div className="p2-ai-banner__category">
+                        Best guess: {catMeta(classify.category)?.label || classify.category}
+                        <span className="p2-ai-pill p2-ai-pill--low">
+                          {Math.round(classify.confidence * 100)}% — Low confidence
+                        </span>
+                      </div>
+                      <p className="p2-ai-banner__reason" style={{ color: 'var(--color-warning, #d97706)' }}>
+                        ⚠️ Unable to identify the product confidently. Please try another photo or upload a closer image of the product.
+                      </p>
+                      {classify.reason && (
+                        <p className="p2-ai-banner__reason" style={{ fontSize: '0.78rem', marginTop: '4px' }}>{classify.reason}</p>
+                      )}
+                      {/* Show top-3 candidates so user can pick the right one */}
+                      {classify.candidates?.length > 1 && (
+                        <div style={{ marginTop: '8px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', alignSelf: 'center' }}>Top guesses:</span>
+                          {classify.candidates.slice(0, 3).map(c => (
+                            <button
+                              key={c.category}
+                              type="button"
+                              className="btn btn-outline btn-sm"
+                              style={{ fontSize: '0.78rem', padding: '2px 8px' }}
+                              onClick={() => applySuggestion(c.category)}
+                            >
+                              {catMeta(c.category)?.label || c.category} ({Math.round(c.confidence * 100)}%)
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Medium / High confidence suggestion ───────────────── */}
+                {(classify.verdict === 'medium' || classify.verdict === 'high') && classify.category && (
+                  <div className="p2-ai-banner__top">
+                    <div className="p2-ai-banner__sparkle" aria-hidden="true">✨</div>
+                    <div className="p2-ai-banner__body">
+                      <div className="p2-ai-banner__category">
+                        {t('createLot.classification.detected', { label: catMeta(classify.category)?.label || classify.category })}
+                        <span className={`p2-ai-pill p2-ai-pill--${classify.verdict}`}>
+                          {Math.round(classify.confidence * 100)}% {t('createLot.classification.match')}
+                        </span>
+                      </div>
+                      {classify.reason && (
+                        <p className="p2-ai-banner__reason">{classify.reason}</p>
+                      )}
+                      {/* Show alternatives for medium confidence */}
+                      {classify.verdict === 'medium' && classify.candidates?.length > 1 && (
+                        <div style={{ marginTop: '6px', display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Also possible:</span>
+                          {classify.candidates.slice(1, 3).map(c => (
+                            <button
+                              key={c.category}
+                              type="button"
+                              className="btn btn-ghost btn-sm"
+                              style={{ fontSize: '0.78rem', padding: '2px 8px' }}
+                              onClick={() => applySuggestion(c.category)}
+                            >
+                              {catMeta(c.category)?.label || c.category} ({Math.round(c.confidence * 100)}%)
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Action buttons (only for medium/high verdicts) ─────── */}
+                {(classify.verdict === 'medium' || classify.verdict === 'high') && classify.category && (
+                  <div className="p2-ai-banner__actions">
+                    <button
+                      type="button"
+                      className="btn btn-accent btn-sm"
+                      onClick={() => applySuggestion(classify.category)}
+                    >
+                      ✓ {t('createLot.classification.useCategory', { name: catMeta(classify.category)?.label || classify.category })}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => setClassifyDismissed(true)}
+                    >
+                      {t('createLot.classification.chooseOther')}
+                    </button>
+                  </div>
+                )}
+
+                {/* Dismiss for unreadable/low */}
+                {(classify.verdict === 'unreadable' || classify.verdict === 'low') && (
+                  <div className="p2-ai-banner__actions">
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => setClassifyDismissed(true)}
+                    >
+                      Select category manually →
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </section>
@@ -788,11 +883,31 @@ export default function CreateLot() {
                     <strong className="font-mono">{weight} kg</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                    <span className="text-muted">Current Market Rate (Benchmark)</span>
+                    <span className="text-muted">
+                      Estimated Market Rate
+                      {valuation.is_estimated && (
+                        <span
+                          title="Price is a benchmark estimate, not a live traded rate"
+                          style={{ marginLeft: '4px', fontSize: '0.72rem', color: 'var(--color-primary)', border: '1px solid var(--color-primary)', borderRadius: '4px', padding: '0 4px', verticalAlign: 'middle' }}
+                        >
+                          Est.
+                        </span>
+                      )}
+                    </span>
                     <strong className="font-mono" style={{ color: 'var(--color-primary)' }}>
                       {fmtRupees(valuation.market_benchmark ?? valuation.unit_price)} / kg
                     </strong>
                   </div>
+                  {valuation.price_date && (
+                    <div style={{ marginTop: '4px', fontSize: '0.75rem', color: 'var(--color-text-muted)', textAlign: 'right' }}>
+                      Last updated: {new Date(valuation.price_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </div>
+                  )}
+                  {valuation.used_fallback_location && (
+                    <div style={{ marginTop: '4px', fontSize: '0.75rem', color: 'var(--color-warning, #d97706)' }}>
+                      ⚠️ No local benchmark available — showing Bengaluru reference rates.
+                    </div>
+                  )}
                 </div>
 
                 {/* Estimated Value hero */}

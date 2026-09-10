@@ -317,12 +317,15 @@ export default function PriceDiscovery() {
     );
   }
 
-  const currentPulseItem = marketPulse?.pulse?.find(p => p.material_category === category) || {
-    material_category: category,
-    unit_price: authoritativeBenchmark,
-    market_range: '315 – 380',
-    regional_demand: 'High',
+  const currentPulseItem = marketPulse?.data?.find(p => p.category === category) || {
+    category,
+    current_price: authoritativeBenchmark,
+    // NOTE: No hardcoded fallback range — show null if unavailable
+    market_range_low:  null,
+    market_range_high: null,
+    regional_demand: 'Active',
     hub: `${location} Hub`,
+    is_estimated: true,
   };
 
   const filteredRecyclers = [...rateRows]
@@ -397,7 +400,7 @@ export default function PriceDiscovery() {
 
       {/* Pulse Banner */}
       {marketPulse && (
-        <div className="p2-pulse-strip animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-3)', padding: '12px 20px', background: 'linear-gradient(135deg, rgba(124,58,237,0.06) 0%, rgba(37,99,235,0.06) 100%)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: '12px', marginBottom: 'var(--space-5)' }}>
+      <div className="p2-pulse-strip animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-3)', padding: '12px 20px', background: 'linear-gradient(135deg, rgba(124,58,237,0.06) 0%, rgba(37,99,235,0.06) 100%)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: '12px', marginBottom: 'var(--space-5)' }}>
           <div className="p2-pulse-strip__live" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', fontWeight: '700', color: '#10b981', letterSpacing: '0.05em' }}>
             <span className="live-dot" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 0 3px rgba(16,185,129,0.25)', display: 'inline-block' }} />
             <span>LIVE COMMODITY INDEX</span>
@@ -408,15 +411,23 @@ export default function PriceDiscovery() {
             </span>
             <span className="p2-pulse-strip__price font-mono" style={{ fontWeight: '700', fontSize: '1.2rem', color: 'var(--color-primary, #7c3aed)' }}>
               {fmt(authoritativeBenchmark)}/kg
+              {currentPulseItem?.is_estimated && (
+                <span title="Estimated benchmark rate" style={{ marginLeft: '4px', fontSize: '0.65rem', color: 'var(--color-primary)', border: '1px solid var(--color-primary)', borderRadius: '4px', padding: '0 3px', verticalAlign: 'middle' }}>Est.</span>
+              )}
             </span>
           </div>
-          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexWrap: 'wrap' }}>
             <span className="status-badge status-badge--success" style={{ fontSize: '0.78rem', fontWeight: '600', padding: '3px 10px' }}>
               Demand: {currentPulseItem.regional_demand}
             </span>
             <span className="status-badge" style={{ fontSize: '0.78rem', fontWeight: '600', padding: '3px 10px' }}>
               {currentPulseItem.hub}
             </span>
+            {marketPulse?.last_updated && (
+              <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', padding: '3px 6px' }}>
+                Updated: {new Date(marketPulse.last_updated).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </span>
+            )}
           </div>
         </div>
       )}
