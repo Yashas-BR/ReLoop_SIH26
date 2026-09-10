@@ -491,17 +491,25 @@ export async function getPaymentHistory(collectorId) {
 // can be pointed at any backend / demo identity without editing source. Until
 // auth is wired up, the app acts as a given collector and recycler persona.
 
-const envInt = (key, fallback) => {
-  const raw = import.meta.env?.[key];
-  const n = raw == null ? NaN : Number(raw);
+const envInt = (value, fallback) => {
+  const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
 };
 
-export const DEMO_COLLECTOR_ID = envInt('VITE_DEMO_COLLECTOR_ID', 1);
-export const DEMO_RECYCLER_ID = envInt('VITE_DEMO_RECYCLER_ID', 1);
-export const DEFAULT_LOCATION = import.meta.env?.VITE_DEFAULT_LOCATION || 'Bengaluru';
-export const DEFAULT_LAT = Number(import.meta.env?.VITE_DEFAULT_LAT) || 12.9716;
-export const DEFAULT_LNG = Number(import.meta.env?.VITE_DEFAULT_LNG) || 77.5946;
+export const DEMO_COLLECTOR_ID =
+  envInt(process.env.EXPO_PUBLIC_DEMO_COLLECTOR_ID, 1);
+
+export const DEMO_RECYCLER_ID =
+  envInt(process.env.EXPO_PUBLIC_DEMO_RECYCLER_ID, 1);
+
+export const DEFAULT_LOCATION =
+  process.env.EXPO_PUBLIC_DEFAULT_LOCATION || 'Bengaluru';
+
+export const DEFAULT_LAT =
+  Number(process.env.EXPO_PUBLIC_DEFAULT_LAT) || 12.9716;
+
+export const DEFAULT_LNG =
+  Number(process.env.EXPO_PUBLIC_DEFAULT_LNG) || 77.5946;
 
 export const MATERIAL_CATEGORIES = [
   { id: 'CRT', label: 'CRTs', icon: '', sub: ['Color CRT', 'Monochrome CRT'] },
