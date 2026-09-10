@@ -1,18 +1,30 @@
-// API Client — connects the frontend to the backend dynamically.
+// ============================================================
+// ReLoop Mobile API Client
+// React Native / Expo
+// ============================================================
 //
-// Base URL resolution order:
-//   1. VITE_API_BASE_URL env var points at any backend (dev, staging, LAN,
-//      production). Example: VITE_API_BASE_URL=http://192.168.1.10:3000/v1
-//   2. Default '/v1' — same-origin, served through the Vite dev proxy (see
-//      vite.config.js) or directly by the backend in production.
+// Backend base URL comes from:
 //
-// Offline-aware wrappers:
-//  1. Try the network first when online
-//  2. Cache successful responses in IndexedDB
-//  3. Fall back to cache when offline
-//  4. Queue write operations when offline
+// EXPO_PUBLIC_API_BASE_URL
 //
-// Wrappers return { data, fromCache } so UI can show a staleness indicator.
+// Example:
+// https://kabadiwala-mh5c.onrender.com/v1
+//
+// NOTE:
+// The original web frontend had IndexedDB-based offline support.
+// That code is intentionally NOT used here because IndexedDB and
+// the existing browser offline utilities are not suitable for the
+// React Native mobile app.
+//
+// Proper mobile offline support will be added later using
+// AsyncStorage / SQLite / NetInfo.
+// ============================================================
+
+
+// ============================================================
+// BASE URL
+// ============================================================
+
 function resolveBaseUrl() {
   const fromEnv = process.env.EXPO_PUBLIC_API_BASE_URL;
 
@@ -20,503 +32,1259 @@ function resolveBaseUrl() {
     return fromEnv.trim().replace(/\/+$/, '');
   }
 
-  throw new Error("EXPO_PUBLIC_API_BASE_URL is not configured");
+  throw new Error(
+    'EXPO_PUBLIC_API_BASE_URL is not configured'
+  );
 }
 
 const BASE = resolveBaseUrl();
 
-/*import { isOnline } from '../services/offline/offlineUtils.js';
-import {
-  cacheLots, getCachedLots,
-  cacheTransactions, getCachedTransactions,
-  cacheEarnings, getCachedEarnings,
-} from '../services/offline/cache.js';
-import { enqueue } from '../services/offline/syncQueue.js'; */
 
-// Keys that hold identifiers / human-readable codes and must NEVER be coerced
-// to numbers, even if they happen to look numeric.
+// ============================================================
+// NORMALIZATION
+// ============================================================
+
+// PostgreSQL NUMERIC/DECIMAL values often come back as strings.
+//
+// We convert numeric-looking values into numbers, except fields
+// such as IDs, phone numbers, categories, references, etc.
+
 const SKIP_KEYS = new Set([
   'lot_id',
   'handover_reference_number',
   'handover_reference',
   'reference',
   'client_id',
+
   'category',
   'sub_category',
+
   'phone',
   'contact',
   'contact_details',
+
   'name',
+
   'facility_location',
   'service_area',
   'operating_location',
   'location',
   'address',
+
   'authorization_number',
   'authorization_details',
   'verification_source',
+
   'profile_image',
   'image_ref',
   'image_url',
+
   'description',
+
   'status',
   'authorization_status',
   'pickup_availability',
+
   'pincode',
   'postal_code',
 ]);
 
+
 function toNumberIfNumeric(value) {
-  if (value === null || value === undefined || value === '') return value;
+  if (
+    value === null ||
+    value === undefined ||
+    value === ''
+  ) {
+    return value;
+  }
+
   const num = Number(value);
-  return Number.isNaN(num) ? value : num;
+
+  return Number.isNaN(num)
+    ? value
+    : num;
 }
 
-// pg returns NUMERIC/DECIMAL columns as strings ("5.20", "140.00"). Recursively
-// coerce float-looking strings to numbers so components can use .toFixed(),
-// comparisons, etc. Skipped keys are identifiers / codes that must stay strings.
+
 function normalize(value, key) {
   if (Array.isArray(value)) {
-    return value.map((item) => normalize(item));
+    return value.map((item) =>
+      normalize(item)
+    );
   }
-  if (value && typeof value === 'object') {
+
+  if (
+    value &&
+    typeof value === 'object'
+  ) {
     const out = {};
+
     for (const [k, v] of Object.entries(value)) {
-      out[k] = SKIP_KEYS.has(k) ? v : normalize(v, k);
+      out[k] = SKIP_KEYS.has(k)
+        ? v
+        : normalize(v, k);
     }
+
     return out;
   }
-  if (typeof value === 'string' && key && !SKIP_KEYS.has(key)) {
+
+  if (
+    typeof value === 'string' &&
+    key &&
+    !SKIP_KEYS.has(key)
+  ) {
     return toNumberIfNumeric(value);
   }
+
   return value;
 }
 
+
+// ============================================================
+// REQUEST HELPER
+// ============================================================
+
 async function request(path, options = {}) {
   try {
-    const res = await fetch(`${BASE}${path}`, {
-      headers: { 'Content-Type': 'application/json', ...options.headers },
-      ...options,
-    });
+    const res = await fetch(
+      `${BASE}${path}`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+
+        ...options,
+      }
+    );
 
     let json = null;
-    const isJson = res.headers.get('content-type')?.includes('application/json');
+
+    const isJson =
+      res.headers
+        .get('content-type')
+        ?.includes('application/json');
+
     if (isJson) {
       json = await res.json();
     }
 
     if (!res.ok) {
-      const err = new Error(json?.message || `HTTP ${res.status}`);
+      const err = new Error(
+        json?.message ||
+        json?.error ||
+        `HTTP ${res.status}`
+      );
+
       err.status = res.status;
+      err.data = json;
+
       throw err;
     }
+
     return normalize(json);
   } catch (err) {
+    console.error(
+      `API request failed: ${path}`,
+      err
+    );
+
     throw err;
   }
 }
 
-// ── Health ──────────────────────────────────────────────────────────────────
-export const checkHealth = () => request('/health');
 
-// ── Valuation ───────────────────────────────────────────────────────────────
-export const getInstantValuation = ({ category, location, weight }) =>
-  request(`/valuation/instant?category=${encodeURIComponent(category)}&location=${encodeURIComponent(location)}&weight=${weight}`);
+// ============================================================
+// HEALTH
+// ============================================================
 
-// ── Recyclers ───────────────────────────────────────────────────────────────
-export const getMatchedRecyclers = ({ category, lat, lng, maxDistanceKm, location } = {}) => {
-  const params = new URLSearchParams();
-  if (category) params.set('category', category);
-  if (lat != null && Number.isFinite(Number(lat))) params.set('lat', String(lat));
-  if (lng != null && Number.isFinite(Number(lng))) params.set('lng', String(lng));
-  if (location) params.set('location', location);
-  if (maxDistanceKm != null) params.set('maxDistanceKm', String(maxDistanceKm));
-  return request(`/recyclers/match?${params.toString()}`);
+export const checkHealth = () =>
+  request('/health');
+
+
+// ============================================================
+// VALUATION
+// ============================================================
+
+export const getInstantValuation = ({
+  category,
+  location,
+  weight,
+}) =>
+  request(
+    `/valuation/instant` +
+    `?category=${encodeURIComponent(category)}` +
+    `&location=${encodeURIComponent(location)}` +
+    `&weight=${weight}`
+  );
+
+
+// ============================================================
+// RECYCLERS
+// ============================================================
+
+export const getMatchedRecyclers = ({
+  category,
+  lat,
+  lng,
+  maxDistanceKm,
+  location,
+} = {}) => {
+  const params =
+    new URLSearchParams();
+
+  if (category) {
+    params.set(
+      'category',
+      category
+    );
+  }
+
+  if (
+    lat != null &&
+    Number.isFinite(Number(lat))
+  ) {
+    params.set(
+      'lat',
+      String(lat)
+    );
+  }
+
+  if (
+    lng != null &&
+    Number.isFinite(Number(lng))
+  ) {
+    params.set(
+      'lng',
+      String(lng)
+    );
+  }
+
+  if (location) {
+    params.set(
+      'location',
+      location
+    );
+  }
+
+  if (
+    maxDistanceKm != null
+  ) {
+    params.set(
+      'maxDistanceKm',
+      String(maxDistanceKm)
+    );
+  }
+
+  return request(
+    `/recyclers/match?${params.toString()}`
+  );
 };
 
-export const getAllRecyclers = ({ limit, location, name, authorization_status } = {}) => {
-  const params = new URLSearchParams();
-  if (limit) params.set('limit', String(limit));
-  if (location) params.set('location', location);
-  if (name) params.set('name', name);
-  if (authorization_status) params.set('authorization_status', authorization_status);
-  const qs = params.toString();
-  return request(qs ? `/recyclers?${qs}` : '/recyclers').then(r => ({
+
+export const getAllRecyclers = ({
+  limit,
+  location,
+  name,
+  authorization_status,
+} = {}) => {
+  const params =
+    new URLSearchParams();
+
+  if (limit) {
+    params.set(
+      'limit',
+      String(limit)
+    );
+  }
+
+  if (location) {
+    params.set(
+      'location',
+      location
+    );
+  }
+
+  if (name) {
+    params.set(
+      'name',
+      name
+    );
+  }
+
+  if (authorization_status) {
+    params.set(
+      'authorization_status',
+      authorization_status
+    );
+  }
+
+  const qs =
+    params.toString();
+
+  return request(
+    qs
+      ? `/recyclers?${qs}`
+      : '/recyclers'
+  ).then((r) => ({
     ...r,
-    data: Array.isArray(r.data) ? r.data : (r.data?.recyclers ?? r.recyclers ?? []),
+
+    data: Array.isArray(r.data)
+      ? r.data
+      : (
+        r.data?.recyclers ??
+        r.recyclers ??
+        []
+      ),
   }));
 };
-export const getRecycler = (id) => request(`/recyclers/${id}`);
-export const updateRecycler = (id, data) =>
-  request(`/recyclers/${id}`, { method: 'PUT', body: JSON.stringify(data) });
-
-// ── Price Trends & Market Pulse ──────────────────────────────────────────────
-export const getPriceTrends = ({ category, location, days = 90 }) => {
-  let url = `/prices/trends?category=${encodeURIComponent(category)}&days=${days}`;
-  if (location) url += `&location=${encodeURIComponent(location)}`;
-  return request(url);
-};
-
-export const getMarketPulse = (location = 'Bengaluru') =>
-  request(`/prices/market-pulse?location=${encodeURIComponent(location)}`);
-
-export const refreshMarketPrices = (days = 90) =>
-  request('/prices/refresh-market', { method: 'POST', body: JSON.stringify({ days }) });
-
-// Authorized recyclers that accept a category + their latest offered rate per location.
-export const getRecyclerRateBoard = ({ category, location }) =>
-  request(`/prices/ingest/recycler-rates?category=${encodeURIComponent(category)}&location=${encodeURIComponent(location)}`);
-
-// ── Handover / Lots ──────────────────────────────────────────────────────────
-
-/**
- * Create a material lot.
- *
- * ONLINE  → direct backend call, returns backend response.
- * OFFLINE → operation is enqueued in IndexedDB sync queue (replayed against
- *           POST /v1/handover/lots by the sync manager once online).
- *           Returns { queued: true, queueItem } — NOT a confirmed response.
- *
- * The caller MUST check result.queued to show the correct "Saved offline" UX.
- */
-export async function createLot(data) {
-  if (!isOnline()) {
-    const queueItem = await enqueue({
-      operation: 'createLot',
-      entity: 'lot',
-      entityId: null,
-      payload: data,
-    });
-    return { queued: true, queueItem };
-  }
-  return request('/handover/lots', { method: 'POST', body: JSON.stringify(data) });
-}
-
-/**
- * Initiate a handover.
- *
- * ONLINE  → direct backend call, returns backend response.
- * OFFLINE → operation is enqueued in IndexedDB sync queue.
- *           Returns { queued: true, queueItem } — NOT a confirmed response.
- *
- * The caller MUST check result.queued to show the correct "Saved offline" UX.
- * Never show "Handover completed" when queued === true.
- */
-export async function initiateHandover(data) {
-  if (!isOnline()) {
-    const queueItem = await enqueue({
-      operation: 'initiateHandover',
-      entity: 'handover',
-      entityId: data.lot_id ?? null,
-      payload: data,
-    });
-    return { queued: true, queueItem };
-  }
-  return request('/handover/initiate', { method: 'POST', body: JSON.stringify(data) });
-}
-
-export const confirmHandover = (reference, opts) =>
-  request(`/handover/confirm/${reference}`, {
-    method: 'POST',
-    body: JSON.stringify(opts),
-  });
-
-export const getHandoverByRef = (reference) => request(`/handover/${reference}`);
-export const getHandoversByLot = (lotId) => request(`/handover/lot/${lotId}`);
-
-/**
- * Get the full ordered event history + lot_images for a lot.
- * Powers the traceability timeline page.
- * Returns { data: { lot, events, images } }
- */
-export const getLotEvents = (lotId) => request(`/handover/lots/${encodeURIComponent(lotId)}/events`);
-
-/**
- * Get all lot_images rows for a lot (evidence photo chain).
- * Returns { data: Array<LotImage> }
- */
-export const getLotImages = (lotId) => request(`/handover/lots/${encodeURIComponent(lotId)}/images`);
-
-/**
- * Cancel or Delete a lot (SIH 229 lifecycle policy)
- */
-export const cancelLot = (lotId, data = {}) =>
-  request(`/handover/lots/${encodeURIComponent(lotId)}/cancel`, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-
-export const deleteLot = (lotId, data = {}) =>
-  request(`/handover/lots/${encodeURIComponent(lotId)}`, {
-    method: 'DELETE',
-    body: JSON.stringify(data),
-  });
 
 
-/**
- * Get all lots for a collector.
- * ONLINE  → fetches from backend, caches result, returns { data, fromCache: false }
- * OFFLINE → returns cached data with { fromCache: true }
- */
-export async function getLotsByCollector(collectorId) {
-  if (isOnline()) {
-    try {
-      const res = await request(`/handover/lots/collector/${collectorId}`);
-      const lots = Array.isArray(res.data) ? res.data : [];
-      // Tag each lot with collector_id for cache indexing
-      const tagged = lots.map((l) => ({ ...l, collector_id: collectorId }));
-      cacheLots(collectorId, tagged).catch(() => { });
-      return { ...res, fromCache: false };
-    } catch (err) {
-      // Network error while "online" — try cache
-      const cached = await getCachedLots(collectorId);
-      if (cached.length > 0) return { data: cached, fromCache: true, count: cached.length };
-      throw err;
+export const getRecycler = (id) =>
+  request(
+    `/recyclers/${id}`
+  );
+
+
+export const updateRecycler = (
+  id,
+  data
+) =>
+  request(
+    `/recyclers/${id}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(data),
     }
+  );
+
+
+// ============================================================
+// PRICE TRENDS / MARKET
+// ============================================================
+
+export const getPriceTrends = ({
+  category,
+  location,
+  days = 90,
+}) => {
+  let url =
+    `/prices/trends` +
+    `?category=${encodeURIComponent(category)}` +
+    `&days=${days}`;
+
+  if (location) {
+    url +=
+      `&location=${encodeURIComponent(location)}`;
   }
 
-  const cached = await getCachedLots(collectorId);
-  return { data: cached, fromCache: true, count: cached.length };
-}
-
-/**
- * Get all lots assigned to a recycler (matched / handed_over / confirmed).
- * Unlike the collector endpoint, includes the latest traceability record
- * (handover_reference_number, traceability_status) so the recycler can act on
- * pending confirmations directly from the incoming-lots list.
- */
-export async function getLotsByRecycler(recyclerId) {
-  const res = await request(`/handover/lots/recycler/${recyclerId}`);
-  return res;
-}
-
-// ── Payments ─────────────────────────────────────────────────────────────────
-
-export const updatePayment = (lotId, data) =>
-  request(`/payments/${lotId}`, { method: 'PATCH', body: JSON.stringify(data) });
-
-// ── AI feedback loop (SIH26229 dataset generation) ─────────────────────────
-// POST /v1/ai/feedback — record a CV prediction immediately after classification
-export const submitAiFeedback = (payload) =>
-  request('/ai/feedback', { method: 'POST', body: JSON.stringify(payload) });
-
-// PATCH /v1/ai/feedback/:id — update with human outcome
-export const updateAiFeedback = (id, payload) =>
-  request(`/ai/feedback/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
-
-// GET /v1/ai/stats — per-category accuracy (admin / dataset governance)
-export const getAiStats = () => request('/ai/stats');
-
-// POST /v1/ai/classify — pluggable material classifier (cloud model or feature-vector heuristic)
-export const classifyAi = (payload) =>
-  request('/ai/classify', { method: 'POST', body: JSON.stringify(payload) });
-
-// GET /v1/ai/dataset/summary — labelled-sample health (totals, per-category, trend)
-export const getAiDatasetSummary = () => request('/ai/dataset/summary');
-
-// GET /v1/ai/dataset/samples — recent labelled rows with optional filters
-export const getAiDatasetSamples = ({ outcome, category, limit, offset } = {}) => {
-  const q = new URLSearchParams();
-  if (outcome) q.set('outcome', outcome);
-  if (category) q.set('category', category);
-  if (limit) q.set('limit', String(limit));
-  if (offset) q.set('offset', String(offset));
-  return request(`/ai/dataset/samples?${q.toString()}`);
-};
-
-export const getAiDatasetExportUrl = () => `${BASE}/ai/dataset/export`;
-
-// ── Anomaly detection (AI/ML) ────────────────────────────────────────────────
-export const getAnomalies = ({ category } = {}) => {
-  let url = '/anomaly';
-  if (category) url += `?category=${encodeURIComponent(category)}`;
   return request(url);
 };
-export const checkTransactionAnomaly = (payload) =>
-  request('/anomaly/check', { method: 'POST', body: JSON.stringify(payload) });
 
-// ── Auth (collector accounts) ────────────────────────────────────────────────
 
-// POST /v1/collectors/login { phone } → { data: { collector, token } }
-export const loginCollector = (phone) =>
-  request('/collectors/login', { method: 'POST', body: JSON.stringify({ phone }) });
+export const getMarketPulse = (
+  location = 'Bengaluru'
+) =>
+  request(
+    `/prices/market-pulse` +
+    `?location=${encodeURIComponent(location)}`
+  );
 
-// POST /v1/recyclers/login { recycler_id } → { data: { recycler, token } }
-export const loginRecycler = (recyclerId) =>
-  request('/recyclers/login', { method: 'POST', body: JSON.stringify({ recycler_id: recyclerId }) });
 
-// POST /v1/recyclers/onboard — submit a new recycler application (status = pending, admin must approve)
-export const onboardRecycler = (data) =>
-  request('/recyclers/onboard', { method: 'POST', body: JSON.stringify(data) });
+export const refreshMarketPrices = (
+  days = 90
+) =>
+  request(
+    '/prices/refresh-market',
+    {
+      method: 'POST',
 
-// ── Collector registration ──────────────────────────────────────────────────
-// POST /v1/collectors/register { name, phone, operating_location, preferred_language }
-// → 201 { data: { collector, token } } — creates the account AND signs them in.
-export const registerCollector = (data) =>
-  request('/collectors/register', { method: 'POST', body: JSON.stringify(data) });
+      body: JSON.stringify({
+        days,
+      }),
+    }
+  );
 
-// ── Quote / acceptance marketplace (offers) ──────────────────────────────────
-// Request a quote from a recycler for a lot (creates or reuses an open offer).
-export const requestQuote = (lotId, recyclerId) =>
-  request('/quotes/request', {
-    method: 'POST',
-    body: JSON.stringify({ lot_id: lotId, recycler_id: recyclerId }),
-  });
 
-// Recycler submits a price on an open request.
-export const respondToOffer = (offerId, offeredPrice) =>
-  request(`/quotes/${offerId}/respond`, {
-    method: 'POST',
-    body: JSON.stringify({ offered_price: offeredPrice }),
-  });
+export const getRecyclerRateBoard = ({
+  category,
+  location,
+}) =>
+  request(
+    `/prices/ingest/recycler-rates` +
+    `?category=${encodeURIComponent(category)}` +
+    `&location=${encodeURIComponent(location)}`
+  );
 
-// Collector accepts an offer → binds the lot to that recycler at the offer price.
-export const acceptOffer = (offerId) =>
-  request(`/quotes/${offerId}/accept`, { method: 'POST' });
 
-// Collector rejects an offer → the request re-opens for the recycler.
-export const rejectOffer = (offerId) =>
-  request(`/quotes/${offerId}/reject`, { method: 'POST' });
+// ============================================================
+// HANDOVER / LOTS
+// ============================================================
 
-// All offers (by status) for a lot — collector view.
-export const getOffersByLot = (lotId) => request(`/quotes/lot/${lotId}`);
 
-// Lots an authorized recycler may quote on (matching their accepted materials).
-export const getAvailableLots = (recyclerId) =>
-  request(`/quotes/available?recycler_id=${recyclerId}`);
+// ------------------------------------------------------------
+// CREATE LOT
+// ------------------------------------------------------------
+//
+// Mobile version is currently network-only.
+//
+// Mobile offline queue support will be added later.
 
-/**
- * One-call "quote this lot" used by the recycler UI: reuse an existing open
- * request if present, otherwise create one, then fill in the price.
- */
-export async function quoteLot({ lotId, recyclerId, offeredPrice, existingOfferId }) {
-  let offerId = existingOfferId;
+export async function createLot(
+  data
+) {
+  return request(
+    '/handover/lots',
+    {
+      method: 'POST',
+
+      body:
+        JSON.stringify(data),
+    }
+  );
+}
+
+
+// ------------------------------------------------------------
+// INITIATE HANDOVER
+// ------------------------------------------------------------
+
+export async function initiateHandover(
+  data
+) {
+  return request(
+    '/handover/initiate',
+    {
+      method: 'POST',
+
+      body:
+        JSON.stringify(data),
+    }
+  );
+}
+
+
+// ------------------------------------------------------------
+// CONFIRM HANDOVER
+// ------------------------------------------------------------
+
+export const confirmHandover = (
+  reference,
+  opts
+) =>
+  request(
+    `/handover/confirm/${reference}`,
+    {
+      method: 'POST',
+
+      body:
+        JSON.stringify(opts),
+    }
+  );
+
+
+// ------------------------------------------------------------
+// GET HANDOVER BY REFERENCE
+// ------------------------------------------------------------
+
+export const getHandoverByRef = (
+  reference
+) =>
+  request(
+    `/handover/${reference}`
+  );
+
+
+// ------------------------------------------------------------
+// HANDOVERS FOR LOT
+// ------------------------------------------------------------
+
+export const getHandoversByLot = (
+  lotId
+) =>
+  request(
+    `/handover/lot/${lotId}`
+  );
+
+
+// ------------------------------------------------------------
+// LOT EVENTS / TRACEABILITY
+// ------------------------------------------------------------
+
+export const getLotEvents = (
+  lotId
+) =>
+  request(
+    `/handover/lots/${encodeURIComponent(
+      lotId
+    )}/events`
+  );
+
+
+// ------------------------------------------------------------
+// LOT IMAGES
+// ------------------------------------------------------------
+
+export const getLotImages = (
+  lotId
+) =>
+  request(
+    `/handover/lots/${encodeURIComponent(
+      lotId
+    )}/images`
+  );
+
+
+// ------------------------------------------------------------
+// CANCEL LOT
+// ------------------------------------------------------------
+
+export const cancelLot = (
+  lotId,
+  data = {}
+) =>
+  request(
+    `/handover/lots/${encodeURIComponent(
+      lotId
+    )}/cancel`,
+    {
+      method: 'POST',
+
+      body:
+        JSON.stringify(data),
+    }
+  );
+
+
+// ------------------------------------------------------------
+// DELETE LOT
+// ------------------------------------------------------------
+
+export const deleteLot = (
+  lotId,
+  data = {}
+) =>
+  request(
+    `/handover/lots/${encodeURIComponent(
+      lotId
+    )}`,
+    {
+      method: 'DELETE',
+
+      body:
+        JSON.stringify(data),
+    }
+  );
+
+
+// ------------------------------------------------------------
+// GET LOTS BY COLLECTOR
+// ------------------------------------------------------------
+//
+// IMPORTANT:
+// Old web IndexedDB caching has been removed for React Native.
+
+export async function getLotsByCollector(
+  collectorId
+) {
+  return request(
+    `/handover/lots/collector/${collectorId}`
+  );
+}
+
+
+// ------------------------------------------------------------
+// GET LOTS BY RECYCLER
+// ------------------------------------------------------------
+
+export async function getLotsByRecycler(
+  recyclerId
+) {
+  return request(
+    `/handover/lots/recycler/${recyclerId}`
+  );
+}
+
+
+// ============================================================
+// PAYMENTS
+// ============================================================
+
+export const updatePayment = (
+  lotId,
+  data
+) =>
+  request(
+    `/payments/${lotId}`,
+    {
+      method: 'PATCH',
+
+      body:
+        JSON.stringify(data),
+    }
+  );
+
+
+// ============================================================
+// AI FEEDBACK / CLASSIFICATION
+// ============================================================
+
+export const submitAiFeedback = (
+  payload
+) =>
+  request(
+    '/ai/feedback',
+    {
+      method: 'POST',
+
+      body:
+        JSON.stringify(payload),
+    }
+  );
+
+
+export const updateAiFeedback = (
+  id,
+  payload
+) =>
+  request(
+    `/ai/feedback/${id}`,
+    {
+      method: 'PATCH',
+
+      body:
+        JSON.stringify(payload),
+    }
+  );
+
+
+export const getAiStats = () =>
+  request(
+    '/ai/stats'
+  );
+
+
+export const classifyAi = (
+  payload
+) =>
+  request(
+    '/ai/classify',
+    {
+      method: 'POST',
+
+      body:
+        JSON.stringify(payload),
+    }
+  );
+
+
+export const getAiDatasetSummary = () =>
+  request(
+    '/ai/dataset/summary'
+  );
+
+
+export const getAiDatasetSamples = ({
+  outcome,
+  category,
+  limit,
+  offset,
+} = {}) => {
+  const q =
+    new URLSearchParams();
+
+  if (outcome) {
+    q.set(
+      'outcome',
+      outcome
+    );
+  }
+
+  if (category) {
+    q.set(
+      'category',
+      category
+    );
+  }
+
+  if (limit) {
+    q.set(
+      'limit',
+      String(limit)
+    );
+  }
+
+  if (offset) {
+    q.set(
+      'offset',
+      String(offset)
+    );
+  }
+
+  return request(
+    `/ai/dataset/samples?${q.toString()}`
+  );
+};
+
+
+export const getAiDatasetExportUrl =
+  () =>
+    `${BASE}/ai/dataset/export`;
+
+
+// ============================================================
+// ANOMALY DETECTION
+// ============================================================
+
+export const getAnomalies = ({
+  category,
+} = {}) => {
+  let url =
+    '/anomaly';
+
+  if (category) {
+    url +=
+      `?category=${encodeURIComponent(
+        category
+      )}`;
+  }
+
+  return request(url);
+};
+
+
+export const checkTransactionAnomaly = (
+  payload
+) =>
+  request(
+    '/anomaly/check',
+    {
+      method: 'POST',
+
+      body:
+        JSON.stringify(payload),
+    }
+  );
+
+
+// ============================================================
+// COLLECTOR AUTH
+// ============================================================
+
+
+// ------------------------------------------------------------
+// LOGIN COLLECTOR
+//
+// POST /v1/collectors/login
+//
+// body:
+// {
+//   phone: "9876543210"
+// }
+// ------------------------------------------------------------
+
+export const loginCollector = (
+  phone
+) =>
+  request(
+    '/collectors/login',
+    {
+      method: 'POST',
+
+      body:
+        JSON.stringify({
+          phone,
+        }),
+    }
+  );
+
+
+// ------------------------------------------------------------
+// REGISTER COLLECTOR
+//
+// Creates account and returns collector + token.
+// ------------------------------------------------------------
+
+export const registerCollector = (
+  data
+) =>
+  request(
+    '/collectors/register',
+    {
+      method: 'POST',
+
+      body:
+        JSON.stringify(data),
+    }
+  );
+
+
+// ============================================================
+// RECYCLER AUTH
+// ============================================================
+
+export const loginRecycler = (
+  recyclerId
+) =>
+  request(
+    '/recyclers/login',
+    {
+      method: 'POST',
+
+      body:
+        JSON.stringify({
+          recycler_id:
+            recyclerId,
+        }),
+    }
+  );
+
+
+export const onboardRecycler = (
+  data
+) =>
+  request(
+    '/recyclers/onboard',
+    {
+      method: 'POST',
+
+      body:
+        JSON.stringify(data),
+    }
+  );
+
+
+// ============================================================
+// QUOTE / OFFER MARKETPLACE
+// ============================================================
+
+
+// Collector requests quote from recycler
+
+export const requestQuote = (
+  lotId,
+  recyclerId
+) =>
+  request(
+    '/quotes/request',
+    {
+      method: 'POST',
+
+      body:
+        JSON.stringify({
+          lot_id: lotId,
+          recycler_id: recyclerId,
+        }),
+    }
+  );
+
+
+// Recycler responds with price
+
+export const respondToOffer = (
+  offerId,
+  offeredPrice
+) =>
+  request(
+    `/quotes/${offerId}/respond`,
+    {
+      method: 'POST',
+
+      body:
+        JSON.stringify({
+          offered_price:
+            offeredPrice,
+        }),
+    }
+  );
+
+
+// Collector accepts offer
+
+export const acceptOffer = (
+  offerId
+) =>
+  request(
+    `/quotes/${offerId}/accept`,
+    {
+      method: 'POST',
+    }
+  );
+
+
+// Collector rejects offer
+
+export const rejectOffer = (
+  offerId
+) =>
+  request(
+    `/quotes/${offerId}/reject`,
+    {
+      method: 'POST',
+    }
+  );
+
+
+// All offers for one lot
+
+export const getOffersByLot = (
+  lotId
+) =>
+  request(
+    `/quotes/lot/${lotId}`
+  );
+
+
+// Lots recycler can quote
+
+export const getAvailableLots = (
+  recyclerId
+) =>
+  request(
+    `/quotes/available?recycler_id=${recyclerId}`
+  );
+
+
+// Convenient one-call quote function
+
+export async function quoteLot({
+  lotId,
+  recyclerId,
+  offeredPrice,
+  existingOfferId,
+}) {
+  let offerId =
+    existingOfferId;
+
   if (!offerId) {
-    const created = await requestQuote(lotId, recyclerId);
-    offerId = created.data.id;
+    const created =
+      await requestQuote(
+        lotId,
+        recyclerId
+      );
+
+    offerId =
+      created.data.id;
   }
-  return respondToOffer(offerId, offeredPrice);
+
+  return respondToOffer(
+    offerId,
+    offeredPrice
+  );
 }
 
-// ── Admin panel ──────────────────────────────────────────────────────────────
-// POST /v1/admin/login { code } → { data: { admin, token } } (mock code for demo)
-export const adminLogin = (code) =>
-  request('/admin/login', { method: 'POST', body: JSON.stringify({ code }) });
 
-// GET /v1/admin/summary → dashboard counts + alerts
-export const getAdminSummary = () => request('/admin/summary');
+// ============================================================
+// ADMIN
+// ============================================================
 
-export const renewRecyclerAuthorization = (id, data) =>
-  request(`/recyclers/${id}/renew`, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+export const adminLogin = (
+  code
+) =>
+  request(
+    '/admin/login',
+    {
+      method: 'POST',
 
-// POST /v1/admin/recyclers/:id/verify { decision, verification_source?, rejection_reason? }
-export const adminVerifyRecycler = (id, decision, verification_source, rejection_reason) =>
-  request(`/admin/recyclers/${id}/verify`, {
-    method: 'POST',
-    body: JSON.stringify({ decision, verification_source, rejection_reason }),
-  });
-
-// GET /v1/admin/price-sources → provenance registry
-export const getPriceSources = () => request('/admin/price-sources');
-export const createPriceSource = (data) => request('/admin/price-sources', { method: 'POST', body: JSON.stringify(data) });
-export const updatePriceSource = (id, data) => request(`/admin/price-sources/${id}`, { method: 'PUT', body: JSON.stringify(data) });
-export const deletePriceSource = (id) => request(`/admin/price-sources/${id}`, { method: 'DELETE' });
-
-// Read-only operational controls for the admin console.
-export const getAdminLots = () => request('/admin/lots');
-export const getAdminAuditEvents = () => request('/admin/audit-events');
-
-// Dashboard chart analytics — material mix, revenue velocity, recycler auth status
-export const getAdminAnalytics = () => request('/admin/analytics');
-
-// Geospatial heatmap data — recycler facilities, density, state summaries
-export const getAdminHeatmap = () => request('/admin/heatmap');
-
-
-// ── Earnings summary ─────────────────────────────────────────────────────────
-
-/**
- * Get earnings summary.
- * ONLINE  → fetches, caches, returns { data, fromCache: false }
- * OFFLINE → returns cached snapshot
- */
-export async function getEarningsSummary(collectorId) {
-  if (isOnline()) {
-    try {
-      const res = await request(`/payments/earnings/${collectorId}`);
-      cacheEarnings(collectorId, res.data).catch(() => { });
-      return { ...res, fromCache: false };
-    } catch (err) {
-      const cached = await getCachedEarnings(collectorId);
-      if (cached) return { data: cached, fromCache: true };
-      throw err;
+      body:
+        JSON.stringify({
+          code,
+        }),
     }
-  }
+  );
 
-  const cached = await getCachedEarnings(collectorId);
-  if (cached) return { data: cached, fromCache: true };
-  return { data: null, fromCache: true };
-}
 
-/**
- * Get payment history (ledger rows).
- * ONLINE  → fetches, caches, returns { data, fromCache: false }
- * OFFLINE → returns cached rows
- */
-export async function getPaymentHistory(collectorId) {
-  if (isOnline()) {
-    try {
-      const res = await request(`/payments/history/${collectorId}`);
-      const rows = Array.isArray(res.data) ? res.data : [];
-      // Tag each row with collector_id for cache indexing
-      const tagged = rows.map((r) => ({ ...r, collector_id: collectorId }));
-      cacheTransactions(collectorId, tagged).catch(() => { });
-      return { ...res, fromCache: false };
-    } catch (err) {
-      const cached = await getCachedTransactions(collectorId);
-      if (cached.length > 0) return { data: cached, fromCache: true };
-      throw err;
+export const getAdminSummary = () =>
+  request(
+    '/admin/summary'
+  );
+
+
+export const renewRecyclerAuthorization = (
+  id,
+  data
+) =>
+  request(
+    `/recyclers/${id}/renew`,
+    {
+      method: 'POST',
+
+      body:
+        JSON.stringify(data),
     }
-  }
+  );
 
-  const cached = await getCachedTransactions(collectorId);
-  return { data: cached, fromCache: true };
+
+export const adminVerifyRecycler = (
+  id,
+  decision,
+  verification_source,
+  rejection_reason
+) =>
+  request(
+    `/admin/recyclers/${id}/verify`,
+    {
+      method: 'POST',
+
+      body:
+        JSON.stringify({
+          decision,
+          verification_source,
+          rejection_reason,
+        }),
+    }
+  );
+
+
+// ============================================================
+// PRICE SOURCES
+// ============================================================
+
+export const getPriceSources =
+  () =>
+    request(
+      '/admin/price-sources'
+    );
+
+
+export const createPriceSource = (
+  data
+) =>
+  request(
+    '/admin/price-sources',
+    {
+      method: 'POST',
+
+      body:
+        JSON.stringify(data),
+    }
+  );
+
+
+export const updatePriceSource = (
+  id,
+  data
+) =>
+  request(
+    `/admin/price-sources/${id}`,
+    {
+      method: 'PUT',
+
+      body:
+        JSON.stringify(data),
+    }
+  );
+
+
+export const deletePriceSource = (
+  id
+) =>
+  request(
+    `/admin/price-sources/${id}`,
+    {
+      method: 'DELETE',
+    }
+  );
+
+
+// ============================================================
+// ADMIN OPERATIONAL DATA
+// ============================================================
+
+export const getAdminLots = () =>
+  request(
+    '/admin/lots'
+  );
+
+
+export const getAdminAuditEvents = () =>
+  request(
+    '/admin/audit-events'
+  );
+
+
+export const getAdminAnalytics = () =>
+  request(
+    '/admin/analytics'
+  );
+
+
+export const getAdminHeatmap = () =>
+  request(
+    '/admin/heatmap'
+  );
+
+
+// ============================================================
+// EARNINGS
+// ============================================================
+//
+// Mobile version is network-only.
+// Offline caching will be implemented later using mobile storage.
+
+export async function getEarningsSummary(
+  collectorId
+) {
+  return request(
+    `/payments/earnings/${collectorId}`
+  );
 }
 
-// ── App defaults ─────────────────────────────────────────────────────────────
-// These are config-driven (env) rather than hardcoded magic numbers so the app
-// can be pointed at any backend / demo identity without editing source. Until
-// auth is wired up, the app acts as a given collector and recycler persona.
 
-const envInt = (value, fallback) => {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : fallback;
+// ============================================================
+// PAYMENT HISTORY
+// ============================================================
+
+export async function getPaymentHistory(
+  collectorId
+) {
+  return request(
+    `/payments/history/${collectorId}`
+  );
+}
+
+
+// ============================================================
+// ENV / APP DEFAULTS
+// ============================================================
+
+const envInt = (
+  value,
+  fallback
+) => {
+  const n =
+    Number(value);
+
+  return Number.isFinite(n)
+    ? n
+    : fallback;
 };
+
 
 export const DEMO_COLLECTOR_ID =
-  envInt(process.env.EXPO_PUBLIC_DEMO_COLLECTOR_ID, 1);
+  envInt(
+    process.env
+      .EXPO_PUBLIC_DEMO_COLLECTOR_ID,
+    1
+  );
+
 
 export const DEMO_RECYCLER_ID =
-  envInt(process.env.EXPO_PUBLIC_DEMO_RECYCLER_ID, 1);
+  envInt(
+    process.env
+      .EXPO_PUBLIC_DEMO_RECYCLER_ID,
+    1
+  );
+
 
 export const DEFAULT_LOCATION =
-  process.env.EXPO_PUBLIC_DEFAULT_LOCATION || 'Bengaluru';
+  process.env
+    .EXPO_PUBLIC_DEFAULT_LOCATION ||
+  'Bengaluru';
+
 
 export const DEFAULT_LAT =
-  Number(process.env.EXPO_PUBLIC_DEFAULT_LAT) || 12.9716;
+  Number(
+    process.env
+      .EXPO_PUBLIC_DEFAULT_LAT
+  ) || 12.9716;
+
 
 export const DEFAULT_LNG =
-  Number(process.env.EXPO_PUBLIC_DEFAULT_LNG) || 77.5946;
+  Number(
+    process.env
+      .EXPO_PUBLIC_DEFAULT_LNG
+  ) || 77.5946;
+
+
+// ============================================================
+// MATERIAL CATEGORIES
+// ============================================================
 
 export const MATERIAL_CATEGORIES = [
-  { id: 'CRT', label: 'CRTs', icon: '', sub: ['Color CRT', 'Monochrome CRT'] },
-  { id: 'LCD', label: 'LCD Panels', icon: '', sub: ['LED Monitor', 'LCD TV', 'Flat Panel'] },
-  { id: 'PCB', label: 'PCBs', icon: '', sub: ['Motherboard', 'Graphics Card', 'RAM', 'Mixed PCB'] },
-  { id: 'Cable', label: 'Cables', icon: '', sub: ['Power Cable', 'Data Cable', 'Mixed Cables'] },
-  { id: 'Battery', label: 'Batteries', icon: '', sub: ['Li-Ion', 'Lead-Acid', 'NiMH', 'Mixed'] },
-  { id: 'Motor', label: 'Motors', icon: '', sub: ['Electric Motor', 'Transformer', 'Magnet Assembly'] },
-  { id: 'Plastic', label: 'Mixed Plastics', icon: '', sub: ['ABS Plastic', 'PC Plastic', 'Mixed E-Plastic'] },
+  {
+    id: 'CRT',
+    label: 'CRTs',
+    icon: '📺',
+
+    sub: [
+      'Color CRT',
+      'Monochrome CRT',
+    ],
+  },
+
+  {
+    id: 'LCD',
+    label: 'LCD Panels',
+    icon: '🖥️',
+
+    sub: [
+      'LED Monitor',
+      'LCD TV',
+      'Flat Panel',
+    ],
+  },
+
+  {
+    id: 'PCB',
+    label: 'PCBs',
+    icon: '🔌',
+
+    sub: [
+      'Motherboard',
+      'Graphics Card',
+      'RAM',
+      'Mixed PCB',
+    ],
+  },
+
+  {
+    id: 'Cable',
+    label: 'Cables',
+    icon: '🔗',
+
+    sub: [
+      'Power Cable',
+      'Data Cable',
+      'Mixed Cables',
+    ],
+  },
+
+  {
+    id: 'Battery',
+    label: 'Batteries',
+    icon: '🔋',
+
+    sub: [
+      'Li-Ion',
+      'Lead-Acid',
+      'NiMH',
+      'Mixed',
+    ],
+  },
+
+  {
+    id: 'Motor',
+    label: 'Motors',
+    icon: '⚙️',
+
+    sub: [
+      'Electric Motor',
+      'Transformer',
+      'Magnet Assembly',
+    ],
+  },
+
+  {
+    id: 'Plastic',
+    label: 'Mixed Plastics',
+    icon: '♻️',
+
+    sub: [
+      'ABS Plastic',
+      'PC Plastic',
+      'Mixed E-Plastic',
+    ],
+  },
 ];
