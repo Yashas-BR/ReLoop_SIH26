@@ -5,7 +5,7 @@
 
 INSERT INTO collectors (name, phone, preferred_language, operating_location)
 VALUES 
-('Raju (Demo Collector)', '+919999999999', 'hi', 'Bengaluru');
+('Platform Collector', '+919999999999', 'hi', 'Bengaluru');
 
 INSERT INTO recyclers (name, facility_location, latitude, longitude, materials_accepted, authorization_status, authorization_details, authorization_number, verification_source, last_verified_at, contact_details, pickup_availability, service_area)
 VALUES
