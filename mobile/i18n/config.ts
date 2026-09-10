@@ -6,7 +6,8 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useContext } from 'react';
-import { getSession } from '../services/auth';
+import { getSession } from '../src/services/auth';
+import { LanguageCode, LANGUAGES, DEFAULT_LANGUAGE, isLanguageCode } from '../src/i18n/languages';
 
 import en from './locales/en.json';
 import hi from './locales/hi.json';
@@ -17,15 +18,7 @@ import te from './locales/te.json';
 import ml from './locales/ml.json';
 import bn from './locales/bn.json';
 
-export type LanguageCode =
-  | 'en'
-  | 'hi'
-  | 'kn'
-  | 'ta'
-  | 'te'
-  | 'ml'
-  | 'bn'
-  | 'mr';
+export type { LanguageCode };
 
 export interface I18nContextValue {
   lang: LanguageCode;
@@ -38,6 +31,8 @@ export interface I18nContextValue {
     key: string,
     vars?: Record<string, string | number>
   ) => string;
+
+  ready: boolean;
 }
 
 const LOCALES: Record<string, any> = {
@@ -51,29 +46,11 @@ const LOCALES: Record<string, any> = {
   bn,
 };
 
-const SUPPORTED: LanguageCode[] = [
-  'en',
-  'hi',
-  'kn',
-  'ta',
-  'te',
-  'ml',
-  'bn',
-  'mr',
-];
+const SUPPORTED = LANGUAGES.map(l => l.code);
 
 const STORAGE_KEY = 'kc_lang';
 
-export const LANG_OPTIONS: { code: LanguageCode; label: string }[] = [
-  { code: 'en', label: 'English' },
-  { code: 'hi', label: 'हिंदी' },
-  { code: 'kn', label: 'ಕನ್ನಡ' },
-  { code: 'ta', label: 'தமிழ்' },
-  { code: 'te', label: 'తెలుగు' },
-  { code: 'ml', label: 'മലയാളം' },
-  { code: 'bn', label: 'বাংলা' },
-  { code: 'mr', label: 'मराठी' },
-];
+export const LANG_OPTIONS = LANGUAGES;
 
 /**
  * Priority:
@@ -87,7 +64,7 @@ async function detectInitialLang(): Promise<LanguageCode> {
 
     if (
       stored &&
-      SUPPORTED.includes(stored as LanguageCode)
+      isLanguageCode(stored)
     ) {
       return stored as LanguageCode;
     }
@@ -106,7 +83,7 @@ async function detectInitialLang(): Promise<LanguageCode> {
 
     if (
       sessionLang &&
-      SUPPORTED.includes(sessionLang as LanguageCode)
+      isLanguageCode(sessionLang)
     ) {
       return sessionLang as LanguageCode;
     }
@@ -117,7 +94,7 @@ async function detectInitialLang(): Promise<LanguageCode> {
     );
   }
 
-  return 'en';
+  return DEFAULT_LANGUAGE;
 }
 
 function getKey(locale: any, key: string) {
