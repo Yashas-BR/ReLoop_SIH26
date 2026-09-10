@@ -8,7 +8,7 @@ import {
     View,
 } from 'react-native';
 
-import { useTranslation } from '../../../i18n/config.js';
+import { useTranslation } from '../../../i18n/config';
 
 const SECTION_META = [
     { id: 'general', color: 'blue', warning: false, hasDoNot: false },

@@ -17,7 +17,30 @@ import te from './locales/te.json';
 import ml from './locales/ml.json';
 import bn from './locales/bn.json';
 
-const LOCALES = {
+export type LanguageCode =
+  | 'en'
+  | 'hi'
+  | 'kn'
+  | 'ta'
+  | 'te'
+  | 'ml'
+  | 'bn'
+  | 'mr';
+
+export interface I18nContextValue {
+  lang: LanguageCode;
+
+  setLang: (
+    language: LanguageCode
+  ) => void | Promise<void>;
+
+  t: (
+    key: string,
+    vars?: Record<string, string | number>
+  ) => string;
+}
+
+const LOCALES: Record<string, any> = {
   en,
   hi,
   mr,
@@ -28,7 +51,7 @@ const LOCALES = {
   bn,
 };
 
-const SUPPORTED = [
+const SUPPORTED: LanguageCode[] = [
   'en',
   'hi',
   'kn',
@@ -41,7 +64,7 @@ const SUPPORTED = [
 
 const STORAGE_KEY = 'kc_lang';
 
-export const LANG_OPTIONS = [
+export const LANG_OPTIONS: { code: LanguageCode; label: string }[] = [
   { code: 'en', label: 'English' },
   { code: 'hi', label: 'हिंदी' },
   { code: 'kn', label: 'ಕನ್ನಡ' },
@@ -58,15 +81,15 @@ export const LANG_OPTIONS = [
  * 2. User preferred language from session
  * 3. English
  */
-async function detectInitialLang() {
+async function detectInitialLang(): Promise<LanguageCode> {
   try {
     const stored = await AsyncStorage.getItem(STORAGE_KEY);
 
     if (
       stored &&
-      SUPPORTED.includes(stored)
+      SUPPORTED.includes(stored as LanguageCode)
     ) {
-      return stored;
+      return stored as LanguageCode;
     }
   } catch (error) {
     console.warn(
@@ -83,9 +106,9 @@ async function detectInitialLang() {
 
     if (
       sessionLang &&
-      SUPPORTED.includes(sessionLang)
+      SUPPORTED.includes(sessionLang as LanguageCode)
     ) {
-      return sessionLang;
+      return sessionLang as LanguageCode;
     }
   } catch (error) {
     console.warn(
@@ -97,7 +120,7 @@ async function detectInitialLang() {
   return 'en';
 }
 
-function getKey(locale, key) {
+function getKey(locale: any, key: string) {
   const parts = key.split('.');
 
   let node = locale;
@@ -121,7 +144,7 @@ function getKey(locale, key) {
     : undefined;
 }
 
-function interpolate(str, vars) {
+function interpolate(str: any, vars?: Record<string, string | number>) {
   if (
     !vars ||
     typeof str !== 'string'
@@ -139,9 +162,9 @@ function interpolate(str, vars) {
 }
 
 export const I18nContext =
-  createContext(null);
+  createContext<I18nContextValue | null>(null);
 
-export function useTranslation() {
+export function useTranslation(): I18nContextValue {
   const ctx =
     useContext(I18nContext);
 
@@ -155,10 +178,10 @@ export function useTranslation() {
 }
 
 export function translate(
-  locales,
-  lang,
-  key,
-  vars
+  locales: Record<string, any>,
+  lang: string,
+  key: string,
+  vars?: Record<string, string | number>
 ) {
   const locale =
     locales[lang] || locales.en;

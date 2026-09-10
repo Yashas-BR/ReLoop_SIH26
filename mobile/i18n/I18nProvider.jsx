@@ -23,7 +23,7 @@ import {
   SUPPORTED,
   detectInitialLang,
   translate,
-} from './config.js';
+} from './config';
 
 export function I18nProvider({ children }) {
   const [lang, setLangState] = useState('en');

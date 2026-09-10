@@ -82,7 +82,7 @@ export default function LandingScreen() {
 
             <Pressable
               style={styles.outlineButton}
-              onPress={() => router.push('/safety')}
+              onPress={() => router.push('/collector/safety')}
             >
               <Text style={styles.outlineButtonText}>
                 {t('landing.learnMore')}
@@ -143,15 +143,6 @@ export default function LandingScreen() {
           description={t('landing.recyclerDesc')}
           buttonText={t('landing.loginAsRecycler')}
           onPress={() => router.push('/login/recycler')}
-        />
-
-        <UserTypeCard
-          icon="⚙️"
-          title={t('landing.admin')}
-          description={t('landing.adminDesc')}
-          buttonText={t('landing.loginAsAdmin')}
-          secondary
-          onPress={() => router.push('/login/admin')}
         />
       </View>
 
