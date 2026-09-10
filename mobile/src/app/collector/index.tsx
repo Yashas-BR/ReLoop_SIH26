@@ -303,7 +303,7 @@ export default function CollectorDashboard() {
             label="Find Recyclers"
             description="View matched recyclers"
             onPress={() =>
-              comingSoon('Find Recyclers')
+              router.push('/collector/find-recyclers')
             }
           />
 
@@ -321,7 +321,7 @@ export default function CollectorDashboard() {
             label="Safety Guidance"
             description="Safe e-waste handling"
             onPress={() =>
-              comingSoon('Safety Guidance')
+              router.push('/collector/safety')
             }
           />
         </View>
