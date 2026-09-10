@@ -153,7 +153,7 @@ export default function CollectorLogin() {
                             </Text>
 
                             <Pressable
-                                onPress={() => router.push('/collector/register')}
+                                onPress={() => router.push('/login/collector/register')}
                             >
                                 <Text style={styles.link}>
                                     Create Account
@@ -168,12 +168,12 @@ export default function CollectorLogin() {
                         </Text>
 
                         <Pressable
-                            onPress={() => router.push('/login/recycler')}
-                        >
-                            <Text style={styles.link}>
-                                Login as Recycler
-                            </Text>
-                        </Pressable>
+    onPress={() => router.push('/login/recycler')}
+>
+    <Text style={styles.link}>
+        Login as Recycler
+    </Text>
+</Pressable>
                     </View>
 
                     <Pressable onPress={() => router.replace('/')}>

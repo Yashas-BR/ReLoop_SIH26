@@ -16,13 +16,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f8fafc',
   },
-
   title: {
     fontSize: 28,
     fontWeight: '800',
     color: '#111827',
   },
-
   subtitle: {
     marginTop: 8,
     fontSize: 16,
