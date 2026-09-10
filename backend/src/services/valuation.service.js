@@ -77,93 +77,106 @@ export function resolvePricingLocation(locStr, lat = null, lng = null) {
 export const calculateInstantValuation = async (category, location, weight) => {
   const normalizedLoc = resolvePricingLocation(location);
 
-  // Weighted average of the 10 most recent price records for this category+location.
-  // More recent rows get higher weight (rank 1 = most recent = weight 10, rank 10 = weight 1).
-  // This smooths out single-day spikes and gives a more representative market price.
+  console.log(`[Valuation] Request: category=${category}, location=${location} → resolved=${normalizedLoc}, weight=${weight}kg`);
+
+  const CATEGORY_MATCH_SQL = `
+    material_category = $1
+    OR ($1 IN ('Motor', 'Motors') AND material_category = 'Motor/Magnet Assembly')
+    OR ($1 = 'Motor/Magnet Assembly' AND material_category IN ('Motor', 'Motors'))
+    OR ($1 IN ('LCD', 'LCDs', 'LCD Panels') AND material_category = 'LCD Panel')
+    OR ($1 = 'LCD Panel' AND material_category IN ('LCD', 'LCDs', 'LCD Panels'))
+    OR ($1 IN ('Plastic', 'Plastics', 'Mixed Plastics') AND material_category = 'Mixed Plastic')
+    OR ($1 = 'Mixed Plastic' AND material_category IN ('Plastic', 'Plastics', 'Mixed Plastics'))
+    OR ($1 = 'Batteries' AND material_category = 'Battery')
+    OR ($1 = 'PCBs' AND material_category = 'PCB')
+    OR ($1 = 'Cables' AND material_category = 'Cable')
+    OR ($1 = 'CRTs' AND material_category = 'CRT')
+  `;
+
   let priceResult = await query(
-    `SELECT buying_price, unit, market_range_low, market_range_high,
+    `SELECT buying_price, unit, market_range_low, market_range_high, price_date,
             ROW_NUMBER() OVER (ORDER BY price_date DESC) AS recency_rank
      FROM prices
-     WHERE (
-       material_category = $1
-       OR ($1 IN ('Motor', 'Motors') AND material_category = 'Motor/Magnet Assembly')
-       OR ($1 = 'Motor/Magnet Assembly' AND material_category IN ('Motor', 'Motors'))
-       OR ($1 IN ('LCD', 'LCDs', 'LCD Panels') AND material_category = 'LCD Panel')
-       OR ($1 = 'LCD Panel' AND material_category IN ('LCD', 'LCDs', 'LCD Panels'))
-       OR ($1 IN ('Plastic', 'Plastics', 'Mixed Plastics') AND material_category = 'Mixed Plastic')
-       OR ($1 = 'Mixed Plastic' AND material_category IN ('Plastic', 'Plastics', 'Mixed Plastics'))
-       OR ($1 = 'Batteries' AND material_category = 'Battery')
-       OR ($1 = 'PCBs' AND material_category = 'PCB')
-       OR ($1 = 'Cables' AND material_category = 'Cable')
-       OR ($1 = 'CRTs' AND material_category = 'CRT')
-     ) AND (
-       location = $2
-       OR LOWER(location) = LOWER($2)
-       OR location ILIKE $3
-     )
+     WHERE (${CATEGORY_MATCH_SQL})
+       AND (
+         location = $2
+         OR LOWER(location) = LOWER($2)
+         OR location ILIKE $3
+       )
      ORDER BY price_date DESC
      LIMIT 10`,
     [category, normalizedLoc, `%${normalizedLoc}%`]
   );
 
+  let usedFallback = false;
   if (priceResult.rows.length === 0) {
-    // Fallback to Bengaluru benchmark prices
+    console.warn(`[Valuation] No price data for ${category} in ${normalizedLoc}. Falling back to Bengaluru benchmark.`);
     priceResult = await query(
-      `SELECT buying_price, unit, market_range_low, market_range_high,
+      `SELECT buying_price, unit, market_range_low, market_range_high, price_date,
               ROW_NUMBER() OVER (ORDER BY price_date DESC) AS recency_rank
        FROM prices
-       WHERE (
-         material_category = $1
-         OR ($1 IN ('Motor', 'Motors') AND material_category = 'Motor/Magnet Assembly')
-         OR ($1 = 'Motor/Magnet Assembly' AND material_category IN ('Motor', 'Motors'))
-         OR ($1 IN ('LCD', 'LCDs', 'LCD Panels') AND material_category = 'LCD Panel')
-         OR ($1 = 'LCD Panel' AND material_category IN ('LCD', 'LCDs', 'LCD Panels'))
-         OR ($1 IN ('Plastic', 'Plastics', 'Mixed Plastics') AND material_category = 'Mixed Plastic')
-         OR ($1 = 'Mixed Plastic' AND material_category IN ('Plastic', 'Plastics', 'Mixed Plastics'))
-         OR ($1 = 'Batteries' AND material_category = 'Battery')
-         OR ($1 = 'PCBs' AND material_category = 'PCB')
-         OR ($1 = 'Cables' AND material_category = 'Cable')
-         OR ($1 = 'CRTs' AND material_category = 'CRT')
-       )
+       WHERE (${CATEGORY_MATCH_SQL})
        ORDER BY price_date DESC
        LIMIT 10`,
       [category]
     );
+    usedFallback = true;
   }
 
   if (priceResult.rows.length === 0) {
+    console.error(`[Valuation] No pricing data found for ${category} anywhere in DB.`);
     throw new ApiError(404, `No pricing data found for ${category} in ${location}`);
   }
 
   const rows = priceResult.rows;
   const n = rows.length;
 
+  // Detect and correct per_quintal unit (1 quintal = 100 kg)
+  let rawUnit = rows[0].unit || 'per_kg';
+  let unitScaleFactor = 1;
+  if (rawUnit === 'per_quintal') {
+    console.warn(`[Valuation] ⚠ Unit is per_quintal for ${category}. Converting to per_kg (÷100).`);
+    unitScaleFactor = 1 / 100;
+    rawUnit = 'per_kg';
+  }
+
   // Authoritative current market benchmark: latest price record
-  const latestPrice = parseFloat(rows[0].buying_price);
+  const latestPrice = parseFloat(rows[0].buying_price) * unitScaleFactor;
   const unitPrice = Math.round(latestPrice * 100) / 100;
 
-  // Filtered market range representing normal observed market prices (±10% to ±15% of benchmark)
-  const rawMin = Math.min(...rows.map(r => parseFloat(r.market_range_low ?? r.buying_price)));
-  const rawMax = Math.max(...rows.map(r => parseFloat(r.market_range_high ?? r.buying_price)));
-
-  // Trim abnormal outliers (restrict range to normal trading band around benchmark)
-  const rangeLow = Math.max(Math.round(unitPrice * 0.88 * 100) / 100, Math.round(rawMin * 100) / 100);
+  // Market range — trimmed to a normal ±12% trading band around benchmark
+  const rawMin = Math.min(...rows.map(r => parseFloat(r.market_range_low ?? r.buying_price) * unitScaleFactor));
+  const rawMax = Math.max(...rows.map(r => parseFloat(r.market_range_high ?? r.buying_price) * unitScaleFactor));
+  const rangeLow  = Math.max(Math.round(unitPrice * 0.88 * 100) / 100, Math.round(rawMin * 100) / 100);
   const rangeHigh = Math.min(Math.round(unitPrice * 1.12 * 100) / 100, Math.round(rawMax * 100) / 100);
 
   const estimatedValue = Math.round(unitPrice * weight * 100) / 100;
 
+  // Determine the most recent price_date across the rows used
+  const priceDateRaw = rows[0].price_date;
+  const priceDate = priceDateRaw
+    ? new Date(priceDateRaw).toISOString().slice(0, 10)
+    : null;
+
+  console.log(`[Valuation] Result: category=${category}, resolvedLoc=${normalizedLoc}, unitPrice=₹${unitPrice}/kg, date=${priceDate}, samples=${n}, fallback=${usedFallback}`);
+
   return {
     benchmark_available: true,
+    is_estimated: true,                    // Prices are benchmark-derived, not live traded
     estimated_value: parseFloat(estimatedValue.toFixed(2)),
     unit_price: parseFloat(unitPrice.toFixed(2)),
     market_benchmark: parseFloat(unitPrice.toFixed(2)),
-    unit: rows[0].unit,
-    market_range_low: parseFloat(rangeLow.toFixed(2)),
+    unit: rawUnit,
+    market_range_low:  parseFloat(rangeLow.toFixed(2)),
     market_range_high: parseFloat(rangeHigh.toFixed(2)),
     weight_kg: weight,
     category,
     location: normalizedLoc || location,
+    price_date: priceDate,                 // For UI "last updated" display
     price_samples: n,
-    benchmark_notice: `Based on current ${normalizedLoc || location} market benchmark reference.`,
+    used_fallback_location: usedFallback,
+    benchmark_notice: usedFallback
+      ? `No benchmark data for ${location}. Showing Bengaluru reference rates.`
+      : `Based on current ${normalizedLoc} market benchmark reference (estimated).`,
   };
 };

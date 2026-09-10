@@ -56,16 +56,17 @@ const RULES = {
     ['green', null, 0.3, 1],
   ],
   PCB: [
-    ['green', 0.18, null, 3],
+    ['green', 0.18, null, 3.0],
     ['edge', 0.18, null, 2.5],
-    ['copper', 0.03, null, 1.5],
+    ['copper', 0.03, null, 2.0],  // fixed: copper bin now receives yellow-gold signal
     ['blue', null, 0.4, 1],
   ],
   Cable: [
-    ['satVar', 0.14, null, 5],
+    ['satVar', 0.14, null, 5.0],
     ['meanSat', 0.2, null, 2],
     ['edge', 0.16, null, 1.5],
     ['red', 0.03, null, 1.5],
+    ['copper', 0.04, null, 1.5],  // fixed: yellow insulation now counted here
     ['green', 0.02, 0.4, 0.5],
     ['blue', 0.02, 0.4, 0.5],
   ],
@@ -74,10 +75,10 @@ const RULES = {
     ['meanSat', null, 0.3, 1.5],
     ['meanLum', 0.28, 0.72, 1],
     ['edge', 0.05, 0.35, 1],
-    ['copper', null, 0.1, 1.5],
+    ['copper', null, 0.08, 1.5], // should NOT have copper signal
   ],
   Motor: [
-    ['copper', 0.08, null, 3],
+    ['copper', 0.08, null, 4.0],  // fixed: was 3.0, copper is the primary motor signal
     ['edge', 0.18, null, 2],
     ['neutral', 0.2, null, 1],
     ['meanLum', 0.3, 0.75, 1],
@@ -85,7 +86,7 @@ const RULES = {
   Plastic: [
     ['edge', null, 0.16, 3],
     ['meanSat', 0.06, 0.6, 1.5],
-    ['copper', null, 0.12, 1],
+    ['copper', null, 0.10, 1],
     ['green', null, 0.3, 1],
   ],
 };
@@ -112,9 +113,10 @@ function rankFeatures(features) {
     }));
 }
 
+// Verdict thresholds (synced with frontend analyze.js v2)
 function toVerdict(confidence, spread) {
-  if (confidence >= 0.55 && spread >= 0.2) return 'high';
-  if (confidence >= 0.4 && spread >= 0.12) return 'medium';
+  if (confidence >= 0.55 && spread >= 0.18) return 'high';
+  if (confidence >= 0.35 && spread >= 0.10) return 'medium';
   return 'low';
 }
 

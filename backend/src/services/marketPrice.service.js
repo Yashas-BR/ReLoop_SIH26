@@ -220,38 +220,122 @@ export const seedDynamicNationalPrices = async (days = 90) => {
 };
 
 /**
- * Fetch live market pulse overview across all e-waste categories
+ * Fetch live market pulse overview across all e-waste categories.
+ *
+ * FIX: now queries the actual `prices` DB table for the latest benchmark price
+ * per category for the requested location. Falls back to SCRAP_COMMODITY_BENCHMARKS
+ * base prices only if no DB records exist (e.g. fresh deployment before seeding).
+ *
  * @param {string} location
  * @returns {Promise<Object>}
  */
 export const getLiveMarketPulse = async (location = 'Bengaluru') => {
   const locFactor = REGIONAL_MARKET_FACTORS[location] || { multiplier: 1.0, demand: 'Active', hub: location };
 
+  console.log(`[MarketPulse] Fetching live pulse for location=${location}`);
+
+  // Fetch the single latest benchmark price per category for this location from the DB.
+  // We use DISTINCT ON to get one row per category with the most recent price_date.
+  let dbRows = [];
+  let lastUpdated = null;
+  try {
+    const result = await query(
+      `SELECT DISTINCT ON (material_category)
+         material_category,
+         buying_price,
+         unit,
+         market_range_low,
+         market_range_high,
+         price_date
+       FROM prices
+       WHERE location = $1
+         AND recycler_id IS NULL
+       ORDER BY material_category, price_date DESC`,
+      [location]
+    );
+    dbRows = result.rows;
+
+    if (dbRows.length === 0 && location !== 'Bengaluru') {
+      // Fallback to Bengaluru if target location has no data
+      console.warn(`[MarketPulse] No DB data for ${location}, falling back to Bengaluru.`);
+      const fallback = await query(
+        `SELECT DISTINCT ON (material_category)
+           material_category,
+           buying_price,
+           unit,
+           market_range_low,
+           market_range_high,
+           price_date
+         FROM prices
+         WHERE location = 'Bengaluru'
+           AND recycler_id IS NULL
+         ORDER BY material_category, price_date DESC`,
+        []
+      );
+      dbRows = fallback.rows;
+    }
+
+    // Determine the latest price_date across all rows for the "last updated" display
+    if (dbRows.length > 0) {
+      const dates = dbRows.map(r => r.price_date).filter(Boolean).sort();
+      lastUpdated = dates[dates.length - 1];
+    }
+
+    console.log(`[MarketPulse] DB returned ${dbRows.length} category prices for ${location}. Last updated: ${lastUpdated}`);
+  } catch (err) {
+    console.error('[MarketPulse] DB query failed, using hardcoded benchmarks:', err.message);
+  }
+
+  // Build a lookup: category → DB row
+  const dbByCategory = {};
+  for (const row of dbRows) {
+    dbByCategory[row.material_category] = row;
+  }
+
   const pulse = [];
   for (const [cat, bench] of Object.entries(SCRAP_COMMODITY_BENCHMARKS)) {
-    const regionalBase = bench.basePrice * locFactor.multiplier;
-    const currentPrice = Math.round(regionalBase * 100) / 100;
-    const weeklyHigh = Math.round(currentPrice * 1.06 * 100) / 100;
-    const weeklyLow = Math.round(currentPrice * 0.94 * 100) / 100;
+    const dbRow = dbByCategory[cat];
+    let currentPrice, weeklyLow, weeklyHigh, dataSource;
+
+    if (dbRow) {
+      // Use real DB price
+      currentPrice = Math.round(parseFloat(dbRow.buying_price) * 100) / 100;
+      weeklyLow    = dbRow.market_range_low  != null ? Math.round(parseFloat(dbRow.market_range_low)  * 100) / 100 : Math.round(currentPrice * 0.93 * 100) / 100;
+      weeklyHigh   = dbRow.market_range_high != null ? Math.round(parseFloat(dbRow.market_range_high) * 100) / 100 : Math.round(currentPrice * 1.08 * 100) / 100;
+      dataSource   = 'db';
+    } else {
+      // Fall back to static commodity benchmark
+      const regionalBase = bench.basePrice * locFactor.multiplier;
+      currentPrice = Math.round(regionalBase * 100) / 100;
+      weeklyLow    = Math.round(currentPrice * 0.94 * 100) / 100;
+      weeklyHigh   = Math.round(currentPrice * 1.06 * 100) / 100;
+      dataSource   = 'static-fallback';
+      console.warn(`[MarketPulse] No DB row for category=${cat} in ${location}, using static benchmark.`);
+    }
 
     pulse.push({
-      category: cat,
-      name: bench.name,
-      current_price: currentPrice,
-      unit: bench.unit,
+      category:         cat,
+      name:             bench.name,
+      current_price:    currentPrice,
+      unit:             bench.unit,
       market_range_low: weeklyLow,
       market_range_high: weeklyHigh,
       commodity_driver: bench.driver,
-      regional_demand: locFactor.demand,
-      hub: locFactor.hub,
-      subtypes: bench.subtypes,
+      regional_demand:  locFactor.demand,
+      hub:              locFactor.hub,
+      subtypes:         bench.subtypes,
+      is_estimated:     true,
+      data_source:      dataSource,
     });
   }
 
   return {
     location,
-    timestamp: new Date().toISOString(),
-    market_status: 'Active (Live Benchmarked)',
+    timestamp:      new Date().toISOString(),
+    last_updated:   lastUpdated,                     // actual DB price_date, for UI "last updated" badge
+    market_status:  dbRows.length > 0
+      ? 'Active (DB-Backed Benchmark)'
+      : 'Active (Static Fallback — seed prices to get live data)',
     data: pulse,
   };
 };
