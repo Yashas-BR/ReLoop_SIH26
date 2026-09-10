@@ -1,23 +1,13 @@
 /**
- * i18n — Lightweight translation system for Kabadiwala Connect.
+ * i18n — Lightweight translation system for ReLoop mobile.
  *
- * No external library. Custom React Context + hook.
- * Supports: English (en), Hindi (hi), Marathi (mr)
- *
- * Usage:
- *   const { t, lang, setLang } = useTranslation();
- *   t('nav.dashboard')           → "Dashboard" / "डैशबोर्ड" / "डॅशबोर्ड"
- *   t('createLot.photos.count', { current: 2, max: 3 }) → "2/3 फ़ोटो"
- *
- * Template variables: use {{varName}} syntax in locale JSON values.
- * Falls back to English for any missing key.
- * Falls back to the key itself if English also missing (never breaks UI).
- *
- * Persistence: language choice is stored in localStorage as 'kc_lang'.
+ * React Native / Expo version.
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useContext } from 'react';
 import { getSession } from '../services/auth';
+
 import en from './locales/en.json';
 import hi from './locales/hi.json';
 import mr from './locales/mr.json';
@@ -27,8 +17,28 @@ import te from './locales/te.json';
 import ml from './locales/ml.json';
 import bn from './locales/bn.json';
 
-const LOCALES = { en, hi, mr, kn, ta, te, ml, bn };
-const SUPPORTED = ['en', 'hi', 'kn', 'ta', 'te', 'ml', 'bn', 'mr'];
+const LOCALES = {
+  en,
+  hi,
+  mr,
+  kn,
+  ta,
+  te,
+  ml,
+  bn,
+};
+
+const SUPPORTED = [
+  'en',
+  'hi',
+  'kn',
+  'ta',
+  'te',
+  'ml',
+  'bn',
+  'mr',
+];
+
 const STORAGE_KEY = 'kc_lang';
 
 export const LANG_OPTIONS = [
@@ -42,91 +52,149 @@ export const LANG_OPTIONS = [
   { code: 'mr', label: 'मराठी' },
 ];
 
-function detectInitialLang() {
-  // Collector's account preference wins (set at registration/login)
-  const sessionLang = getSession()?.preferred_language;
-  if (sessionLang && SUPPORTED.includes(sessionLang)) return sessionLang;
-  const stored = typeof localStorage !== 'undefined'
-    ? localStorage.getItem(STORAGE_KEY)
-    : null;
-  if (stored && SUPPORTED.includes(stored)) return stored;
-  // Try browser preference
-  const browser = (navigator.language || 'en').slice(0, 2).toLowerCase();
-  if (SUPPORTED.includes(browser)) return browser;
+/**
+ * Priority:
+ * 1. Saved language from AsyncStorage
+ * 2. User preferred language from session
+ * 3. English
+ */
+async function detectInitialLang() {
+  try {
+    const stored = await AsyncStorage.getItem(STORAGE_KEY);
+
+    if (
+      stored &&
+      SUPPORTED.includes(stored)
+    ) {
+      return stored;
+    }
+  } catch (error) {
+    console.warn(
+      '[i18n] Could not read stored language:',
+      error
+    );
+  }
+
+  try {
+    const session = await getSession();
+
+    const sessionLang =
+      session?.preferred_language;
+
+    if (
+      sessionLang &&
+      SUPPORTED.includes(sessionLang)
+    ) {
+      return sessionLang;
+    }
+  } catch (error) {
+    console.warn(
+      '[i18n] Could not read session language:',
+      error
+    );
+  }
+
   return 'en';
 }
 
-/**
- * Resolve a dot-notated key in a locale object.
- * e.g. getKey(en, 'nav.dashboard') → "Dashboard"
- */
 function getKey(locale, key) {
   const parts = key.split('.');
+
   let node = locale;
+
   for (const part of parts) {
-    if (node == null || typeof node !== 'object') return undefined;
+    if (
+      node == null ||
+      typeof node !== 'object'
+    ) {
+      return undefined;
+    }
+
     node = node[part];
   }
-  return typeof node === 'string' || Array.isArray(node) ? node : undefined;
+
+  return (
+    typeof node === 'string' ||
+    Array.isArray(node)
+  )
+    ? node
+    : undefined;
 }
 
-/**
- * Fill {{varName}} or {varName} placeholders in a translated string.
- */
 function interpolate(str, vars) {
-  if (!vars || typeof str !== 'string') return str;
-  return str.replace(/\{\{?(\w+)\}?\}/g, (match, k) =>
-    vars[k] !== undefined ? String(vars[k]) : match
+  if (
+    !vars ||
+    typeof str !== 'string'
+  ) {
+    return str;
+  }
+
+  return str.replace(
+    /\{\{?(\w+)\}?\}/g,
+    (match, key) =>
+      vars[key] !== undefined
+        ? String(vars[key])
+        : match
   );
 }
 
-// ── Context ─────────────────────────────────────────────────────────────────
+export const I18nContext =
+  createContext(null);
 
-export const I18nContext = createContext(null);
-
-/**
- * Hook — use this in every component that needs translations.
- *
- * @returns {{ t: Function, lang: string, setLang: Function }}
- */
 export function useTranslation() {
-  const ctx = useContext(I18nContext);
+  const ctx =
+    useContext(I18nContext);
+
   if (!ctx) {
-    throw new Error('useTranslation must be used inside <I18nProvider>');
+    throw new Error(
+      'useTranslation must be used inside <I18nProvider>'
+    );
   }
+
   return ctx;
 }
 
-/**
- * Translate a key with optional template variables.
- * Falls back: current locale → English → raw key string.
- * Returns arrays unchanged (needed for safety section items).
- *
- * @param {object} locales  — all locale objects
- * @param {string} lang     — active language code
- * @param {string} key      — dot-notated key e.g. 'nav.dashboard'
- * @param {object} [vars]   — template variables e.g. { count: 3 }
- * @returns {string|Array}
- */
-export function translate(locales, lang, key, vars) {
-  const locale = locales[lang] || locales.en;
-  let result = getKey(locale, key);
+export function translate(
+  locales,
+  lang,
+  key,
+  vars
+) {
+  const locale =
+    locales[lang] || locales.en;
 
-  // Fallback to English
-  if (result === undefined && lang !== 'en') {
-    result = getKey(locales.en, key);
+  let result =
+    getKey(locale, key);
+
+  if (
+    result === undefined &&
+    lang !== 'en'
+  ) {
+    result =
+      getKey(locales.en, key);
   }
 
-  // Return arrays as-is (e.g. safety section items)
-  if (Array.isArray(result)) return result;
+  if (Array.isArray(result)) {
+    return result;
+  }
 
-  // Final fallback — return the key itself so UI never breaks
   if (result === undefined) {
-    console.warn(`[i18n] Missing key: "${key}" in "${lang}"`);
+    console.warn(
+      `[i18n] Missing key: "${key}" in "${lang}"`
+    );
+
     return key;
   }
 
-  return interpolate(result, vars);
+  return interpolate(
+    result,
+    vars
+  );
 }
 
-export { LOCALES, SUPPORTED, STORAGE_KEY, detectInitialLang };
+export {
+  LOCALES,
+  SUPPORTED,
+  STORAGE_KEY,
+  detectInitialLang,
+};

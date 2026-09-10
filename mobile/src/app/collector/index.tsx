@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -161,14 +160,6 @@ export default function CollectorDashboard() {
   useEffect(() => {
     loadDashboard();
   }, []);
-
-  function comingSoon(feature: string) {
-    Alert.alert(
-      feature,
-      'This screen will be migrated next.'
-    );
-  }
-
   return (
     <ScrollView
       style={styles.screen}
@@ -378,9 +369,12 @@ export default function CollectorDashboard() {
                 key={String(lot.lot_id)}
                 lot={lot}
                 onPress={() =>
-                  comingSoon(
-                    `Lot ${lot.lot_id}`
-                  )
+                  router.push({
+                    pathname: '/collector/lots/[lotId]',
+                    params: {
+                      lotId: String(lot.lot_id),
+                    },
+                  })
                 }
               />
             ))}

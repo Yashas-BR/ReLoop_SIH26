@@ -1,44 +1,97 @@
 /**
- * I18nProvider — wraps the application with multilingual support.
+ * I18nProvider — React Native / Expo multilingual provider.
  *
  * Provides:
- *   lang    — current language code ('en' | 'hi' | 'mr' | 'kn')
- *   setLang — switch language (persists to localStorage)
- *   t(key, vars?) — translate a key with optional template variables
- *
- * Mount once at the top of the component tree (in App.jsx).
+ * - lang
+ * - setLang
+ * - t(key, vars?)
+ * - ready
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+
 import {
   I18nContext,
   LOCALES,
   STORAGE_KEY,
   SUPPORTED,
+  detectInitialLang,
   translate,
-  detectInitialLang as getInitialLang,
 } from './config.js';
 
 export function I18nProvider({ children }) {
-  const [lang, setLangState] = useState(() => getInitialLang());
+  const [lang, setLangState] = useState('en');
+  const [ready, setReady] = useState(false);
 
-  const setLang = useCallback((code) => {
-    if (!SUPPORTED.includes(code)) return;
+  useEffect(() => {
+    let active = true;
+
+    async function loadLanguage() {
+      const initialLang = await detectInitialLang();
+
+      if (!active) {
+        return;
+      }
+
+      setLangState(initialLang);
+      setReady(true);
+    }
+
+    loadLanguage();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const setLang = useCallback(async (code) => {
+    if (!SUPPORTED.includes(code)) {
+      return;
+    }
+
+    // Update UI immediately.
     setLangState(code);
+
+    // Persist language for next app launch.
     try {
-      localStorage.setItem(STORAGE_KEY, code);
-    } catch {
-      // localStorage blocked (private mode etc.) — still works in-session
+      await AsyncStorage.setItem(
+        STORAGE_KEY,
+        code
+      );
+    } catch (error) {
+      console.warn(
+        '[i18n] Could not save language:',
+        error
+      );
     }
   }, []);
 
-  // Memoize t() so it only changes when lang changes
   const t = useCallback(
-    (key, vars) => translate(LOCALES, lang, key, vars),
+    (key, vars) =>
+      translate(
+        LOCALES,
+        lang,
+        key,
+        vars
+      ),
     [lang]
   );
 
-  const value = useMemo(() => ({ lang, setLang, t }), [lang, setLang, t]);
+  const value = useMemo(
+    () => ({
+      lang,
+      setLang,
+      t,
+      ready,
+    }),
+    [lang, setLang, t, ready]
+  );
 
   return (
     <I18nContext.Provider value={value}>

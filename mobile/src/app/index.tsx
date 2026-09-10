@@ -6,21 +6,14 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useState } from 'react';
 
-const LANG_OPTIONS = [
-  { code: 'en', label: 'English' },
-  { code: 'hi', label: 'हिन्दी' },
-  { code: 'kn', label: 'ಕನ್ನಡ' },
-  { code: 'ta', label: 'தமிழ்' },
-  { code: 'te', label: 'తెలుగు' },
-  { code: 'ml', label: 'മലയാളം' },
-  { code: 'mr', label: 'मराठी' },
-  { code: 'bn', label: 'বাংলা' },
-];
+import {
+  LANG_OPTIONS,
+  useTranslation,
+} from '../../i18n/config';
 
 export default function LandingScreen() {
-  const [lang, setLang] = useState('en');
+  const { t, lang, setLang } = useTranslation();
 
   return (
     <ScrollView
@@ -59,27 +52,22 @@ export default function LandingScreen() {
 
       {/* HERO SECTION */}
       <View style={styles.hero}>
-        {/* Hero illustration */}
         <View style={styles.heroVisual}>
           <View style={styles.heroCircle3} />
           <View style={styles.heroCircle2} />
           <View style={styles.heroCircle1} />
 
           <Text style={[styles.heroIcon, styles.recyclerIcon]}>♻️</Text>
-
           <Text style={[styles.heroIcon, styles.boxIcon]}>📦</Text>
-
           <Text style={[styles.heroIcon, styles.rupeeIcon]}>₹</Text>
         </View>
 
-        {/* Hero text */}
         <View style={styles.heroText}>
           <Text style={styles.heroTitleMain}>Kabadiwala</Text>
-
           <Text style={styles.heroTitleSub}>Connect</Text>
 
           <Text style={styles.tagline}>
-            Smart recycling. Fair prices. Trusted connections.
+            {t('landing.tagline')}
           </Text>
 
           <View style={styles.heroActions}>
@@ -87,14 +75,18 @@ export default function LandingScreen() {
               style={styles.accentButton}
               onPress={() => router.push('/login/collector')}
             >
-              <Text style={styles.accentButtonText}>Get Started</Text>
+              <Text style={styles.accentButtonText}>
+                {t('landing.getStarted')}
+              </Text>
             </Pressable>
 
             <Pressable
               style={styles.outlineButton}
               onPress={() => router.push('/safety')}
             >
-              <Text style={styles.outlineButtonText}>Learn More</Text>
+              <Text style={styles.outlineButtonText}>
+                {t('landing.learnMore')}
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -103,59 +95,61 @@ export default function LandingScreen() {
       {/* FEATURES SECTION */}
       <View style={styles.featuresSection}>
         <Text style={styles.sectionTitle}>
-          Why Kabadiwala Connect?
+          {t('landing.featuresTitle')}
         </Text>
 
         <FeatureCard
           icon="📱"
-          title="Easy to Use"
-          description="Simple digital tools designed for collectors and recyclers."
+          title={t('landing.feature1Title')}
+          description={t('landing.feature1Desc')}
         />
 
         <FeatureCard
           icon="💰"
-          title="Fair Pricing"
-          description="Discover transparent and competitive market prices."
+          title={t('landing.feature2Title')}
+          description={t('landing.feature2Desc')}
         />
 
         <FeatureCard
           icon="🔍"
-          title="Traceability"
-          description="Track every stage of the recycling journey."
+          title={t('landing.feature3Title')}
+          description={t('landing.feature3Desc')}
         />
 
         <FeatureCard
           icon="📍"
-          title="Nearby Recyclers"
-          description="Find trusted recyclers near your location."
+          title={t('landing.feature4Title')}
+          description={t('landing.feature4Desc')}
         />
       </View>
 
       {/* USER TYPES SECTION */}
       <View style={styles.userTypesSection}>
-        <Text style={styles.sectionTitle}>Who are you?</Text>
+        <Text style={styles.sectionTitle}>
+          {t('landing.whoAreYou')}
+        </Text>
 
         <UserTypeCard
           icon="📦"
-          title="Collector"
-          description="Create lots, discover prices and connect with recyclers."
-          buttonText="Login as Collector"
+          title={t('landing.collector')}
+          description={t('landing.collectorDesc')}
+          buttonText={t('landing.loginAsCollector')}
           onPress={() => router.push('/login/collector')}
         />
 
         <UserTypeCard
           icon="♻️"
-          title="Recycler"
-          description="View incoming lots, quote prices and manage recycling."
-          buttonText="Login as Recycler"
+          title={t('landing.recycler')}
+          description={t('landing.recyclerDesc')}
+          buttonText={t('landing.loginAsRecycler')}
           onPress={() => router.push('/login/recycler')}
         />
 
         <UserTypeCard
           icon="⚙️"
-          title="Admin"
-          description="Monitor activity and manage platform operations."
-          buttonText="Login as Admin"
+          title={t('landing.admin')}
+          description={t('landing.adminDesc')}
+          buttonText={t('landing.loginAsAdmin')}
           secondary
           onPress={() => router.push('/login/admin')}
         />
@@ -164,12 +158,11 @@ export default function LandingScreen() {
       {/* CTA SECTION */}
       <View style={styles.cta}>
         <Text style={styles.ctaTitle}>
-          Ready to get started?
+          {t('landing.ctaTitle')}
         </Text>
 
         <Text style={styles.ctaDescription}>
-          Join Kabadiwala Connect and make e-waste recycling smarter,
-          transparent and efficient.
+          {t('landing.ctaDesc')}
         </Text>
 
         <Pressable
@@ -177,7 +170,7 @@ export default function LandingScreen() {
           onPress={() => router.push('/login/collector')}
         >
           <Text style={styles.ctaButtonText}>
-            Get Started
+            {t('landing.getStarted')}
           </Text>
         </Pressable>
       </View>
@@ -185,7 +178,7 @@ export default function LandingScreen() {
       {/* FOOTER */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          © 2026 Kabadiwala Connect.
+          © 2026 Kabadiwala Connect. {t('landing.footer')}
         </Text>
       </View>
     </ScrollView>
