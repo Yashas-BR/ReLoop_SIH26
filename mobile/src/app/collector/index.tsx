@@ -294,7 +294,7 @@ export default function CollectorDashboard() {
             label="Price Board"
             description="Check market prices"
             onPress={() =>
-              comingSoon('Price Board')
+              router.push('/collector/price-discovery')
             }
           />
 
@@ -363,7 +363,7 @@ export default function CollectorDashboard() {
             <Pressable
               style={styles.emptyButton}
               onPress={() =>
-                comingSoon('Create Lot')
+                router.push('/collector/create-lot')
               }
             >
               <Text style={styles.emptyButtonText}>

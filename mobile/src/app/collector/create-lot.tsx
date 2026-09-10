@@ -2193,8 +2193,9 @@ export default function CreateLotScreen() {
                 );
 
             const lotId =
-                response?.data
-                    ?.lot?.lot_id;
+                response?.data?.lot?.lot_id ??
+                response?.data?.lot_id ??
+                response?.data?.id;
 
             /*
              * Attach created lot ID to
@@ -2235,11 +2236,49 @@ export default function CreateLotScreen() {
                         text:
                             'Continue',
 
-                        onPress:
-                            () =>
+                        onPress: () => {
+                            if (!lotId) {
                                 router.replace(
                                     '/collector'
-                                ),
+                                );
+                                return;
+                            }
+
+                            router.replace({
+                                pathname:
+                                    '/collector/matched-recyclers',
+
+                                params: {
+                                    lotId:
+                                        String(lotId),
+
+                                    category,
+
+                                    location,
+
+                                    lat:
+                                        String(
+                                            collectionLat
+                                        ),
+
+                                    lng:
+                                        String(
+                                            collectionLng
+                                        ),
+
+                                    weight:
+                                        String(weight),
+
+                                    estimatedValue:
+                                        valuation?.estimated_value !=
+                                            null
+                                            ? String(
+                                                valuation.estimated_value
+                                            )
+                                            : '',
+                                },
+                            });
+                        },
                     },
                 ]
             );
