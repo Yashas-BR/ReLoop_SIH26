@@ -312,7 +312,7 @@ export default function CollectorDashboard() {
             label="Earnings Ledger"
             description="View payment history"
             onPress={() =>
-              comingSoon('Earnings Ledger')
+              router.push('/collector/earnings')
             }
           />
 
