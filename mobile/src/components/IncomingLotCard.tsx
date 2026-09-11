@@ -6,6 +6,14 @@ import {
 } from 'react-native';
 
 import type { RecyclerIncomingLot } from '../types/recycler-lot';
+import { useTranslation } from '../../i18n/config';
+import { 
+  getLotMaterialId, 
+  getNormalizedMaterialId, 
+  getMaterialDisplayLabel, 
+  getRecyclerStatusLabel 
+} from '../utils/lot-helpers';
+import { getMaterialIcon } from '../constants/materials';
 
 interface IncomingLotCardProps {
   lot: RecyclerIncomingLot;
@@ -23,10 +31,12 @@ export function IncomingLotCard({
   currencySymbol = '₹',
   onPress,
 }: IncomingLotCardProps) {
-  const category =
-    lot.category ??
-    lot.material_category ??
-    '—';
+  const { t } = useTranslation();
+  
+  const rawCategory = getLotMaterialId(lot);
+  const normalizedCategory = getNormalizedMaterialId(rawCategory);
+  const displayCategory = getMaterialDisplayLabel(rawCategory, t);
+  const icon = normalizedCategory ? getMaterialIcon(normalizedCategory) : '📦';
 
   const location =
     lot.location ??
@@ -49,16 +59,14 @@ export function IncomingLotCard({
           </Text>
 
           <Text style={styles.category}>
-            {category}
+            {icon} {displayCategory}
           </Text>
         </View>
 
         {!!lot.transaction_status && (
           <View style={styles.status}>
             <Text style={styles.statusText}>
-              {lot.transaction_status
-                .replace(/_/g, ' ')
-                .toUpperCase()}
+              {getRecyclerStatusLabel(lot.transaction_status, t)}
             </Text>
           </View>
         )}

@@ -1091,11 +1091,11 @@
   },
   "recyclerLot": {
     "incomingLots": "Incoming Lots",
-    "incomingLotsDesc": "Lots available for quotes and matched for pickup.",
+    "incomingLotsDesc": "Lots available for quoting",
     "lot": "Lot",
     "category": "Material Category",
-    "weight": "Approximate Weight",
-    "location": "Collection Location",
+    "weight": "Weight",
+    "location": "Location",
     "estimatedValue": "Estimated Value",
     "status": "Status",
     "description": "Description",
@@ -1117,7 +1117,9 @@
     "rejectSuccess": "Lot rejected.",
     "rejectError": "Unable to reject this lot.",
     "notFound": "Lot not found",
-    "loadError": "Unable to load lot details."
+    "loadError": "Failed to load lots",
+    "noLots": "No Lots Found",
+    "noLotsDesc": "There are no incoming lots matching your criteria."
   },
   "recyclerActivity": {
     "title": "My Activity",

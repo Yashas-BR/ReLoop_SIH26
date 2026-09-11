@@ -17,6 +17,12 @@ import { useAuth } from '../../services/auth';
 import { useTranslation } from '../../../i18n/config';
 import { LanguageSelector } from '../../components/LanguageSelector';
 import type { RecyclerIncomingLot } from '../../types/recycler-lot';
+import { IncomingLotCard } from '../../components/IncomingLotCard';
+import { 
+  getLotMaterialId, 
+  getNormalizedMaterialId, 
+  getMaterialDisplayLabel 
+} from '../../utils/lot-helpers';
 
 export default function IncomingLotsScreen() {
   const { recyclerId } = useAuth();
@@ -56,7 +62,7 @@ export default function IncomingLotsScreen() {
   const availableCategories = useMemo(() => {
     const cats = new Set<string>();
     lots.forEach(lot => {
-      const c = lot.category ?? lot.material_category;
+      const c = getNormalizedMaterialId(getLotMaterialId(lot));
       if (c) cats.add(c);
     });
     return Array.from(cats).sort();
@@ -64,26 +70,31 @@ export default function IncomingLotsScreen() {
 
   const filteredLots = useMemo(() => {
     return lots.filter((lot) => {
-      const category = lot.category ?? lot.material_category ?? '';
-      if (selectedCategory && category !== selectedCategory) {
+      const rawCat = getLotMaterialId(lot);
+      const categoryId = getNormalizedMaterialId(rawCat) ?? '';
+      
+      if (selectedCategory && categoryId !== selectedCategory) {
         return false;
       }
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const lotIdStr = String(lot.lot_id).toLowerCase();
         const locStr = (lot.location ?? lot.collection_location ?? '').toLowerCase();
-        const catStr = category.toLowerCase();
+        const catStrId = categoryId.toLowerCase();
+        const catDisplayStr = getMaterialDisplayLabel(categoryId, t).toLowerCase();
+        
         if (
           !lotIdStr.includes(query) &&
           !locStr.includes(query) &&
-          !catStr.includes(query)
+          !catStrId.includes(query) &&
+          !catDisplayStr.includes(query)
         ) {
           return false;
         }
       }
       return true;
     });
-  }, [lots, selectedCategory, searchQuery]);
+  }, [lots, selectedCategory, searchQuery, t]);
 
   return (
     <View style={styles.screen}>
@@ -122,7 +133,7 @@ export default function IncomingLotsScreen() {
               onPress={() => setSelectedCategory(cat)}
             >
               <Text style={[styles.categoryText, selectedCategory === cat && styles.categoryTextActive]}>
-                {cat}
+                {getMaterialDisplayLabel(cat, t)}
               </Text>
             </Pressable>
           ))}
@@ -156,7 +167,12 @@ export default function IncomingLotsScreen() {
             </View>
           ) : (
             filteredLots.map(lot => (
-              <LotCard key={lot.lot_id} lot={lot} t={t} />
+              <IncomingLotCard 
+                key={lot.lot_id} 
+                lot={lot} 
+                kgLabel={t('common.kg') || 'kg'} 
+                onPress={() => router.push(`/recycler/lot/${lot.lot_id}`)}
+              />
             ))
           )}
         </ScrollView>
@@ -165,34 +181,7 @@ export default function IncomingLotsScreen() {
   );
 }
 
-function LotCard({ lot, t }: { lot: RecyclerIncomingLot; t: any }) {
-  const category = lot.category ?? lot.material_category ?? '—';
-  const location = lot.location ?? lot.collection_location ?? '—';
-  const weight = lot.approx_weight_kg ? `${lot.approx_weight_kg} ${t('common.kg') || 'kg'}` : '—';
-  
-  return (
-    <Pressable
-      style={styles.card}
-      onPress={() => router.push(`/recycler/lot/${lot.lot_id}`)}
-    >
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardCategory}>{category}</Text>
-        <Text style={styles.cardLotId}>#{lot.lot_id}</Text>
-      </View>
-      
-      <View style={styles.cardBody}>
-        <View style={styles.cardRow}>
-          <Text style={styles.cardLabel}>{t('recyclerLot.weight') || 'Weight'}</Text>
-          <Text style={styles.cardValue}>{weight}</Text>
-        </View>
-        <View style={styles.cardRow}>
-          <Text style={styles.cardLabel}>{t('recyclerLot.location') || 'Location'}</Text>
-          <Text style={styles.cardValue}>{location}</Text>
-        </View>
-      </View>
-    </Pressable>
-  );
-}
+
 
 const styles = StyleSheet.create({
   screen: {

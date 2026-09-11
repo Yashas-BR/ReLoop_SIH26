@@ -675,13 +675,13 @@
     }
   },
   "materials": {
-    "CRT": "সিআরটি",
-    "LCD": "এলসিডি প্যানেল",
-    "PCB": "পিসিবি",
-    "Cable": "তার/তার",
-    "Battery": "ব্যাটারি",
-    "Motor": "মোটর",
-    "Plastic": "যৌগিক প্লাস্টিক"
+    "CRT": "সিআরটি (CRTs)",
+    "LCD": "এলসিডি প্যানেল (LCD Panels)",
+    "PCB": "পিসিবি (PCBs)",
+    "Cable": "কেবল (Cables)",
+    "Battery": "ব্যাটারি (Batteries)",
+    "Motor": "মোটর (Motors)",
+    "Plastic": "মিশ্র প্লাস্টিক (Mixed Plastics)"
   },
   "priceDiscovery": {
     "title": "মূল্য আবিষ্কার এবং বাজার দর",
@@ -1087,8 +1087,8 @@
   "recyclerLot": {
     "lot": "লট",
     "category": "উপাদানের ধরন",
-    "weight": "আনুমানিক ওজন",
-    "location": "সংগ্রহের স্থান",
+    "weight": "ওজন",
+    "location": "অবস্থান",
     "estimatedValue": "আনুমানিক মূল্য",
     "status": "অবস্থা",
     "description": "বিবরণ",
@@ -1110,7 +1110,11 @@
     "rejectSuccess": "লট প্রত্যাখ্যান করা হয়েছে।",
     "rejectError": "লট প্রত্যাখ্যান করা যায়নি।",
     "notFound": "লট পাওয়া যায়নি",
-    "loadError": "লটের তথ্য লোড করা যায়নি।"
+    "loadError": "লট লোড করতে ব্যর্থ হয়েছে",
+    "incomingLots": "আগত লট",
+    "incomingLotsDesc": "কোট করার জন্য উপলব্ধ লট",
+    "noLots": "কোন লট পাওয়া যায়নি",
+    "noLotsDesc": "আপনার সন্ধানের সাথে মিল রয়েছে এমন কোনও লট নেই।"
   },
   "recyclerActivity": {
     "title": "আমার কার্যক্রম",

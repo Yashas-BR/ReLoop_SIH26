@@ -341,13 +341,13 @@
     }
   },
   "materials": {
-    "CRT": "CRT",
-    "LCD": "LCD पॅनेल",
-    "PCB": "PCB",
-    "Cable": "तार/केबल",
-    "Battery": "बॅटरी",
-    "Motor": "मोटर",
-    "Plastic": "मिश्र प्लास्टिक"
+    "CRT": "सीआरटी (CRTs)",
+    "LCD": "एलसीडी पॅनल्स (LCD Panels)",
+    "PCB": "पीसीबी (PCBs)",
+    "Cable": "केबल्स (Cables)",
+    "Battery": "बॅटरी (Batteries)",
+    "Motor": "मोटार (Motors)",
+    "Plastic": "मिश्र प्लास्टिक (Mixed Plastics)"
   },
   "prices": {
     "title": "किंमत शोध",
@@ -1087,8 +1087,8 @@
   "recyclerLot": {
     "lot": "लॉट",
     "category": "साहित्य श्रेणी",
-    "weight": "अंदाजे वजन",
-    "location": "संकलन ठिकाण",
+    "weight": "वजन",
+    "location": "स्थान",
     "estimatedValue": "अंदाजे मूल्य",
     "status": "स्थिती",
     "description": "वर्णन",
@@ -1110,7 +1110,11 @@
     "rejectSuccess": "लॉट नाकारला.",
     "rejectError": "लॉट नाकारता आला नाही.",
     "notFound": "लॉट सापडला नाही",
-    "loadError": "लॉटची माहिती लोड करता आली नाही."
+    "loadError": "लॉट लोड करण्यात अयशस्वी",
+    "incomingLots": "येणारे लॉट",
+    "incomingLotsDesc": "कोट करण्यासाठी उपलब्ध लॉट",
+    "noLots": "कोणतेही लॉट आढळले नाहीत",
+    "noLotsDesc": "तुमच्या निकषांशी जुळणारे कोणतेही लॉट नाहीत."
   },
   "recyclerActivity": {
     "title": "माझी गतिविधी",

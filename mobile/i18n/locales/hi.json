@@ -341,13 +341,13 @@
     }
   },
   "materials": {
-    "CRT": "CRT",
-    "LCD": "LCD पैनल",
-    "PCB": "PCB",
-    "Cable": "तार/केबल",
-    "Battery": "बैटरी",
-    "Motor": "मोटर",
-    "Plastic": "मिश्रित प्लास्टिक"
+    "CRT": "सीआरटी (CRTs)",
+    "LCD": "एलसीडी पैनल (LCD Panels)",
+    "PCB": "पीसीबी (PCBs)",
+    "Cable": "केबल्स (Cables)",
+    "Battery": "बैटरियां (Batteries)",
+    "Motor": "मोटर्स (Motors)",
+    "Plastic": "मिश्रित प्लास्टिक (Mixed Plastics)"
   },
   "prices": {
     "title": "मूल्य खोज",
@@ -1087,8 +1087,8 @@
   "recyclerLot": {
     "lot": "लॉट",
     "category": "सामग्री श्रेणी",
-    "weight": "अनुमानित वजन",
-    "location": "संग्रह स्थान",
+    "weight": "वजन",
+    "location": "स्थान",
     "estimatedValue": "अनुमानित मूल्य",
     "status": "स्थिति",
     "description": "विवरण",
@@ -1110,7 +1110,11 @@
     "rejectSuccess": "लॉट अस्वीकार कर दिया गया।",
     "rejectError": "लॉट अस्वीकार नहीं किया जा सका।",
     "notFound": "लॉट नहीं मिला",
-    "loadError": "लॉट विवरण लोड नहीं किया जा सका।"
+    "loadError": "लॉट लोड करने में विफल",
+    "incomingLots": "आने वाले लॉट",
+    "incomingLotsDesc": "कोटेशन के लिए उपलब्ध लॉट",
+    "noLots": "कोई लॉट नहीं मिला",
+    "noLotsDesc": "आपके मानदंड से मेल खाने वाले कोई लॉट नहीं हैं।"
   },
   "recyclerActivity": {
     "title": "मेरी गतिविधि",

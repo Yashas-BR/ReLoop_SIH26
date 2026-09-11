@@ -675,13 +675,13 @@
     }
   },
   "materials": {
-    "CRT": "CRT",
-    "LCD": "LCD ప్యానెల్",
-    "PCB": "PCB",
-    "Cable": "వైర్/కేబుల్",
-    "Battery": "బ్యాటరీ",
-    "Motor": "మోటార్",
-    "Plastic": "మిశ్రమ ప్లాస్టిక్"
+    "CRT": "సీఆర్టీలు (CRTs)",
+    "LCD": "ఎల్సీడీ ప్యానెల్స్ (LCD Panels)",
+    "PCB": "పీసీబీలు (PCBs)",
+    "Cable": "కేబుల్స్ (Cables)",
+    "Battery": "బ్యాటరీలు (Batteries)",
+    "Motor": "మోటార్లు (Motors)",
+    "Plastic": "మిశ్రమ ప్లాస్టిక్స్ (Mixed Plastics)"
   },
   "priceDiscovery": {
     "title": "ధర ఆవిష్కరణ మరియు మార్కెట్ ధరలు",
@@ -1087,8 +1087,8 @@
   "recyclerLot": {
     "lot": "లాట్",
     "category": "మెటీరియల్ వర్గం",
-    "weight": "సుమారు బరువు",
-    "location": "సేకరణ స్థలం",
+    "weight": "బరువు",
+    "location": "స్థానం",
     "estimatedValue": "అంచనా విలువ",
     "status": "స్థితి",
     "description": "వివరణ",
@@ -1110,7 +1110,11 @@
     "rejectSuccess": "లాట్ తిరస్కరించబడింది.",
     "rejectError": "లాట్ను తిరస్కరించలేకపోయాము.",
     "notFound": "లాట్ కనుగొనబడలేదు",
-    "loadError": "లాట్ వివరాలను లోడ్ చేయలేకపోయాము."
+    "loadError": "లాట్‌లను లోడ్ చేయడంలో విఫలమైంది",
+    "incomingLots": "వస్తున్న లాట్‌లు",
+    "incomingLotsDesc": "కోట్ చేయడానికి అందుబాటులో ఉన్న లాట్‌లు",
+    "noLots": "ఏ లాట్‌లు కనుగొనబడలేదు",
+    "noLotsDesc": "మీ శోధనకు ఏ లాట్‌లు సరిపోలడం లేదు."
   },
   "recyclerActivity": {
     "title": "నా కార్యకలాపం",
