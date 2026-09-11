@@ -21,96 +21,55 @@ export default function RecyclerLayout() {
 
   if (isLoading) {
     return (
-      <View
-        style={
-          styles.loading
-        }
-      >
-        <ActivityIndicator
-          size="large"
-        />
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" />
       </View>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <Redirect
-        href="/login/recycler"
-      />
+      <Redirect href="/login/recycler" />
     );
   }
 
   return (
-    <Stack
-      screenOptions={{
-        headerBackTitle:
-          'Back',
-
-        animation:
-          'slide_from_right',
-      }}
-    >
+    <Stack>
       <Stack.Screen
         name="dashboard"
         options={{
-          headerShown:
-            false,
+          headerShown: false,
         }}
       />
 
       <Stack.Screen
         name="incoming-lots"
         options={{
-          title:
-            'Incoming Lots',
+          title: 'Incoming Lots',
         }}
       />
 
       <Stack.Screen
         name="lot/[id]"
         options={{
-          title:
-            'Lot Details',
+          title: 'Lot Details',
         }}
       />
 
       <Stack.Screen
         name="profile"
         options={{
-          title:
-            'Profile',
-        }}
-      />
-
-      <Stack.Screen
-        name="scan"
-        options={{
-          title:
-            'Scan QR',
-        }}
-      />
-
-      <Stack.Screen
-        name="map"
-        options={{
-          title:
-            'Map',
+          title: 'Recycler Profile',
         }}
       />
     </Stack>
   );
 }
 
-const styles =
-  StyleSheet.create({
-    loading: {
-      flex: 1,
-      alignItems:
-        'center',
-      justifyContent:
-        'center',
-      backgroundColor:
-        '#FFFFFF',
-    },
-  });
+const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

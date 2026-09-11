@@ -82,13 +82,13 @@
     "profile": "Profile"
   },
   "common": {
-    "back": "← Back",
+    "back": "Back",
     "next": "Next →",
     "submit": "Submit",
     "cancel": "Cancel",
     "save": "Save",
     "retry": "Retry",
-    "loading": "Loading…",
+    "loading": "Loading...",
     "error": "Error",
     "success": "Success",
     "edit": "Edit",
@@ -106,7 +106,8 @@
     "tryAgain": "Please try again.",
     "noData": "No data available.",
     "summary": "Summary",
-    "lotId": "Lot ID"
+    "lotId": "Lot ID",
+    "signOut": "Sign Out"
   },
   "status": {
     "quoted": "Quoted",
@@ -855,20 +856,20 @@
   },
   "recyclerDash": {
     "title": "Recycler Dashboard",
-    "subtitle": "Manage incoming lots and your profile",
-    "newLotsTitle": "{{count}} new lots to quote",
-    "newLotsDesc": "Freshly created by collectors — matched to your accepted materials.",
-    "viewLots": "View & Quote",
+    "subtitle": "Overview of your recycling operations",
+    "newLotsTitle": "{{count}} new lots available",
+    "newLotsDesc": "Collectors have posted new lots matching your accepted materials.",
+    "viewLots": "View Lots",
     "incomingLots": "Incoming Lots",
-    "incomingLotsDesc": "Review and confirm lot handovers",
+    "incomingLotsDesc": "Review and manage lots requested or handed over to you.",
     "myProfile": "My Profile",
-    "myProfileDesc": "Update your rates and service area",
+    "myProfileDesc": "Manage your facility details and accepted materials.",
     "safetyGuidance": "Safety Guidance",
     "safetyGuidanceDesc": "Handling & field safety",
     "totalConfirmed": "Confirmed",
     "totalPending": "Pending",
     "totalLots": "Total Lots",
-    "loadError": "Could not load recycler data.",
+    "loadError": "Failed to load dashboard data. Please try again.",
     "viewAll": "View All",
     "editProfile": "Edit Profile",
     "basicInfo": "Basic Information",
@@ -893,8 +894,8 @@
     "subtitle": "Lots matched and awaiting handover confirmation",
     "availableTitle": "New Lots to Quote",
     "availableDesc": "Collectors just created these lots — they match your accepted materials. Quote to appear in their comparisons.",
-    "noLots": "No matched lots yet",
-    "noLotsDesc": "Collectors will be matched to your facility once they create lots in your area.",
+    "noLots": "No Lots Available",
+    "noLotsDesc": "There are no incoming lots matching your criteria at the moment.",
     "noFilteredLots": "No lots match this filter",
     "noFilteredLotsDesc": "Try selecting a different status filter above.",
     "loadError": "Could not load incoming lots.",
@@ -929,13 +930,13 @@
   },
   "recyclerProfile": {
     "title": "Recycler Profile",
-    "subtitle": "Manage your profile and service settings",
+    "subtitle": "Manage your facility settings",
     "name": "Recycler Name",
     "namePlaceholder": "Your business or personal name",
     "location": "Location",
     "locationPlaceholder": "City or area",
-    "materials": "Accepted Materials",
-    "materialsHint": "Select all material categories you accept",
+    "materials": "Materials Accepted",
+    "materialsHint": "Categories of materials you currently accept",
     "rate": "Offered Rate (₹/kg)",
     "ratePlaceholder": "e.g. 120",
     "pickup": "Pickup Available",
@@ -947,10 +948,15 @@
     "authorizedYes": "Authorized",
     "authorizedNo": "Not Authorized",
     "saveProfile": "Save Profile",
-    "saving": "Saving…",
-    "saveSuccess": "Profile saved successfully.",
-    "saveError": "Could not save profile.",
-    "loadError": "Could not load profile."
+    "saving": "Saving...",
+    "saveSuccess": "Profile updated successfully.",
+    "saveError": "Failed to update profile.",
+    "loadError": "Failed to load profile details.",
+    "pickupAvailability": "Pickup Availability",
+    "authorizationStatus": "Authorization Status",
+    "authorizationNumber": "Authorization Number",
+    "authorizationIssueDate": "Issue Date",
+    "authorizationValidUntil": "Valid Until"
   },
   "recyclerScan": {
     "nav": "Scan Lot",
@@ -1083,5 +1089,19 @@
     "signIn": "Sign in",
     "demoCode": "Demo Code:",
     "backToLogin": "Back to Login"
+  },
+  "pickup": {
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "on_request": "On Request"
+  },
+  "authorization": {
+    "authorized": "Authorized",
+    "pending": "Pending",
+    "unauthorized": "Unauthorized",
+    "expiring_soon": "Expiring Soon",
+    "expired": "Expired",
+    "renewal_pending": "Renewal Pending",
+    "active": "Active"
   }
 }

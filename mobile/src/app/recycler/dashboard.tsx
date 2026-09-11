@@ -1,187 +1,1145 @@
 import {
+    ActivityIndicator,
     Pressable,
-    SafeAreaView,
+    RefreshControl,
+    ScrollView,
     StyleSheet,
     Text,
     View,
 } from 'react-native';
 
-import { router } from 'expo-router';
+import {
+    router,
+} from 'expo-router';
 
-import { useAuth } from '../../services/auth';
+import {
+    useCallback,
+    useEffect,
+    useMemo,
+    useState,
+} from 'react';
+
+import {
+    getAvailableLots,
+    getLotsByRecycler,
+    getRecycler,
+} from '../../api/client';
+
+import {
+    LotCard,
+} from '../../components/recycler/LotCard';
+
+import {
+    StatCard,
+} from '../../components/recycler/StatCard';
+
+import {
+    StatusBadge,
+} from '../../components/recycler/StatusBadge';
+
+import {
+    LanguageSelector,
+} from '../../components/LanguageSelector';
+
+import {
+    useAuth,
+} from '../../services/auth';
+
+import type {
+    Recycler,
+} from '../../types/auth';
+
+import type {
+    RecyclerLot,
+} from '../../types/recycler-dashboard';
+
+import {
+    useTranslation,
+} from '../../../i18n/config';
 
 export default function RecyclerDashboardScreen() {
     const {
-        recycler,
         recyclerId,
+        recycler:
+        storedRecycler,
+
+        updateRecycler,
+
         signOut,
     } = useAuth();
 
-    const handleLogout = async () => {
+    const {
+        t,
+        lang,
+    } =
+        useTranslation();
+
+    const [
+        recycler,
+        setRecycler,
+    ] =
+        useState<Recycler | null>(
+            storedRecycler,
+        );
+
+    const [
+        lots,
+        setLots,
+    ] =
+        useState<RecyclerLot[]>(
+            [],
+        );
+
+    const [
+        newLots,
+        setNewLots,
+    ] = useState(0);
+
+    const [
+        loading,
+        setLoading,
+    ] = useState(true);
+
+    const [
+        refreshing,
+        setRefreshing,
+    ] = useState(false);
+
+    const [
+        error,
+        setError,
+    ] = useState('');
+
+    const loadDashboard =
+        useCallback(
+            async (
+                refresh = false,
+            ) => {
+                if (!recyclerId) {
+                    return;
+                }
+
+                refresh
+                    ? setRefreshing(true)
+                    : setLoading(true);
+
+                setError('');
+
+                try {
+                    const [
+                        recyclerResponse,
+                        lotsResponse,
+                        availableResponse,
+                    ] =
+                        await Promise.allSettled(
+                            [
+                                getRecycler(
+                                    recyclerId,
+                                ),
+
+                                getLotsByRecycler(
+                                    recyclerId,
+                                ),
+
+                                getAvailableLots(
+                                    recyclerId,
+                                ),
+                            ],
+                        );
+
+                    if (
+                        recyclerResponse.status ===
+                        'fulfilled'
+                    ) {
+                        const nextRecycler =
+                            recyclerResponse
+                                .value.data;
+
+                        setRecycler(
+                            nextRecycler,
+                        );
+
+                        await updateRecycler(
+                            nextRecycler,
+                        );
+                    }
+
+                    if (
+                        lotsResponse.status ===
+                        'fulfilled'
+                    ) {
+                        setLots(
+                            Array.isArray(
+                                lotsResponse
+                                    .value.data,
+                            )
+                                ? lotsResponse
+                                    .value.data
+                                : [],
+                        );
+                    } else {
+                        setError(
+                            t(
+                                'recyclerDash.loadError',
+                            ),
+                        );
+                    }
+
+                    if (
+                        availableResponse.status ===
+                        'fulfilled'
+                    ) {
+                        setNewLots(
+                            Array.isArray(
+                                availableResponse
+                                    .value.data,
+                            )
+                                ? availableResponse
+                                    .value.data
+                                    .length
+                                : 0,
+                        );
+                    }
+                } catch (loadError) {
+                    console.error(
+                        '[RecyclerDashboard]',
+                        loadError,
+                    );
+
+                    setError(
+                        t(
+                            'recyclerDash.loadError',
+                        ),
+                    );
+                } finally {
+                    setLoading(false);
+                    setRefreshing(false);
+                }
+            },
+            [
+                recyclerId,
+                t,
+                updateRecycler,
+            ],
+        );
+
+    useEffect(() => {
+        void loadDashboard();
+    }, [loadDashboard]);
+
+    const pending =
+        useMemo(
+            () =>
+                lots.filter(
+                    lot =>
+                        lot.transaction_status ===
+                        'matched',
+                ).length,
+            [lots],
+        );
+
+    const confirmed =
+        useMemo(
+            () =>
+                lots.filter(
+                    lot =>
+                        lot.transaction_status ===
+                        'confirmed' ||
+                        lot.transaction_status ===
+                        'handed_over',
+                ).length,
+            [lots],
+        );
+
+    const recentLots =
+        useMemo(
+            () =>
+                [...lots]
+                    .sort(
+                        (
+                            first,
+                            second,
+                        ) =>
+                            new Date(
+                                second.created_at ??
+                                0,
+                            ).getTime() -
+                            new Date(
+                                first.created_at ??
+                                0,
+                            ).getTime(),
+                    )
+                    .slice(0, 5),
+            [lots],
+        );
+
+    async function handleSignOut() {
         await signOut();
-        router.replace('/login/recycler');
-    };
+
+        router.replace(
+            '/login/recycler',
+        );
+    }
+
+    if (
+        loading &&
+        !recycler
+    ) {
+        return (
+            <View
+                style={
+                    styles.loadingScreen
+                }
+            >
+                <ActivityIndicator
+                    size="large"
+                />
+
+                <Text
+                    style={
+                        styles.loadingText
+                    }
+                >
+                    {t(
+                        'common.loading',
+                    )}
+                </Text>
+            </View>
+        );
+    }
 
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <View style={styles.container}>
-                <Text style={styles.brand}>
-                    RELOOP
-                </Text>
+        <ScrollView
+            style={
+                styles.screen
+            }
+            contentContainerStyle={
+                styles.content
+            }
+            refreshControl={
+                <RefreshControl
+                    refreshing={
+                        refreshing
+                    }
+                    onRefresh={() =>
+                        void loadDashboard(
+                            true,
+                        )
+                    }
+                />
+            }
+        >
+            <LanguageSelector />
 
-                <Text style={styles.title}>
-                    Recycler Dashboard
-                </Text>
-
-                <Text style={styles.subtitle}>
-                    Phase 1 authentication is connected.
-                </Text>
-
-                <View style={styles.card}>
-                    <Text style={styles.label}>
-                        Recycler
+            <View
+                style={
+                    styles.header
+                }
+            >
+                <View
+                    style={
+                        styles.headerText
+                    }
+                >
+                    <Text
+                        style={
+                            styles.eyebrow
+                        }
+                    >
+                        RELOOP
                     </Text>
 
-                    <Text style={styles.value}>
-                        {recycler?.name ?? 'Unknown Recycler'}
+                    <Text
+                        style={
+                            styles.title
+                        }
+                    >
+                        {recycler?.name ??
+                            t(
+                                'recyclerDash.title',
+                            )}
                     </Text>
 
-                    <Text style={styles.label}>
-                        Recycler ID
+                    <Text
+                        style={
+                            styles.subtitle
+                        }
+                    >
+                        {recycler
+                            ?.facility_location ??
+                            t(
+                                'recyclerDash.subtitle',
+                            )}
                     </Text>
 
-                    <Text style={styles.value}>
-                        {recyclerId ?? '—'}
-                    </Text>
+                    <View
+                        style={
+                            styles.badges
+                        }
+                    >
+                        <StatusBadge
+                            status={
+                                (recycler as any)
+                                    ?.account_status ??
+                                'active'
+                            }
+                        />
 
-                    <Text style={styles.label}>
-                        Facility
-                    </Text>
-
-                    <Text style={styles.value}>
-                        {recycler?.facility_location ?? 'Not provided'}
-                    </Text>
+                        <StatusBadge
+                            status={
+                                recycler
+                                    ?.authorization_status
+                            }
+                        />
+                    </View>
                 </View>
 
                 <Pressable
-                    style={({ pressed }) => [
-                        styles.button,
-                        pressed && styles.buttonPressed,
-                    ]}
+                    accessibilityRole="button"
                     onPress={() =>
-                        router.push('/recycler/incoming-lots')
+                        router.push('/recycler/profile')
                     }
-                >
-                    <Text style={styles.buttonText}>
-                        Incoming Lots
-                    </Text>
-                </Pressable>
-
-                <Pressable
                     style={({ pressed }) => [
-                        styles.secondaryButton,
-                        pressed && styles.buttonPressed,
+                        styles.profileButton,
+                        pressed && styles.pressed,
                     ]}
-                    onPress={handleLogout}
                 >
-                    <Text style={styles.secondaryButtonText}>
-                        Sign Out
+                    <Text
+                        style={
+                            styles.profileButtonText
+                        }
+                    >
+                        {t(
+                            'recyclerProfile.title',
+                        )}
                     </Text>
                 </Pressable>
             </View>
-        </SafeAreaView>
+
+            {!!error && (
+                <View
+                    style={
+                        styles.errorBox
+                    }
+                >
+                    <Text
+                        style={
+                            styles.errorText
+                        }
+                    >
+                        {error}
+                    </Text>
+
+                    <Pressable
+                        onPress={() =>
+                            void loadDashboard()
+                        }
+                    >
+                        <Text
+                            style={
+                                styles.retry
+                            }
+                        >
+                            {t(
+                                'common.retry',
+                            )}
+                        </Text>
+                    </Pressable>
+                </View>
+            )}
+
+            <View
+                style={
+                    styles.stats
+                }
+            >
+                <StatCard
+                    label={t(
+                        'recyclerDash.totalLots',
+                    )}
+                    value={
+                        lots.length
+                    }
+                    subtitle={t(
+                        'incomingLots.title',
+                    )}
+                />
+
+                <StatCard
+                    label={t(
+                        'recyclerDash.totalPending',
+                    )}
+                    value={
+                        pending
+                    }
+                    subtitle={t(
+                        'incomingLots.filterPending',
+                    )}
+                />
+
+                <StatCard
+                    label={t(
+                        'recyclerDash.totalConfirmed',
+                    )}
+                    value={
+                        confirmed
+                    }
+                    subtitle={t(
+                        'common.completed',
+                    )}
+                    accent
+                />
+
+                <StatCard
+                    label={t(
+                        'recyclerProfile.materials',
+                    )}
+                    value={
+                        recycler
+                            ?.materials_accepted
+                            ?.length ??
+                        0
+                    }
+                    subtitle={t(
+                        'recyclerProfile.materialsHint',
+                    )}
+                />
+            </View>
+
+            {newLots > 0 && (
+                <View
+                    style={
+                        styles.newLotsCard
+                    }
+                >
+                    <View
+                        style={{ flex: 1 }}
+                    >
+                        <Text
+                            style={
+                                styles.newLotsTitle
+                            }
+                        >
+                            {t(
+                                'recyclerDash.newLotsTitle',
+                            ).replace(
+                                '{{count}}',
+                                String(newLots),
+                            )}
+                        </Text>
+
+                        <Text
+                            style={
+                                styles.newLotsDescription
+                            }
+                        >
+                            {t(
+                                'recyclerDash.newLotsDesc',
+                            )}
+                        </Text>
+                    </View>
+
+                    <Pressable
+                        onPress={() =>
+                            router.push(
+                                '/recycler/incoming-lots',
+                            )
+                        }
+                        style={
+                            styles.quoteButton
+                        }
+                    >
+                        <Text
+                            style={
+                                styles.quoteButtonText
+                            }
+                        >
+                            {t(
+                                'recyclerDash.viewLots',
+                            )}
+                        </Text>
+                    </Pressable>
+                </View>
+            )}
+
+            <Text
+                style={
+                    styles.sectionTitle
+                }
+            >
+                {t(
+                    'dashboard.quickActions',
+                )}
+            </Text>
+
+            <View
+                style={
+                    styles.actions
+                }
+            >
+                <QuickAction
+                    title={t(
+                        'recyclerDash.incomingLots',
+                    )}
+                    description={t(
+                        'recyclerDash.incomingLotsDesc',
+                    )}
+                    onPress={() =>
+                        router.push(
+                            '/recycler/incoming-lots',
+                        )
+                    }
+                />
+
+                <QuickAction
+                    title={t(
+                        'recyclerDash.myProfile',
+                    )}
+                    description={t(
+                        'recyclerDash.myProfileDesc',
+                    )}
+                    onPress={() =>
+                        router.push('/recycler/profile')
+                    }
+                />
+
+                <QuickAction
+                    title={t(
+                        'recyclerScan.title',
+                    )}
+                    description={t(
+                        'recyclerScan.ctaDesc',
+                    )}
+                    onPress={() =>
+                        // @ts-expect-error - Route not yet created
+                        router.push('/recycler/scan')
+                    }
+                />
+            </View>
+
+            <View
+                style={
+                    styles.sectionHeader
+                }
+            >
+                <Text
+                    style={
+                        styles.sectionTitle
+                    }
+                >
+                    {t(
+                        'recyclerDash.incomingLots',
+                    )}
+                </Text>
+
+                <Pressable
+                    onPress={() =>
+                        router.push(
+                            '/recycler/incoming-lots',
+                        )
+                    }
+                >
+                    <Text
+                        style={
+                            styles.viewAll
+                        }
+                    >
+                        {t(
+                            'recyclerDash.viewAll',
+                        )}
+                    </Text>
+                </Pressable>
+            </View>
+
+            {recentLots.length ===
+                0 ? (
+                <View
+                    style={
+                        styles.emptyCard
+                    }
+                >
+                    <Text
+                        style={
+                            styles.emptyTitle
+                        }
+                    >
+                        {t(
+                            'incomingLots.noLots',
+                        )}
+                    </Text>
+
+                    <Text
+                        style={
+                            styles.emptyText
+                        }
+                    >
+                        {t(
+                            'incomingLots.noLotsDesc',
+                        )}
+                    </Text>
+                </View>
+            ) : (
+                <View
+                    style={
+                        styles.lotList
+                    }
+                >
+                    {recentLots.map(
+                        lot => (
+                            <LotCard
+                                key={
+                                    lot.lot_id
+                                }
+                                lot={lot}
+                                language={
+                                    lang
+                                }
+                                kgLabel={t(
+                                    'common.kg',
+                                )}
+                                onPress={() =>
+                                    router.push({
+                                        pathname: '/recycler/lot/[id]',
+                                        params: {
+                                            id: lot.lot_id,
+                                        },
+                                    })
+                                }
+                            />
+                        ),
+                    )}
+                </View>
+            )}
+
+            <Pressable
+                accessibilityRole="button"
+                onPress={
+                    handleSignOut
+                }
+                style={({ pressed }) => [
+                    styles.signOut,
+
+                    pressed &&
+                    styles.pressed,
+                ]}
+            >
+                <Text
+                    style={
+                        styles.signOutText
+                    }
+                >
+                    {t('common.signOut')}
+                </Text>
+            </Pressable>
+        </ScrollView>
     );
 }
 
-const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: '#F4F7F5',
-    },
+function QuickAction({
+    title,
+    description,
+    onPress,
+}: {
+    title: string;
 
-    container: {
-        flex: 1,
-        paddingHorizontal: 24,
-        paddingVertical: 32,
-    },
+    description: string;
 
-    brand: {
-        fontSize: 12,
-        fontWeight: '800',
-        letterSpacing: 2,
-        color: '#16794B',
-    },
+    onPress:
+    () => void;
+}) {
+    return (
+        <Pressable
+            onPress={
+                onPress
+            }
+            style={({ pressed }) => [
+                styles.actionCard,
 
-    title: {
-        marginTop: 8,
-        fontSize: 30,
-        fontWeight: '800',
-        color: '#173D2D',
-    },
+                pressed &&
+                styles.pressed,
+            ]}
+        >
+            <Text
+                style={
+                    styles.actionTitle
+                }
+            >
+                {title}
+            </Text>
 
-    subtitle: {
-        marginTop: 8,
-        fontSize: 16,
-        lineHeight: 23,
-        color: '#68756D',
-    },
+            <Text
+                style={
+                    styles.actionDescription
+                }
+            >
+                {description}
+            </Text>
 
-    card: {
-        marginTop: 28,
-        padding: 20,
-        borderRadius: 18,
-        backgroundColor: '#FFFFFF',
-    },
+            <Text
+                style={
+                    styles.actionArrow
+                }
+            >
+                →
+            </Text>
+        </Pressable>
+    );
+}
 
-    label: {
-        marginTop: 12,
-        fontSize: 12,
-        fontWeight: '700',
-        color: '#728078',
-        textTransform: 'uppercase',
-        letterSpacing: 1,
-    },
+const styles =
+    StyleSheet.create({
+        pressed: {
+            opacity: 0.7,
+        },
+        screen: {
+            flex: 1,
 
-    value: {
-        marginTop: 4,
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#173D2D',
-    },
+            backgroundColor:
+                '#F5F8F6',
+        },
 
-    button: {
-        marginTop: 28,
-        minHeight: 52,
-        borderRadius: 14,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#16794B',
-    },
+        content: {
+            padding: 20,
 
-    buttonText: {
-        fontSize: 16,
-        fontWeight: '800',
-        color: '#FFFFFF',
-    },
+            paddingTop: 50,
 
-    secondaryButton: {
-        marginTop: 12,
-        minHeight: 52,
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: '#16794B',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#FFFFFF',
-    },
+            paddingBottom: 60,
+        },
 
-    secondaryButtonText: {
-        fontSize: 16,
-        fontWeight: '800',
-        color: '#16794B',
-    },
+        loadingScreen: {
+            flex: 1,
 
-    buttonPressed: {
-        opacity: 0.75,
-    },
-});
+            alignItems:
+                'center',
+
+            justifyContent:
+                'center',
+
+            backgroundColor:
+                '#F5F8F6',
+        },
+
+        loadingText: {
+            marginTop: 12,
+
+            color: '#68756D',
+        },
+
+        header: {
+            marginTop: 24,
+
+            flexDirection:
+                'row',
+
+            alignItems:
+                'flex-start',
+
+            justifyContent:
+                'space-between',
+
+            gap: 12,
+        },
+
+        headerText: {
+            flex: 1,
+        },
+
+        eyebrow: {
+            fontSize: 12,
+
+            fontWeight: '900',
+
+            letterSpacing: 2,
+
+            color: '#16794B',
+        },
+
+        title: {
+            marginTop: 6,
+
+            fontSize: 30,
+
+            lineHeight: 36,
+
+            fontWeight: '900',
+
+            color: '#173D2D',
+        },
+
+        subtitle: {
+            marginTop: 5,
+
+            fontSize: 14,
+
+            color: '#68756D',
+        },
+
+        badges: {
+            marginTop: 12,
+
+            flexDirection:
+                'row',
+
+            flexWrap: 'wrap',
+
+            gap: 7,
+        },
+
+        profileButton: {
+            paddingHorizontal: 13,
+
+            paddingVertical: 10,
+
+            borderRadius: 12,
+
+            borderWidth: 1,
+
+            borderColor:
+                '#16794B',
+
+            backgroundColor:
+                '#FFFFFF',
+        },
+
+        profileButtonText: {
+            fontSize: 12,
+
+            fontWeight: '800',
+
+            color: '#16794B',
+        },
+
+        stats: {
+            marginTop: 25,
+
+            flexDirection:
+                'row',
+
+            flexWrap: 'wrap',
+
+            justifyContent:
+                'space-between',
+
+            gap: 12,
+        },
+
+        errorBox: {
+            marginTop: 20,
+
+            padding: 14,
+
+            borderRadius: 14,
+
+            backgroundColor:
+                '#FFF0EE',
+        },
+
+        errorText: {
+            color: '#A12D25',
+
+            fontWeight: '600',
+        },
+
+        retry: {
+            marginTop: 8,
+
+            color: '#16794B',
+
+            fontWeight: '800',
+        },
+
+        newLotsCard: {
+            marginTop: 25,
+
+            padding: 18,
+
+            borderRadius: 18,
+
+            backgroundColor:
+                '#E6F5EC',
+
+            flexDirection:
+                'row',
+
+            alignItems:
+                'center',
+
+            gap: 12,
+        },
+
+        newLotsTitle: {
+            fontSize: 16,
+
+            fontWeight: '900',
+
+            color: '#173D2D',
+        },
+
+        newLotsDescription: {
+            marginTop: 5,
+
+            fontSize: 13,
+
+            lineHeight: 19,
+
+            color: '#597067',
+        },
+
+        quoteButton: {
+            paddingHorizontal: 13,
+
+            paddingVertical: 10,
+
+            borderRadius: 12,
+
+            backgroundColor:
+                '#16794B',
+        },
+
+        quoteButtonText: {
+            fontSize: 12,
+
+            fontWeight: '800',
+
+            color: '#FFFFFF',
+        },
+
+        sectionTitle: {
+            marginTop: 28,
+
+            fontSize: 20,
+
+            fontWeight: '900',
+
+            color: '#173D2D',
+        },
+
+        actions: {
+            marginTop: 13,
+
+            gap: 10,
+        },
+
+        actionCard: {
+            padding: 17,
+
+            borderRadius: 18,
+
+            backgroundColor:
+                '#FFFFFF',
+
+            borderWidth: 1,
+
+            borderColor:
+                '#E1E8E3',
+        },
+
+        actionTitle: {
+            fontSize: 16,
+
+            fontWeight: '800',
+
+            color: '#173D2D',
+        },
+
+        actionDescription: {
+            marginTop: 4,
+
+            fontSize: 13,
+
+            color: '#718078',
+        },
+
+        actionArrow: {
+            position:
+                'absolute',
+
+            right: 17,
+
+            top: 23,
+
+            fontSize: 20,
+
+            color: '#16794B',
+        },
+
+        sectionHeader: {
+            flexDirection:
+                'row',
+
+            alignItems:
+                'flex-end',
+
+            justifyContent:
+                'space-between',
+        },
+
+        viewAll: {
+            color: '#16794B',
+
+            fontWeight: '800',
+        },
+
+        lotList: {
+            marginTop: 13,
+
+            gap: 11,
+        },
+
+        emptyCard: {
+            marginTop: 13,
+
+            padding: 26,
+
+            borderRadius: 18,
+
+            backgroundColor:
+                '#FFFFFF',
+
+            alignItems:
+                'center',
+        },
+
+        emptyTitle: {
+            fontSize: 17,
+
+            fontWeight: '800',
+
+            color: '#173D2D',
+        },
+
+        emptyText: {
+            marginTop: 7,
+
+            textAlign: 'center',
+
+            lineHeight: 20,
+
+            color: '#718078',
+        },
+
+        signOut: {
+            marginTop: 34,
+
+            minHeight: 50,
+
+            alignItems:
+                'center',
+
+            justifyContent:
+                'center',
+
+            borderRadius: 14,
+
+            borderWidth: 1,
+
+            borderColor:
+                '#D5DDD8',
+        },
+
+        signOutText: {
+            fontWeight: '800',
+
+            color: '#6B746F',
+        },
+    });
