@@ -18,6 +18,8 @@ import {
   formatCurrency,
 } from '../../utils/locale';
 
+import { useTranslation } from '../../../i18n/config';
+
 interface LotCardProps {
   lot: RecyclerLot;
 
@@ -35,6 +37,13 @@ export function LotCard({
   kgLabel,
   onPress,
 }: LotCardProps) {
+  const { t } = useTranslation();
+  const status = lot.transaction_status ?? 'quoted';
+  const statusLabel = status === 'matched' ? t('recyclerActivity.matched') :
+                      status === 'confirmed' ? t('recyclerActivity.confirmed') :
+                      status === 'handed_over' ? t('recyclerActivity.handedOver') :
+                      undefined;
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -79,10 +88,8 @@ export function LotCard({
         </View>
 
         <StatusBadge
-          status={
-            lot.transaction_status ??
-            'quoted'
-          }
+          status={status}
+          label={statusLabel}
         />
       </View>
 

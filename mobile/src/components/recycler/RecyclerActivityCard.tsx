@@ -1,0 +1,1 @@
+export { RecyclerActivityCard } from '../RecyclerActivityCard';

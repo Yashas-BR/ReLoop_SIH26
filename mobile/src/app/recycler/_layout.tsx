@@ -57,6 +57,20 @@ export default function RecyclerLayout() {
       />
 
       <Stack.Screen
+        name="activity"
+        options={{
+          headerShown: false,
+        }}
+      />
+
+      <Stack.Screen
+        name="history/[id]"
+        options={{
+          headerShown: false,
+        }}
+      />
+
+      <Stack.Screen
         name="profile"
         options={{
           title: 'Recycler Profile',

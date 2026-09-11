@@ -592,6 +592,20 @@ export default function RecyclerDashboardScreen() {
                 />
 
                 <QuickAction
+                  title={t(
+                    'recyclerActivity.title',
+                  )}
+                  description={t(
+                    'recyclerActivity.dashboardDescription',
+                  )}
+                  onPress={() =>
+                    router.push(
+                      '/recycler/activity' as any,
+                    )
+                  }
+                />
+
+                <QuickAction
                     title={t(
                         'recyclerDash.myProfile',
                     )}

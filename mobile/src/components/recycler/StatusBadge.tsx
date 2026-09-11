@@ -9,6 +9,8 @@ interface StatusBadgeProps {
   | string
   | null
   | undefined;
+  
+  label?: string;
 }
 
 function normalizeStatus(
@@ -43,6 +45,7 @@ import {
 
 export function StatusBadge({
   status,
+  label,
 }: StatusBadgeProps) {
   const { t } = useTranslation();
   const normalized = normalizeStatus(status);
@@ -73,9 +76,9 @@ export function StatusBadge({
   // fallback to generic getLabel(normalized) if not found.
   const translationKey = `authorization.${normalized}`;
   const translated = t(translationKey as any);
-  const displayLabel = translated && !translated.includes('authorization.') 
+  const displayLabel = label ?? (translated && !translated.includes('authorization.') 
     ? translated 
-    : getLabel(normalized);
+    : getLabel(normalized));
 
   return (
     <View
