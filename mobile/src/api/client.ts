@@ -130,6 +130,17 @@ function normalize<T>(value: T, key?: string): T {
 // REQUEST HELPER
 // ============================================================
 
+/** Timeout in milliseconds for all API requests. */
+const TIMEOUT_MS: number = (() => {
+  const raw = process.env.EXPO_PUBLIC_API_TIMEOUT_MS;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : 15_000;
+})();
+
+/**
+ * Thrown when an HTTP response indicates a server/client error (4xx/5xx).
+ * Always has a `status` code and optionally a parsed `data` body.
+ */
 export class ApiError extends Error {
   status?: number;
   data?: any;
@@ -142,18 +153,45 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Thrown when the request cannot reach the server at all.
+ * Typical causes: no internet, DNS failure, or browser CORS preflight rejection.
+ * On Expo Web, a CORS block from the backend manifests as a `TypeError` which
+ * we convert to this class so callers can show a platform-specific message.
+ */
+export class NetworkError extends Error {
+  readonly cause?: unknown;
+
+  constructor(message: string, cause?: unknown) {
+    super(message);
+    this.name = 'NetworkError';
+    this.cause = cause;
+  }
+}
+
 export interface RequestOptions extends RequestInit {
   headers?: Record<string, string>;
 }
 
 export async function request<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
+  const method = (options.method ?? 'GET').toUpperCase();
+  const url = `${BASE}${path}`;
+
+  if (__DEV__) {
+    console.log(`[API] ${method} ${url}`);
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
   try {
-    const res = await fetch(`${BASE}${path}`, {
+    const res = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
       },
       ...options,
+      signal: controller.signal,
     });
 
     let json: any = null;
@@ -172,8 +210,34 @@ export async function request<T = any>(path: string, options: RequestOptions = {
 
     return normalize(json) as T;
   } catch (err) {
-    console.error(`API request failed: ${path}`, err);
+    // AbortError means our timeout fired.
+    if (err instanceof Error && err.name === 'AbortError') {
+      const timeoutErr = new NetworkError(
+        `Request timed out after ${TIMEOUT_MS / 1000}s`,
+        err
+      );
+      console.error(`[API] Timeout: ${method} ${url}`, timeoutErr);
+      throw timeoutErr;
+    }
+
+    // TypeError is what browsers (and React Native fetch) throw when the network
+    // is unreachable OR when a CORS preflight is rejected by the server.
+    if (err instanceof TypeError) {
+      const netErr = new NetworkError(
+        'Network request failed – check connectivity or CORS configuration.',
+        err
+      );
+      console.error(`[API] Network error: ${method} ${url}`, netErr);
+      throw netErr;
+    }
+
+    // ApiError and any other typed errors pass through as-is.
+    if (__DEV__) {
+      console.error(`[API] Error: ${method} ${url}`, err);
+    }
     throw err;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 

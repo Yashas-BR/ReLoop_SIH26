@@ -20,6 +20,7 @@ import {
 
 import {
   ApiError,
+  NetworkError,
   loginRecycler,
   onboardRecycler,
 } from '../../api/client';
@@ -318,90 +319,120 @@ export default function RecyclerLoginScreen() {
   }
 
   async function handleApply() {
-    const validationError =
-      validateApplication();
+    // Prevent duplicate submissions while a request is already in-flight.
+    if (applicationBusy) {
+      return;
+    }
+
+    const validationError = validateApplication();
 
     if (validationError) {
-      setApplicationError(
-        validationError,
-      );
-
+      setApplicationError(validationError);
       return;
     }
 
     setApplicationError('');
     setApplicationBusy(true);
 
-    const payload:
-      RecyclerApplication = {
-        name:
-          form.name.trim(),
+    const payload: RecyclerApplication = {
+      name: form.name.trim(),
 
-        facility_location:
-          form.facilityLocation.trim(),
+      // facility_location is required by the backend – always include it.
+      facility_location: form.facilityLocation.trim(),
 
-        contact_details:
-          form.contactDetails.trim() ||
-          undefined,
+      contact_details:
+        form.contactDetails.trim() || undefined,
 
-        service_area:
-          form.serviceArea.trim() ||
-          undefined,
+      service_area:
+        form.serviceArea.trim() || undefined,
 
-        materials_accepted:
-          form.materialsAccepted,
+      materials_accepted: form.materialsAccepted,
 
-        pickup_availability:
-          form.pickupAvailability,
+      pickup_availability: form.pickupAvailability,
 
-        authorization_number:
-          form.authorizationNumber.trim() ||
-          undefined,
+      authorization_number:
+        form.authorizationNumber.trim() || undefined,
 
-        authorization_issue_date:
-          form.authorizationIssueDate.trim() ||
-          undefined,
+      authorization_issue_date:
+        form.authorizationIssueDate.trim() || undefined,
 
-        authorization_valid_until:
-          form.authorizationValidUntil.trim() ||
-          undefined,
+      authorization_valid_until:
+        form.authorizationValidUntil.trim() || undefined,
 
-        authorization_document_url:
-          form.authorizationDocumentUrl.trim() ||
-          undefined,
+      authorization_document_url:
+        form.authorizationDocumentUrl.trim() || undefined,
 
-        authorization_details:
-          form.authorizationDetails.trim() ||
-          undefined,
-      };
+      authorization_details:
+        form.authorizationDetails.trim() || undefined,
+    };
 
     try {
-      const response =
-        await onboardRecycler(
-          payload,
-        );
-
-      setAppliedRecyclerId(
-        response.data.id,
-      );
+      const response = await onboardRecycler(payload);
+      setAppliedRecyclerId(response.data.id);
     } catch (error) {
-      if (
-        error instanceof ApiError
-      ) {
+      // ── Expo Web: CORS / network failure ──────────────────────────────────
+      // When the backend's CORS policy blocks localhost the browser throws a
+      // TypeError which our client converts to NetworkError.  Give the user a
+      // clear, actionable message instead of a generic network error.
+      if (Platform.OS === 'web' && error instanceof NetworkError) {
         setApplicationError(
-          error.message,
+          t('login.corsWebError')
         );
-
         return;
       }
 
-      setApplicationError(
-        'Could not submit your application.',
-      );
+      // ── Native: NetworkError (no connectivity / timeout) ──────────────────
+      if (error instanceof NetworkError) {
+        setApplicationError(t('login.networkError'));
+        return;
+      }
+
+      // ── HTTP error responses from the backend ─────────────────────────────
+      if (error instanceof ApiError) {
+        switch (error.status) {
+          case 400:
+            setApplicationError(
+              error.message || 'Invalid application data. Please check your inputs.'
+            );
+            break;
+          case 409:
+            setApplicationError(
+              error.message || 'A recycler with this name or facility already exists.'
+            );
+            break;
+          case 422:
+            setApplicationError(
+              error.message || 'Validation failed. Please check required fields.'
+            );
+            break;
+          case 403:
+            setApplicationError(
+              error.message || 'You are not authorized to submit this application.'
+            );
+            break;
+          case 404:
+            setApplicationError(
+              'Onboarding endpoint not found. Please contact support.'
+            );
+            break;
+          case 500:
+            setApplicationError(
+              'Server error. Please try again in a few moments.'
+            );
+            break;
+          default:
+            setApplicationError(
+              error.message || 'Could not submit your application.'
+            );
+        }
+        return;
+      }
+
+      // ── Unexpected error ──────────────────────────────────────────────────
+      setApplicationError('Could not submit your application. Please try again.');
     } finally {
-      setApplicationBusy(
-        false,
-      );
+      // Always reset loading state – success or failure.
+      setApplicationBusy(false);
     }
   }
 

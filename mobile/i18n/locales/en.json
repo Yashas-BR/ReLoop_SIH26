@@ -71,7 +71,9 @@
     "pickupWeekly": "Weekly",
     "pickupOnRequest": "On Request",
     "applyButton": "Submit Application",
-    "applyingButton": "Submitting..."
+    "applyingButton": "Submitting...",
+    "corsWebError": "Recycler application cannot be submitted from Expo Web because the API does not allow localhost browser requests. Please test this flow using Expo Go or Android/iOS.",
+    "networkError": "Could not reach the server. Check your internet connection and try again."
   },
   "recyclerPortal": {
     "nav": "Recycler portal sections",
