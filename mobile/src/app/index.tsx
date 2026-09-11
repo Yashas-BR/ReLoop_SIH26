@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import {
+  Animated,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -8,12 +9,82 @@ import {
 } from 'react-native';
 
 import {
+  useCallback,
+  useEffect,
+  useRef,
+} from 'react';
+
+import {
   LANG_OPTIONS,
   useTranslation,
 } from '../../i18n/config';
 
 export default function LandingScreen() {
   const { t, lang, setLang } = useTranslation();
+
+  const floatAnim1 = useRef(new Animated.Value(0)).current;
+  const floatAnim2 = useRef(new Animated.Value(0)).current;
+  const floatAnim3 = useRef(new Animated.Value(0)).current;
+
+  const pulseAnim = useRef(new Animated.Value(0)).current;
+  const spinAnim1 = useRef(new Animated.Value(0)).current;
+  const spinAnim2 = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Pulse: 4s loop (circle 1)
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 0, duration: 2000, useNativeDriver: true }),
+      ])
+    );
+    
+    // Spin: 20s loop (circle 2)
+    const spin1 = Animated.loop(
+      Animated.timing(spinAnim1, { toValue: 1, duration: 20000, useNativeDriver: true })
+    );
+
+    // Spin Reverse: 30s loop (circle 3)
+    const spin2 = Animated.loop(
+      Animated.timing(spinAnim2, { toValue: 1, duration: 30000, useNativeDriver: true })
+    );
+
+    const makeFloat = (anim: Animated.Value) => Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, { toValue: -10, duration: 1500, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0, duration: 1500, useNativeDriver: true }),
+      ])
+    );
+
+    const f1 = makeFloat(floatAnim1);
+    const f2 = makeFloat(floatAnim2);
+    const f3 = makeFloat(floatAnim3);
+
+    pulse.start();
+    spin1.start();
+    spin2.start();
+
+    // Start with delays to offset the loop phases (like CSS animation-delay)
+    f1.start();
+    const t1 = setTimeout(() => { f3.start(); }, 500); // rupee (0.5s)
+    const t2 = setTimeout(() => { f2.start(); }, 1000); // box (1s)
+
+    return () => {
+      pulse.stop();
+      spin1.stop();
+      spin2.stop();
+      f1.stop();
+      f2.stop();
+      f3.stop();
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [floatAnim1, floatAnim2, floatAnim3, pulseAnim, spinAnim1, spinAnim2]);
+
+  const spin1Interpolate = spinAnim1.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  const spin2Interpolate = spinAnim2.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-360deg'] });
+  const scaleInterpolate = pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.05] });
+  const opacityInterpolate = pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 0.4] });
 
   return (
     <ScrollView
@@ -53,13 +124,15 @@ export default function LandingScreen() {
       {/* HERO SECTION */}
       <View style={styles.hero}>
         <View style={styles.heroVisual}>
-          <View style={styles.heroCircle3} />
-          <View style={styles.heroCircle2} />
-          <View style={styles.heroCircle1} />
+          {/* Animated Circles */}
+          <Animated.View style={[styles.heroCircle3, { transform: [{ rotate: spin2Interpolate }] }]} />
+          <Animated.View style={[styles.heroCircle2, { transform: [{ rotate: spin1Interpolate }] }]} />
+          <Animated.View style={[styles.heroCircle1, { opacity: opacityInterpolate, transform: [{ scale: scaleInterpolate }] }]} />
 
-          <Text style={[styles.heroIcon, styles.recyclerIcon]}>♻️</Text>
-          <Text style={[styles.heroIcon, styles.boxIcon]}>📦</Text>
-          <Text style={[styles.heroIcon, styles.rupeeIcon]}>₹</Text>
+          {/* Animated Floating Icons */}
+          <Animated.Text style={[styles.heroIcon, styles.recyclerIcon, { transform: [{ translateY: floatAnim1 }] }]}>♻️</Animated.Text>
+          <Animated.Text style={[styles.heroIcon, styles.boxIcon, { transform: [{ translateY: floatAnim2 }] }]}>📦</Animated.Text>
+          <Animated.Text style={[styles.heroIcon, styles.rupeeIcon, { transform: [{ translateY: floatAnim3 }] }]}>₹</Animated.Text>
         </View>
 
         <View style={styles.heroText}>
