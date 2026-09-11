@@ -25,6 +25,13 @@ import type {
   RecyclerLot,
 } from '../types/recycler-dashboard';
 
+import type {
+  ApiResponse,
+  RecyclerIncomingLot,
+  RecyclerQuote,
+  RecyclerQuoteInput,
+} from '../types/recycler-lot';
+
 export {
   MATERIAL_CATEGORIES,
   VALID_MATERIAL_IDS,
@@ -1557,24 +1564,67 @@ export const getOffersByLot =
  * lots currently available to this Recycler.
  */
 export function getAvailableLots(
-  recyclerId:
-    | number
-    | string,
-): Promise<
-  ApiDataResponse<
-    RecyclerLot[]
-  >
-> {
-  return request<
-    ApiDataResponse<
-      RecyclerLot[]
-    >
-  >(
+  recyclerId: number,
+): Promise<ApiResponse<RecyclerIncomingLot[]>> {
+  return request<ApiResponse<RecyclerIncomingLot[]>>(
     `/quotes/available?recycler_id=${encodeURIComponent(
-      String(
-        recyclerId,
-      ),
+      String(recyclerId),
     )}`,
+  );
+}
+
+// Use the exact endpoint/payload from the existing ReLoop web application.
+export async function submitRecyclerQuote(
+  input: RecyclerQuoteInput,
+): Promise<ApiResponse<RecyclerQuote>> {
+  // 1. requestQuote
+  const created = await request<ApiResponse<{ id: string | number }>>(
+    '/quotes/request',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        lot_id: input.lot_id,
+        recycler_id: input.recycler_id,
+      }) as any,
+    },
+  );
+
+  // 2. respondToOffer
+  return request<ApiResponse<RecyclerQuote>>(
+    `/quotes/${encodeURIComponent(String(created.data.id))}/respond`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        offered_price: input.amount,
+        notes: input.notes,
+      }) as any,
+    },
+  );
+}
+
+export async function acceptRecyclerLot(
+  recyclerId: number,
+  lotId: string,
+): Promise<ApiResponse<unknown>> {
+  // Replace with exact endpoint used by the website.
+  return request<ApiResponse<unknown>>(
+    `/quotes/${lotId}/accept`,
+    {
+      method: 'POST',
+    },
+  );
+}
+
+export async function rejectRecyclerLot(
+  recyclerId: number,
+  lotId: string,
+): Promise<ApiResponse<unknown>> {
+  // Replace with exact endpoint used by the website.
+  return request<ApiResponse<unknown>>(
+    `/quotes/${lotId}/reject`,
+    {
+      method: 'POST',
+    },
   );
 }
 
