@@ -90,6 +90,13 @@ export default function RecyclerLayout() {
           headerShown: false,
         }}
       />
+
+      <Stack.Screen
+        name="handover/[lotId]"
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }
