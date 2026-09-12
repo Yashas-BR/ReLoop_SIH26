@@ -44,19 +44,33 @@ export async function getCurrentCoordinates(): Promise<AppCoordinates> {
     };
   }
 
-  const current =
-    await Location.getCurrentPositionAsync({
-      accuracy:
-        Location.Accuracy.Balanced,
-    });
+  let location;
+  try {
+    location =
+      await Location.getCurrentPositionAsync({
+        accuracy:
+          Location.Accuracy.Balanced,
+      });
+  } catch (e) {
+    // Fallback for Android emulators or devices with strict location settings
+    console.warn(
+      'getCurrentPositionAsync failed, trying getLastKnownPositionAsync...',
+      e,
+    );
+    location =
+      await Location.getLastKnownPositionAsync();
+    if (!location) {
+      throw e;
+    }
+  }
 
   return {
     latitude:
-      current.coords
+      location.coords
         .latitude,
 
     longitude:
-      current.coords
+      location.coords
         .longitude,
   };
 }

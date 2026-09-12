@@ -1,10 +1,15 @@
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
-
 import { useTranslation } from '../../../i18n/config';
+import { AppLogo } from '../branding/AppLogo';
 import type { Recycler } from '../../app/collector/matched-recyclers';
-import { hasValidCoordinates, toFiniteCoordinate } from '../../utils/coordinates';
+import { hasValidCoordinates, toFiniteNumber } from '../../utils/coordinates';
+import { LeafletMap, MapMarker } from '../LeafletMap';
+
+const DEFAULT_CENTER = {
+  latitude: 12.9716,
+  longitude: 77.5946,
+};
 
 interface MatchedRecyclersMapProps {
   recyclers: Recycler[];
@@ -22,45 +27,26 @@ export function MatchedRecyclersMap({
   currentLng,
 }: MatchedRecyclersMapProps) {
   const { t } = useTranslation();
-  const mapRef = useRef<MapView>(null);
 
-  const validRecyclers = recyclers.filter(hasValidCoordinates);
+  const validRecyclers = recyclers.filter((rec) => hasValidCoordinates(rec));
 
-  useEffect(() => {
-    if (validRecyclers.length === 0) return;
+  const validMarkers: MapMarker[] = validRecyclers
+    .map((rec) => {
+      const id = rec.id ?? rec.recycler_id;
+      const lng = toFiniteNumber(rec.longitude);
+      const lat = toFiniteNumber(rec.latitude);
+      if (!id || lng === null || lat === null) return null;
+      return {
+        id,
+        latitude: lat,
+        longitude: lng,
+        title: rec.name,
+        selected: selectedRecyclerId === id,
+      };
+    })
+    .filter(Boolean) as MapMarker[];
 
-    if (validRecyclers.length === 1) {
-      const rec = validRecyclers[0];
-      const lat = toFiniteCoordinate(rec.latitude)!;
-      const lng = toFiniteCoordinate(rec.longitude)!;
-      
-      mapRef.current?.animateToRegion(
-        {
-          latitude: lat,
-          longitude: lng,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
-        },
-        1000
-      );
-    } else {
-      const coordinates = validRecyclers.map((rec) => ({
-        latitude: toFiniteCoordinate(rec.latitude)!,
-        longitude: toFiniteCoordinate(rec.longitude)!,
-      }));
-      
-      if (currentLat != null && currentLng != null) {
-        coordinates.push({ latitude: currentLat, longitude: currentLng });
-      }
-
-      mapRef.current?.fitToCoordinates(coordinates, {
-        edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-        animated: true,
-      });
-    }
-  }, [validRecyclers, currentLat, currentLng]);
-
-  if (validRecyclers.length === 0) {
+  if (validMarkers.length === 0) {
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyIcon}>🗺️</Text>
@@ -69,33 +55,27 @@ export function MatchedRecyclersMap({
     );
   }
 
+  // Determine a safe fallback center 
+  const center = currentLat !== null && currentLng !== null 
+    ? { latitude: currentLat, longitude: currentLng }
+    : validMarkers.length > 0 
+    ? { latitude: validMarkers[0].latitude, longitude: validMarkers[0].longitude }
+    : DEFAULT_CENTER;
+
   return (
     <View style={styles.container}>
-      <MapView
-        ref={mapRef}
-        style={StyleSheet.absoluteFill}
-        showsUserLocation={true}
-        showsMyLocationButton={true}
-      >
-        {validRecyclers.map((recycler) => {
-          const id = recycler.id ?? recycler.recycler_id;
-          if (!id) return null;
-          
-          const lat = toFiniteCoordinate(recycler.latitude)!;
-          const lng = toFiniteCoordinate(recycler.longitude)!;
-          
-          return (
-            <Marker
-              key={`recycler-${id}`}
-              coordinate={{ latitude: lat, longitude: lng }}
-              title={recycler.name || t('matchedRecyclers.facility')}
-              description={recycler.service_area || recycler.facility_location || undefined}
-              pinColor={selectedRecyclerId === id ? '#16794B' : undefined}
-              onCalloutPress={() => onRecyclerPress(id)}
-            />
-          );
-        })}
-      </MapView>
+      <View style={styles.logoOverlay}>
+        <AppLogo size="small" />
+      </View>
+
+      <LeafletMap 
+        style={styles.map}
+        center={center}
+        markers={validMarkers}
+        onMarkerPress={(id) => onRecyclerPress(Number(id))}
+        fitToMarkers={true}
+      />
+
       <View style={styles.tipContainer}>
         <Text style={styles.tipText}>{t('matchedRecyclers.tapMarker')}</Text>
       </View>
@@ -113,6 +93,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     backgroundColor: '#EDF1EF',
   },
+  map: { flex: 1 },
   emptyContainer: {
     height: 400,
     width: '100%',
@@ -124,10 +105,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     padding: 20,
   },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 16,
-  },
+  emptyIcon: { fontSize: 48, marginBottom: 16 },
   emptyText: {
     fontSize: 16,
     color: '#55645C',
@@ -139,19 +117,19 @@ const styles = StyleSheet.create({
     bottom: 16,
     left: 16,
     right: 16,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    padding: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    backgroundColor: '#FFFFFFEE',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
-  tipText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#173D2D',
-  }
+  tipText: { color: '#173D2D' },
+  logoOverlay: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    zIndex: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    padding: 8,
+    borderRadius: 8,
+  },
 });
