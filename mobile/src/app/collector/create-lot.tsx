@@ -2252,33 +2252,13 @@ export default function CreateLotScreen() {
                                     '/collector/matched-recyclers',
 
                                 params: {
-                                    lotId:
-                                        String(lotId),
-
-                                    category,
-
-                                    location,
-
-                                    lat:
-                                        String(
-                                            collectionLat
-                                        ),
-
-                                    lng:
-                                        String(
-                                            collectionLng
-                                        ),
-
-                                    weight:
-                                        String(weight),
-
-                                    estimatedValue:
-                                        valuation?.estimated_value !=
-                                            null
-                                            ? String(
-                                                valuation.estimated_value
-                                            )
-                                            : '',
+                                    lotId: String(lotId),
+                                    category: response?.data?.lot?.category || response?.data?.category || category,
+                                    location: response?.data?.lot?.location || response?.data?.location || location,
+                                    lat: String(response?.data?.lot?.latitude || response?.data?.latitude || collectionLat),
+                                    lng: String(response?.data?.lot?.longitude || response?.data?.longitude || collectionLng),
+                                    weight: String(response?.data?.lot?.approx_weight_kg || response?.data?.approx_weight_kg || weight),
+                                    estimatedValue: response?.data?.lot?.estimated_value != null ? String(response?.data?.lot?.estimated_value) : (response?.data?.estimated_value != null ? String(response?.data?.estimated_value) : (valuation?.estimated_value != null ? String(valuation.estimated_value) : '')),
                                 },
                             });
                         },
