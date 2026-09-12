@@ -18,6 +18,7 @@ export interface RecyclerIncomingLot {
   approx_weight_kg?: number | null;
 
   estimated_value?: number | null;
+  market_estimate?: number | null;
 
   location?: string | null;
   collection_location?: string | null;
@@ -28,6 +29,8 @@ export interface RecyclerIncomingLot {
   transaction_status?: RecyclerLotStatus | null;
 
   collector_id?: number | null;
+  collector_name?: string | null;
+  operating_location?: string | null;
 
   created_at?: string | null;
 
@@ -38,6 +41,9 @@ export interface RecyclerIncomingLot {
   traceability_status?: string | null;
 
   handover_reference_number?: string | null;
+
+  offer_id?: number | string | null;
+  recycler_offer_status?: string | null;
 }
 
 export interface RecyclerQuote {

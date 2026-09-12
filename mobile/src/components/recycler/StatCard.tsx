@@ -2,6 +2,7 @@ import {
   StyleSheet,
   Text,
   View,
+  Pressable,
 } from 'react-native';
 
 interface StatCardProps {
@@ -14,6 +15,8 @@ interface StatCardProps {
   subtitle?: string;
 
   accent?: boolean;
+  
+  onPress?: () => void;
 }
 
 export function StatCard({
@@ -21,9 +24,13 @@ export function StatCard({
   value,
   subtitle,
   accent = false,
+  onPress,
 }: StatCardProps) {
+  const Container = onPress ? (Pressable as any) : View;
+
   return (
-    <View
+    <Container
+      onPress={onPress}
       style={[
         styles.card,
 
@@ -66,7 +73,7 @@ export function StatCard({
           {subtitle}
         </Text>
       )}
-    </View>
+    </Container>
   );
 }
 

@@ -15,17 +15,19 @@ import {
 
 import {
   useCallback,
-  useEffect,
   useState,
 } from 'react';
+import { useFocusEffect } from 'expo-router';
 
 import {
-  acceptRecyclerLot,
   getAvailableLots,
-  rejectRecyclerLot,
-  submitRecyclerQuote,
+  getLotsByRecycler,
+  quoteLot,
+  acceptOffer,
+  rejectOffer,
 } from '../../../api/client';
 import { BrandedHeader } from '../../../components/branding/BrandedHeader';
+import { getMaterialDisplayLabel, getRecyclerStatusLabel } from '../../../utils/lot-helpers';
 
 import { QuoteModal } from '../../../components/QuoteModal';
 
@@ -83,16 +85,29 @@ export default function RecyclerLotDetailScreen() {
       setError('');
 
       try {
-        const response =
-          await getAvailableLots(
-            recyclerId,
-          );
+        const [
+          availableRes,
+          recyclerRes
+        ] = await Promise.all([
+          getAvailableLots(recyclerId),
+          getLotsByRecycler(recyclerId),
+        ]);
 
-        const found =
-          response.data.find(
-            candidate =>
-              getLotId(candidate) === String(id),
-          );
+        const allLots = [
+          ...(Array.isArray(availableRes.data) ? availableRes.data : []),
+          ...(Array.isArray(recyclerRes.data) ? recyclerRes.data : []),
+        ];
+
+        // Deduplicate by lot_id and find the specific lot
+        const uniqueLots = new Map();
+        for (const item of allLots) {
+          const itemId = getLotId(item);
+          if (itemId && !uniqueLots.has(String(itemId))) {
+            uniqueLots.set(String(itemId), item);
+          }
+        }
+
+        const found = uniqueLots.get(String(id));
 
         if (!found) {
           setLot(null);
@@ -127,9 +142,11 @@ export default function RecyclerLotDetailScreen() {
       t,
     ]);
 
-  useEffect(() => {
-    void loadLot();
-  }, [loadLot]);
+  useFocusEffect(
+    useCallback(() => {
+      void loadLot();
+    }, [loadLot])
+  );
 
 
 
@@ -147,18 +164,18 @@ export default function RecyclerLotDetailScreen() {
     setActionLoading(true);
 
     try {
-      await submitRecyclerQuote({
-        recycler_id:
+      await quoteLot({
+        recyclerId:
           recyclerId,
 
-        lot_id:
+        lotId:
           lot.lot_id,
 
-        amount,
+        offeredPrice:
+          amount,
 
-        notes:
-          notes ||
-          undefined,
+        existingOfferId:
+          lot.offer_id ?? undefined,
       });
 
       setQuoteVisible(false);
@@ -192,6 +209,53 @@ export default function RecyclerLotDetailScreen() {
     } finally {
       setActionLoading(false);
     }
+  }
+
+  async function handleAccept() {
+    const lotAny = lot as any;
+    if (!lotAny?.offer_id && !lotAny?.id) return;
+    const offerId = lotAny.offer_id ?? lotAny.id;
+    setActionLoading(true);
+    try {
+      await acceptOffer(offerId!);
+      Alert.alert(t('recyclerLot.success'), t('recyclerLot.acceptSuccess'));
+      await loadLot();
+    } catch (err) {
+      console.error(err);
+      Alert.alert(t('common.error'), t('recyclerLot.acceptError'));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleReject() {
+    const lotAny = lot as any;
+    if (!lotAny?.offer_id && !lotAny?.id) return;
+    const offerId = lotAny.offer_id ?? lotAny.id;
+    Alert.alert(
+      t('recyclerLot.rejectTitle'),
+      t('recyclerLot.rejectConfirm'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        { 
+          text: t('recyclerLot.reject'), 
+          style: 'destructive',
+          onPress: async () => {
+            setActionLoading(true);
+            try {
+              await rejectOffer(offerId!);
+              Alert.alert(t('recyclerLot.success'), t('recyclerLot.rejectSuccess'));
+              await loadLot();
+            } catch (err) {
+              console.error(err);
+              Alert.alert(t('common.error'), t('recyclerLot.rejectError'));
+            } finally {
+              setActionLoading(false);
+            }
+          }
+        }
+      ]
+    );
   }
 
   if (loading) {
@@ -268,10 +332,12 @@ export default function RecyclerLotDetailScreen() {
     );
   }
 
-  const category =
+  const rawCategory =
     lot.category ??
     lot.material_category ??
     '—';
+
+  const category = getMaterialDisplayLabel(rawCategory, t);
 
   const location =
     lot.location ??
@@ -350,8 +416,7 @@ export default function RecyclerLotDetailScreen() {
               'recyclerLot.status',
             )}
             value={
-              lot.transaction_status ??
-              '—'
+              getRecyclerStatusLabel(lot.transaction_status, t)
             }
           />
 
@@ -377,30 +442,33 @@ export default function RecyclerLotDetailScreen() {
           )}
         </Text>
 
-        {(lot.transaction_status === 'quoted' && (!lot.recycler_offer_status || lot.recycler_offer_status === 'requested')) && (
+        {(lot.transaction_status === 'available' || lot.transaction_status === 'quoted') && (
           <Pressable
-            disabled={
-              actionLoading
-            }
-            onPress={() =>
-              setQuoteVisible(
-                true,
-              )
-            }
-            style={
-              styles.quoteButton
-            }
+            disabled={actionLoading}
+            onPress={() => setQuoteVisible(true)}
+            style={styles.quoteButton}
           >
-            <Text
-              style={
-                styles.quoteText
-              }
-            >
-              {t(
-                'recyclerLot.submitQuote',
-              )}
-            </Text>
+            <Text style={styles.quoteText}>{t('recyclerLot.submitQuote')}</Text>
           </Pressable>
+        )}
+
+        {lot.transaction_status === 'matched' && (
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 15 }}>
+            <Pressable
+              disabled={actionLoading}
+              onPress={handleAccept}
+              style={[styles.quoteButton, { flex: 1, backgroundColor: '#16794B' }]}
+            >
+              <Text style={styles.quoteText}>{t('recyclerLot.accept')}</Text>
+            </Pressable>
+            <Pressable
+              disabled={actionLoading}
+              onPress={handleReject}
+              style={[styles.quoteButton, { flex: 1, backgroundColor: '#D93B3B' }]}
+            >
+              <Text style={styles.quoteText}>{t('recyclerLot.reject')}</Text>
+            </Pressable>
+          </View>
         )}
       </ScrollView>
 

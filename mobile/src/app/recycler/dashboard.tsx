@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 
 import {
+    useFocusEffect,
     router,
 } from 'expo-router';
 
@@ -225,9 +226,11 @@ export default function RecyclerDashboardScreen() {
             ],
         );
 
-    useEffect(() => {
-        void loadDashboard();
-    }, [loadDashboard]);
+    useFocusEffect(
+        useCallback(() => {
+            void loadDashboard();
+        }, [loadDashboard]),
+    );
 
     const pending =
         useMemo(
@@ -404,11 +407,12 @@ export default function RecyclerDashboardScreen() {
                         'recyclerDash.totalLots',
                     )}
                     value={
-                        lots.length
+                        newLots
                     }
                     subtitle={t(
                         'incomingLots.title',
                     )}
+                    onPress={() => router.push('/recycler/incoming-lots')}
                 />
 
                 <StatCard
@@ -467,10 +471,8 @@ export default function RecyclerDashboardScreen() {
                             }
                         >
                             {t(
-                                'recyclerDash.newLotsTitle',
-                            ).replace(
-                                '{{count}}',
-                                String(newLots),
+                                'recyclerDash.newLotsAvailable',
+                                { count: newLots }
                             )}
                         </Text>
 

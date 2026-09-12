@@ -13,6 +13,8 @@ import type {
 import { StatusBadge } from './recycler/StatusBadge';
 import { formatAppDate, formatCurrency } from '../utils/locale';
 import { useTranslation } from '../../i18n/config';
+import { getStatusLabel } from '../utils/status';
+import { getMaterialDisplayLabel } from '../utils/lot-helpers';
 
 export interface RecyclerActivityCardProps {
   activity?: RecyclerActivityItem;
@@ -102,10 +104,7 @@ export const RecyclerActivityCard = memo(function RecyclerActivityCard({
     item.amount != null ||
     item.collector_name != null;
 
-  const statusLabel = item.status === 'matched' ? t('recyclerActivity.matched') :
-                      item.status === 'confirmed' ? t('recyclerActivity.confirmed') :
-                      item.status === 'handed_over' ? t('recyclerActivity.handedOver') :
-                      undefined;
+  const statusLabel = getStatusLabel(item.status, t);
 
   return (
     <Pressable
@@ -137,7 +136,7 @@ export const RecyclerActivityCard = memo(function RecyclerActivityCard({
               <Text style={styles.lotIdBadge}>{displayId}</Text>
             ) : null}
             {item.material_category ? (
-              <Text style={styles.categoryBadge}>{item.material_category}</Text>
+              <Text style={styles.categoryBadge}>{getMaterialDisplayLabel(item.material_category, t)}</Text>
             ) : null}
             <Text style={styles.timeText}>
               {relativeTime ? `${relativeTime} • ` : ''}{formattedDate}
@@ -158,7 +157,7 @@ export const RecyclerActivityCard = memo(function RecyclerActivityCard({
         <View style={styles.metricsContainer}>
           {item.weight_kg != null ? (
             <View style={styles.metricItem}>
-              <Text style={styles.metricLabel}>Weight</Text>
+              <Text style={styles.metricLabel}>{t('recyclerActivity.weight')}</Text>
               <Text style={styles.metricValue}>
                 {item.weight_kg} {kgLabel}
               </Text>
@@ -167,7 +166,7 @@ export const RecyclerActivityCard = memo(function RecyclerActivityCard({
 
           {item.amount != null ? (
             <View style={styles.metricItem}>
-              <Text style={styles.metricLabel}>Amount</Text>
+              <Text style={styles.metricLabel}>{t('recyclerActivity.amount')}</Text>
               <Text style={styles.metricValueHighlight}>
                 {formatCurrency(item.amount)}
               </Text>
@@ -176,7 +175,7 @@ export const RecyclerActivityCard = memo(function RecyclerActivityCard({
 
           {item.collector_name ? (
             <View style={styles.metricItem}>
-              <Text style={styles.metricLabel}>Collector</Text>
+              <Text style={styles.metricLabel}>{t('recyclerActivity.collector')}</Text>
               <Text style={styles.metricValue} numberOfLines={1}>
                 {item.collector_name}
               </Text>
@@ -190,7 +189,7 @@ export const RecyclerActivityCard = memo(function RecyclerActivityCard({
         <View style={styles.footer}>
           <Text style={styles.footerText} numberOfLines={1}>
             {item.reference_number
-              ? `Ref: ${item.reference_number}`
+              ? `${t('recyclerActivity.reference')}: ${item.reference_number}`
               : item.location || ''}
           </Text>
           <Text style={styles.arrow}>→</Text>
