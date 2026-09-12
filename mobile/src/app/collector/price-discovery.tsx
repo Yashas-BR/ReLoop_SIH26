@@ -51,6 +51,7 @@ import {
 import { BrandedHeader } from '../../components/branding/BrandedHeader';
 import { useTranslation } from '../../../i18n/config';
 
+<<<<<<< HEAD
 /* =========================================================
    CONSTANTS
 ========================================================= */
@@ -133,10 +134,27 @@ type PulseItem = {
    HELPERS
 ========================================================= */
 
+<<<<<<< HEAD
 function fmt(v?: number | string | null): string {
     if (v == null || v === '') return '—';
     return `₹${Number(v).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 }
+=======
+export default function MatchedRecyclersScreen() {
+    const { t } = useTranslation();
+    /*
+     * These values come from Create Lot.
+     */
+    const params = useLocalSearchParams<{
+        lotId?: string;
+        category?: string;
+        location?: string;
+        lat?: string;
+        lng?: string;
+        weight?: string;
+        estimatedValue?: string;
+    }>();
+>>>>>>> 5c04669e98eb8c2e91a89207ea1238af5024490c
 
 function distKm(lat1: number, lon1: number, lat2: number, lon2: number): number | null {
     if (!isFinite(lat1 + lon1 + lat2 + lon2)) return null;
@@ -287,6 +305,7 @@ function PriceLineChart({ trends, width, height }: ChartProps) {
                     stroke="rgba(124,58,237,0.07)"
                     strokeWidth={1}
                 />
+<<<<<<< HEAD
             ))}
 
             {/* Market range band */}
@@ -303,6 +322,17 @@ function PriceLineChart({ trends, width, height }: ChartProps) {
                 fill="none"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+=======
+            }
+            showsVerticalScrollIndicator={
+                false
+            }
+        >
+            <BrandedHeader
+                showBack
+                title={t('recyclers.title')}
+                subtitle={t('recyclers.subtitle')}
+>>>>>>> 5c04669e98eb8c2e91a89207ea1238af5024490c
             />
 
             {/* Last-point glow dot */}
@@ -317,6 +347,7 @@ function PriceLineChart({ trends, width, height }: ChartProps) {
     );
 }
 
+<<<<<<< HEAD
 /* Y-axis labels — rendered in a sibling RN View */
 function YLabels({ trends, height }: { trends: PriceTrend[]; height: number }) {
     const prices = trends.map(t => Number(t.buying_price)).filter(p => isFinite(p) && p > 0);
@@ -617,6 +648,20 @@ export default function PriceDiscoveryScreen() {
                         {syncing
                             ? <ActivityIndicator size="small" color="#fff" />
                             : <Text style={S.syncBtnTxt}>🔄 {t('priceDiscovery.syncLiveMarket')}</Text>
+=======
+                        <Text
+                            style={
+                                styles.locationText
+                            }
+                        >
+                            {t('priceDiscovery.locating')}
+                        </Text>
+                    </>
+                ) : (
+                    <Text
+                        style={
+                            styles.locationText
+>>>>>>> 5c04669e98eb8c2e91a89207ea1238af5024490c
                         }
                     </Pressable>
                 }
@@ -919,6 +964,7 @@ export default function PriceDiscoveryScreen() {
                 <Text style={S.secSub2}>{t('prices.currentRatesDesc')}</Text>
                 {rateAsOf && <Text style={S.rateAsOf}>{t('prices.rateAsOf', { date: rateAsOf })}</Text>}
 
+<<<<<<< HEAD
                 {/* Search */}
                 <View style={S.searchBox}>
                     <Text style={S.searchIcon}>🔍</Text>
@@ -933,6 +979,229 @@ export default function PriceDiscoveryScreen() {
                         <Pressable onPress={() => setSearch('')} style={S.clearX}>
                             <Text style={S.clearXTxt}>✕</Text>
                         </Pressable>
+=======
+            {lotId ? (
+                <View
+                    style={
+                        styles.lotSummary
+                    }
+                >
+                    <View>
+                        <Text
+                            style={
+                                styles.lotId
+                            }
+                        >
+                            {lotId}
+                        </Text>
+
+                        <Text
+                            style={
+                                styles.lotCategory
+                            }
+                        >
+                            {category}
+                            {lotWeight
+                                ? ` · ${lotWeight} kg`
+                                : ''}
+                        </Text>
+                    </View>
+
+                    {estimatedValue !=
+                        null ? (
+                        <View
+                            style={
+                                styles.estimateBlock
+                            }
+                        >
+                            <Text
+                                style={
+                                    styles.estimateLabel
+                                }
+                            >
+                                {t('priceDiscovery.currentMarketBenchmark').toUpperCase()}
+                            </Text>
+
+                            <Text
+                                style={
+                                    styles.estimateValue
+                                }
+                            >
+                                ₹
+                                {estimatedValue.toLocaleString(
+                                    'en-IN'
+                                )}
+                            </Text>
+                        </View>
+                    ) : null}
+                </View>
+            ) : null}
+
+            {/* SUCCESS */}
+
+            {successMessage ? (
+                <View
+                    style={
+                        styles.successBanner
+                    }
+                >
+                    <Text
+                        style={
+                            styles.successText
+                        }
+                    >
+                        ✓{' '}
+                        {
+                            successMessage
+                        }
+                    </Text>
+                </View>
+            ) : null}
+
+            {/* ERROR */}
+
+            {error ? (
+                <View
+                    style={
+                        styles.errorBanner
+                    }
+                >
+                    <Text
+                        style={
+                            styles.errorText
+                        }
+                    >
+                        ⚠️ {error}
+                    </Text>
+                </View>
+            ) : null}
+
+            {offersError ? (
+                <View
+                    style={
+                        styles.warningBanner
+                    }
+                >
+                    <Text
+                        style={
+                            styles.warningText
+                        }
+                    >
+                        ⚠️{' '}
+                        {offersError}
+                    </Text>
+                </View>
+            ) : null}
+
+            {/* =================================================
+          QUOTES RECEIVED
+      ================================================= */}
+
+            {lotId &&
+                (openOffers.length >
+                    0 ||
+                    acceptedOffer) ? (
+                <View
+                    style={
+                        styles.card
+                    }
+                >
+                    <View
+                        style={
+                            styles.sectionHeader
+                        }
+                    >
+                        <Text
+                            style={
+                                styles.sectionTitle
+                            }
+                        >
+                            {t('quotes.receivedTitle')}
+                        </Text>
+
+                        {acceptedOffer ? (
+                            <View
+                                style={
+                                    styles.acceptedBadge
+                                }
+                            >
+                                <Text
+                                    style={
+                                        styles.acceptedBadgeText
+                                    }
+                                >
+                                    ✓ {t('quotes.accepted')}
+                                </Text>
+                            </View>
+                        ) : null}
+                    </View>
+
+                    {acceptedOffer ? (
+                        <AcceptedOfferCard
+                            offer={
+                                acceptedOffer
+                            }
+                            lotWeight={
+                                lotWeight
+                            }
+                        />
+                    ) : (
+                        <>
+                            <View
+                                style={
+                                    styles.privacyNotice
+                                }
+                            >
+                                <Text
+                                    style={
+                                        styles.privacyText
+                                    }
+                                >
+                                    🔐 Recycler
+                                    contact details
+                                    remain protected
+                                    until you accept
+                                    a quote.
+                                </Text>
+                            </View>
+
+                            {openOffers.map(
+                                (offer) => (
+                                    <OfferCard
+                                        key={
+                                            offer.id
+                                        }
+                                        offer={
+                                            offer
+                                        }
+                                        lotWeight={
+                                            lotWeight
+                                        }
+                                        busy={
+                                            offerBusy ===
+                                            offer.id
+                                        }
+                                        disableActions={
+                                            offerBusy !=
+                                            null
+                                        }
+                                        onAccept={() =>
+                                            handleOfferAction(
+                                                offer.id,
+                                                'accept'
+                                            )
+                                        }
+                                        onReject={() =>
+                                            handleOfferAction(
+                                                offer.id,
+                                                'reject'
+                                            )
+                                        }
+                                    />
+                                )
+                            )}
+                        </>
+>>>>>>> 5c04669e98eb8c2e91a89207ea1238af5024490c
                     )}
                 </View>
                 {!!search.trim() && (
@@ -942,6 +1211,879 @@ export default function PriceDiscoveryScreen() {
                             total: String(rateRows.filter(r => (r.materials_accepted || []).includes(category)).length),
                         })}
                     </Text>
+<<<<<<< HEAD
+=======
+
+                    <TextInput
+                        value={
+                            searchTerm
+                        }
+                        onChangeText={
+                            setSearchTerm
+                        }
+                        placeholder={t('recyclers.searchPlaceholder')}
+                        placeholderTextColor="#9ca3af"
+                        style={
+                            styles.searchInput
+                        }
+                    />
+
+                    {searchTerm ? (
+                        <Pressable
+                            onPress={() =>
+                                setSearchTerm(
+                                    ''
+                                )
+                            }
+                        >
+                            <Text
+                                style={
+                                    styles.clearSearch
+                                }
+                            >
+                                ✕
+                            </Text>
+                        </Pressable>
+                    ) : null}
+                </View>
+            ) : null}
+
+            {searchTerm ? (
+                <Text
+                    style={
+                        styles.searchCount
+                    }
+                >
+                    {t('priceDiscovery.showingRecyclers', { count: String(filteredRecyclers.length), total: String(recyclers.length) })}
+                </Text>
+            ) : null}
+
+            {/* =================================================
+          LOADING
+      ================================================= */}
+
+            {loading ? (
+                <View
+                    style={
+                        styles.loadingBox
+                    }
+                >
+                    <ActivityIndicator
+                        size="large"
+                        color="#16a34a"
+                    />
+
+                    <Text
+                        style={
+                            styles.loadingText
+                        }
+                    >
+                        {t('common.loading')}
+                    </Text>
+                </View>
+            ) : null}
+
+            {/* =================================================
+          NO RECYCLERS
+      ================================================= */}
+
+            {!loading &&
+                recyclers.length ===
+                0 ? (
+                <View
+                    style={
+                        styles.emptyCard
+                    }
+                >
+                    <Text
+                        style={
+                            styles.emptyIcon
+                        }
+                    >
+                        ♻️
+                    </Text>
+
+                    <Text
+                        style={
+                            styles.emptyTitle
+                        }
+                    >
+                        {t('recyclers.noMatch')}
+                    </Text>
+
+                    <Text
+                        style={
+                            styles.emptyText
+                        }
+                    >
+                        {t('recyclers.noMatchDesc')}
+                    </Text>
+
+                    <Pressable
+                        style={
+                            styles.outlineButton
+                        }
+                        onPress={
+                            refresh
+                        }
+                    >
+                        <Text
+                            style={
+                                styles.outlineButtonText
+                            }
+                        >
+                            {t('common.retry')}
+                        </Text>
+                    </Pressable>
+                </View>
+            ) : null}
+
+            {/* =================================================
+          SEARCH EMPTY
+      ================================================= */}
+
+            {!loading &&
+                recyclers.length >
+                0 &&
+                filteredRecyclers.length ===
+                0 ? (
+                <View
+                    style={
+                        styles.emptyCard
+                    }
+                >
+                    <Text
+                        style={
+                            styles.emptyTitle
+                        }
+                    >
+                        {t('recyclers.noSearchMatch')}
+                    </Text>
+
+                    <Pressable
+                        style={
+                            styles.outlineButton
+                        }
+                        onPress={() =>
+                            setSearchTerm('')
+                        }
+                    >
+                        <Text
+                            style={
+                                styles.outlineButtonText
+                            }
+                        >
+                            {t('priceDiscovery.clearFilter')}
+                        </Text>
+                    </Pressable>
+                </View>
+            ) : null}
+
+            {/* =================================================
+          RECYCLER CARDS
+      ================================================= */}
+
+            {!loading &&
+                filteredRecyclers.map(
+                    (recycler) => {
+                        const recyclerId =
+                            recyclerIdOf(
+                                recycler
+                            );
+
+                        if (!recyclerId) {
+                            return null;
+                        }
+
+                        const suitability =
+                            suitabilityOf(
+                                recycler
+                            );
+
+                        const myOffer =
+                            offerForRecycler(
+                                recyclerId
+                            );
+
+                        const isSelected =
+                            selectedId ===
+                            recyclerId;
+
+                        const isRequesting =
+                            requesting ===
+                            recyclerId;
+
+                        const isAcceptedRecycler =
+                            acceptedOffer &&
+                            Number(
+                                acceptedOffer.recycler_id
+                            ) ===
+                            Number(
+                                recyclerId
+                            );
+
+                        return (
+                            <Pressable
+                                key={
+                                    recyclerId
+                                }
+                                onPress={() =>
+                                    setSelectedId(
+                                        recyclerId
+                                    )
+                                }
+                                style={[
+                                    styles.recyclerCard,
+
+                                    isSelected &&
+                                    styles.recyclerCardSelected,
+
+                                    isAcceptedRecycler &&
+                                    styles.recyclerCardAccepted,
+                                ]}
+                            >
+                                {/* HEADER */}
+
+                                <View
+                                    style={
+                                        styles.recyclerHeader
+                                    }
+                                >
+                                    <View
+                                        style={
+                                            styles.recyclerNameWrap
+                                        }
+                                    >
+                                        <View
+                                            style={
+                                                styles.recyclerAvatar
+                                            }
+                                        >
+                                            <Text
+                                                style={
+                                                    styles.recyclerAvatarText
+                                                }
+                                            >
+                                                ♻
+                                            </Text>
+                                        </View>
+
+                                        <View
+                                            style={{
+                                                flex: 1,
+                                            }}
+                                        >
+                                            <Text
+                                                style={
+                                                    styles.recyclerName
+                                                }
+                                            >
+                                                {recycler.name ||
+                                                    'Authorized Recycler'}
+                                            </Text>
+
+                                            <Text
+                                                style={
+                                                    styles.recyclerLocation
+                                                }
+                                            >
+                                                {recycler.service_area ||
+                                                    recycler.facility_location ||
+                                                    'Location unavailable'}
+                                            </Text>
+                                        </View>
+                                    </View>
+
+                                    <View
+                                        style={
+                                            styles.authorizedBadge
+                                        }
+                                    >
+                                        <Text
+                                            style={
+                                                styles.authorizedText
+                                            }
+                                        >
+                                            ✓ Authorized
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                {/* SUITABILITY */}
+
+                                <View
+                                    style={
+                                        styles.scoreSection
+                                    }
+                                >
+                                    <View
+                                        style={
+                                            styles.scoreHeader
+                                        }
+                                    >
+                                        <Text
+                                            style={
+                                                styles.scoreLabel
+                                            }
+                                        >
+                                            Suitability
+                                        </Text>
+
+                                        <Text
+                                            style={
+                                                styles.scoreValue
+                                            }
+                                        >
+                                            {
+                                                suitability
+                                            }
+                                            %
+                                        </Text>
+                                    </View>
+
+                                    <View
+                                        style={
+                                            styles.scoreTrack
+                                        }
+                                    >
+                                        <View
+                                            style={[
+                                                styles.scoreFill,
+
+                                                {
+                                                    width:
+                                                        `${suitability}%`,
+                                                },
+                                            ]}
+                                        />
+                                    </View>
+                                </View>
+
+                                {/* SCORE BREAKDOWN */}
+
+                                {recycler.score_price !=
+                                    null ||
+                                    recycler.score_reliability !=
+                                    null ? (
+                                    <View
+                                        style={
+                                            styles.scoreChips
+                                        }
+                                    >
+                                        <ScoreChip
+                                            text={`Price ${pctScore(
+                                                recycler.score_price
+                                            )}%`}
+                                        />
+
+                                        <ScoreChip
+                                            text={`Distance ${pctScore(
+                                                recycler.score_distance
+                                            )}%`}
+                                        />
+
+                                        <ScoreChip
+                                            text={`Pickup ${pctScore(
+                                                recycler.score_pickup
+                                            )}%`}
+                                        />
+
+                                        <ScoreChip
+                                            text={`Reliability ${pctScore(
+                                                recycler.score_reliability
+                                            )}%`}
+                                        />
+                                    </View>
+                                ) : null}
+
+                                {/* STATS */}
+
+                                <View
+                                    style={
+                                        styles.stats
+                                    }
+                                >
+                                    <Stat
+                                        icon="📍"
+                                        label="Distance"
+                                        value={
+                                            recycler.distance_km !=
+                                                null
+                                                ? `${Number(
+                                                    recycler.distance_km
+                                                ).toFixed(
+                                                    1
+                                                )} km`
+                                                : '—'
+                                        }
+                                    />
+
+                                    <Stat
+                                        icon="₹"
+                                        label="Recycler Rate"
+                                        value={
+                                            recycler.offered_rate
+                                                ? `₹${recycler.offered_rate}/kg`
+                                                : '—'
+                                        }
+                                        subValue={
+                                            lotWeight &&
+                                                recycler.offered_rate
+                                                ? `Est. ₹${Math.round(
+                                                    Number(
+                                                        lotWeight
+                                                    ) *
+                                                    Number(
+                                                        recycler.offered_rate
+                                                    )
+                                                ).toLocaleString(
+                                                    'en-IN'
+                                                )}`
+                                                : undefined
+                                        }
+                                    />
+
+                                    <Stat
+                                        icon="🚚"
+                                        label="Pickup"
+                                        value={
+                                            recycler.pickup_availability ===
+                                                'daily'
+                                                ? 'Available'
+                                                : recycler.pickup_availability ||
+                                                'On request'
+                                        }
+                                    />
+                                </View>
+
+                                {/* MATERIALS */}
+
+                                {Array.isArray(
+                                    recycler.materials_accepted
+                                ) &&
+                                    recycler
+                                        .materials_accepted
+                                        .length >
+                                    0 ? (
+                                    <View
+                                        style={
+                                            styles.materials
+                                        }
+                                    >
+                                        {recycler.materials_accepted.map(
+                                            (
+                                                material
+                                            ) => (
+                                                <View
+                                                    key={
+                                                        material
+                                                    }
+                                                    style={
+                                                        styles.materialChip
+                                                    }
+                                                >
+                                                    <Text
+                                                        style={
+                                                            styles.materialText
+                                                        }
+                                                    >
+                                                        {
+                                                            material
+                                                        }
+                                                    </Text>
+                                                </View>
+                                            )
+                                        )}
+                                    </View>
+                                ) : null}
+
+                                {/* =================================================
+                    ACTION STATE
+                ================================================= */}
+
+                                {acceptedOffer ? (
+                                    isAcceptedRecycler ? (
+                                        <View>
+                                            <View
+                                                style={
+                                                    styles.acceptedRecyclerBox
+                                                }
+                                            >
+                                                <Text
+                                                    style={
+                                                        styles.acceptedRecyclerTitle
+                                                    }
+                                                >
+                                                    ✓ Accepted
+                                                    Recycler
+                                                </Text>
+
+                                                <Text
+                                                    style={
+                                                        styles.acceptedRecyclerRate
+                                                    }
+                                                >
+                                                    ₹
+                                                    {
+                                                        acceptedOffer.offered_price
+                                                    }{' '}
+                                                    / kg
+                                                </Text>
+
+                                                {lotWeight &&
+                                                    acceptedOffer.offered_price ? (
+                                                    <Text
+                                                        style={
+                                                            styles.acceptedRecyclerPayout
+                                                        }
+                                                    >
+                                                        Agreed
+                                                        payout:{' '}
+                                                        ₹
+                                                        {Math.round(
+                                                            Number(
+                                                                lotWeight
+                                                            ) *
+                                                            Number(
+                                                                acceptedOffer.offered_price
+                                                            )
+                                                        ).toLocaleString(
+                                                            'en-IN'
+                                                        )}
+                                                    </Text>
+                                                ) : null}
+                                            </View>
+
+                                            {/* HANDOVER */}
+
+                                            {handoverReference ? (
+                                                <View
+                                                    style={
+                                                        styles.handoverSuccessBox
+                                                    }
+                                                >
+                                                    <Text
+                                                        style={
+                                                            styles.handoverSuccessTitle
+                                                        }
+                                                    >
+                                                        ✓ Handover Initiated
+                                                    </Text>
+
+                                                    <Text
+                                                        style={
+                                                            styles.handoverSuccessText
+                                                        }
+                                                    >
+                                                        Reference:{' '}
+                                                        {handoverReference}
+                                                    </Text>
+
+                                                    <Pressable
+                                                        style={
+                                                            styles.dashboardButton
+                                                        }
+                                                        onPress={() =>
+                                                            router.replace(
+                                                                '/collector'
+                                                            )
+                                                        }
+                                                    >
+                                                        <Text
+                                                            style={
+                                                                styles.dashboardButtonText
+                                                            }
+                                                        >
+                                                            Back to Dashboard
+                                                        </Text>
+                                                    </Pressable>
+                                                </View>
+                                            ) : (
+                                                <View
+                                                    style={
+                                                        styles.nextPartBox
+                                                    }
+                                                >
+                                                    <Text
+                                                        style={
+                                                            styles.nextPartText
+                                                        }
+                                                    >
+                                                        The recycler is confirmed.
+                                                        Start the physical handover
+                                                        when you are ready.
+                                                    </Text>
+
+                                                    <Pressable
+                                                        style={[
+                                                            styles.handoverButton,
+
+                                                            handingOver &&
+                                                            styles.disabledButton,
+                                                        ]}
+                                                        disabled={
+                                                            handingOver
+                                                        }
+                                                        onPress={
+                                                            handleInitiateHandover
+                                                        }
+                                                    >
+                                                        {handingOver ? (
+                                                            <View
+                                                                style={
+                                                                    styles.buttonLoading
+                                                                }
+                                                            >
+                                                                <ActivityIndicator
+                                                                    size="small"
+                                                                    color="#ffffff"
+                                                                />
+
+                                                                <Text
+                                                                    style={
+                                                                        styles.handoverButtonText
+                                                                    }
+                                                                >
+                                                                    Initiating...
+                                                                </Text>
+                                                            </View>
+                                                        ) : (
+                                                            <Text
+                                                                style={
+                                                                    styles.handoverButtonText
+                                                                }
+                                                            >
+                                                                Proceed to Handover
+                                                            </Text>
+                                                        )}
+                                                    </Pressable>
+                                                </View>
+                                            )}
+                                        </View>
+                                    ) : (
+                                        <Text
+                                            style={
+                                                styles.unavailableText
+                                            }
+                                        >
+                                            Another
+                                            recycler's
+                                            quote has been
+                                            accepted.
+                                        </Text>
+                                    )
+                                ) : !myOffer ? (
+                                    <Pressable
+                                        style={[
+                                            styles.primaryButton,
+
+                                            requesting !=
+                                            null &&
+                                            styles.disabledButton,
+                                        ]}
+                                        disabled={
+                                            requesting !=
+                                            null
+                                        }
+                                        onPress={() =>
+                                            handleRequestQuote(
+                                                recycler
+                                            )
+                                        }
+                                    >
+                                        {isRequesting ? (
+                                            <View
+                                                style={
+                                                    styles.buttonLoading
+                                                }
+                                            >
+                                                <ActivityIndicator
+                                                    size="small"
+                                                    color="#ffffff"
+                                                />
+
+                                                <Text
+                                                    style={
+                                                        styles.primaryButtonText
+                                                    }
+                                                >
+                                                    Requesting...
+                                                </Text>
+                                            </View>
+                                        ) : (
+                                            <Text
+                                                style={
+                                                    styles.primaryButtonText
+                                                }
+                                            >
+                                                Request Quote
+                                            </Text>
+                                        )}
+                                    </Pressable>
+                                ) : myOffer.offer_status ===
+                                    'requested' ? (
+                                    <View
+                                        style={
+                                            styles.waitingBox
+                                        }
+                                    >
+                                        <Text
+                                            style={
+                                                styles.waitingText
+                                            }
+                                        >
+                                            ⏳ Quote
+                                            requested —
+                                            awaiting
+                                            recycler
+                                        </Text>
+                                    </View>
+                                ) : myOffer.offer_status ===
+                                    'offered' ? (
+                                    <View
+                                        style={
+                                            styles.offerActionBox
+                                        }
+                                    >
+                                        <Text
+                                            style={
+                                                styles.offerSmallLabel
+                                            }
+                                        >
+                                            RECYCLER'S
+                                            OFFER
+                                        </Text>
+
+                                        <Text
+                                            style={
+                                                styles.offerPrice
+                                            }
+                                        >
+                                            ₹
+                                            {Number(
+                                                myOffer.offered_price
+                                            ).toLocaleString(
+                                                'en-IN'
+                                            )}{' '}
+                                            / kg
+                                        </Text>
+
+                                        {lotWeight &&
+                                            myOffer.offered_price ? (
+                                            <Text
+                                                style={
+                                                    styles.offerPayout
+                                                }
+                                            >
+                                                Estimated
+                                                payout: ₹
+                                                {Math.round(
+                                                    Number(
+                                                        lotWeight
+                                                    ) *
+                                                    Number(
+                                                        myOffer.offered_price
+                                                    )
+                                                ).toLocaleString(
+                                                    'en-IN'
+                                                )}
+                                            </Text>
+                                        ) : null}
+
+                                        <View
+                                            style={
+                                                styles.offerButtons
+                                            }
+                                        >
+                                            <Pressable
+                                                style={[
+                                                    styles.acceptButton,
+
+                                                    offerBusy !=
+                                                    null &&
+                                                    styles.disabledButton,
+                                                ]}
+                                                disabled={
+                                                    offerBusy !=
+                                                    null
+                                                }
+                                                onPress={() =>
+                                                    handleOfferAction(
+                                                        myOffer.id,
+                                                        'accept'
+                                                    )
+                                                }
+                                            >
+                                                {offerBusy ===
+                                                    myOffer.id ? (
+                                                    <ActivityIndicator
+                                                        size="small"
+                                                        color="#ffffff"
+                                                    />
+                                                ) : (
+                                                    <Text
+                                                        style={
+                                                            styles.acceptButtonText
+                                                        }
+                                                    >
+                                                        ✓ Accept
+                                                    </Text>
+                                                )}
+                                            </Pressable>
+
+                                            <Pressable
+                                                style={[
+                                                    styles.rejectButton,
+
+                                                    offerBusy !=
+                                                    null &&
+                                                    styles.disabledButton,
+                                                ]}
+                                                disabled={
+                                                    offerBusy !=
+                                                    null
+                                                }
+                                                onPress={() =>
+                                                    handleOfferAction(
+                                                        myOffer.id,
+                                                        'reject'
+                                                    )
+                                                }
+                                            >
+                                                <Text
+                                                    style={
+                                                        styles.rejectButtonText
+                                                    }
+                                                >
+                                                    Reject
+                                                </Text>
+                                            </Pressable>
+                                        </View>
+                                    </View>
+                                ) : (
+                                    <Pressable
+                                        style={
+                                            styles.primaryButton
+                                        }
+                                        onPress={() =>
+                                            handleRequestQuote(
+                                                recycler
+                                            )
+                                        }
+                                    >
+                                        <Text
+                                            style={
+                                                styles.primaryButtonText
+                                            }
+                                        >
+                                            Request Quote
+                                        </Text>
+                                    </Pressable>
+                                )}
+                            </Pressable>
+                        );
+                    }
+>>>>>>> 5c04669e98eb8c2e91a89207ea1238af5024490c
                 )}
 
                 {loadingRec ? (
