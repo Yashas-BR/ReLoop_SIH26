@@ -23,6 +23,8 @@ import {
   NetworkError,
   loginRecycler,
   onboardRecycler,
+  DEFAULT_LAT,
+  DEFAULT_LNG,
 } from '../../api/client';
 
 import {
@@ -339,8 +341,8 @@ export default function RecyclerLoginScreen() {
     const payload: RecyclerApplication = {
       name: form.name.trim(),
 
-      latitude: null,
-      longitude: null,
+      latitude: Number(DEFAULT_LAT),
+      longitude: Number(DEFAULT_LNG),
 
       // facility_location is required by the backend – always include it.
       facility_location: form.facilityLocation.trim(),
