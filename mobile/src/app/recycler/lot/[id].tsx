@@ -25,6 +25,7 @@ import {
   rejectRecyclerLot,
   submitRecyclerQuote,
 } from '../../../api/client';
+import { BrandedHeader } from '../../../components/branding/BrandedHeader';
 
 import { QuoteModal } from '../../../components/QuoteModal';
 
@@ -416,43 +417,12 @@ export default function RecyclerLotDetailScreen() {
           styles.content
         }
       >
-        <LanguageSelector />
-
-        <Pressable
-          onPress={() =>
-            router.back()
-          }
-        >
-          <Text
-            style={
-              styles.back
-            }
-          >
-            ←{' '}
-            {t(
-              'common.back',
-            )}
-          </Text>
-        </Pressable>
-
-        <Text
-          style={
-            styles.eyebrow
-          }
-        >
-          {t(
-            'recyclerLot.lot',
-          )}{' '}
-          #{lot.lot_id}
-        </Text>
-
-        <Text
-          style={
-            styles.title
-          }
-        >
-          {category}
-        </Text>
+        <BrandedHeader
+          showBack
+          title={category}
+          subtitle={`${t('recyclerLot.lot')} #${lot.lot_id}`}
+          rightElement={<LanguageSelector />}
+        />
 
         <View
           style={

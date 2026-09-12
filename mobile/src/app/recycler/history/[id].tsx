@@ -11,6 +11,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 
 import { getLotsByRecycler } from '../../../api/client';
+import { BrandedHeader } from '../../../components/branding/BrandedHeader';
 import { LanguageSelector } from '../../../components/LanguageSelector';
 import { StatusBadge } from '../../../components/recycler/StatusBadge';
 import { useAuth } from '../../../services/auth';
@@ -86,29 +87,25 @@ export default function RecyclerHistoryDetailScreen() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <LanguageSelector />
-
-      <Pressable onPress={() => router.back()}>
-        <Text style={styles.back}>← {t('common.back')}</Text>
-      </Pressable>
-
-      <Text style={styles.eyebrow}>
-        {t('recyclerHistory.lot')} #{lot.lot_id}
-      </Text>
-
-      <Text style={styles.title}>{lot.category ?? 'N/A'}</Text>
-
-      <View style={styles.badge}>
-        <StatusBadge 
-          status={lot.transaction_status} 
-          label={
-            lot.transaction_status === 'matched' ? t('recyclerActivity.matched') :
-            lot.transaction_status === 'confirmed' ? t('recyclerActivity.confirmed') :
-            lot.transaction_status === 'handed_over' ? t('recyclerActivity.handedOver') :
-            undefined
-          }
-        />
-      </View>
+      <BrandedHeader
+        showBack
+        title={lot.category ?? 'N/A'}
+        subtitle={`${t('recyclerHistory.lot')} #${lot.lot_id}`}
+        rightElement={
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <LanguageSelector />
+            <StatusBadge 
+              status={lot.transaction_status} 
+              label={
+                lot.transaction_status === 'matched' ? t('recyclerActivity.matched') :
+                lot.transaction_status === 'confirmed' ? t('recyclerActivity.confirmed') :
+                lot.transaction_status === 'handed_over' ? t('recyclerActivity.handedOver') :
+                undefined
+              }
+            />
+          </View>
+        }
+      />
 
       <View style={styles.card}>
         <Detail

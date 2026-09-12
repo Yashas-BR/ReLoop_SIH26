@@ -16,6 +16,7 @@ import { getAvailableLots } from '../../api/client';
 import { useAuth } from '../../services/auth';
 import { useTranslation } from '../../../i18n/config';
 import { LanguageSelector } from '../../components/LanguageSelector';
+import { BrandedHeader } from '../../components/branding/BrandedHeader';
 import type { RecyclerIncomingLot } from '../../types/recycler-lot';
 import { IncomingLotCard } from '../../components/IncomingLotCard';
 import { 
@@ -98,15 +99,12 @@ export default function IncomingLotsScreen() {
 
   return (
     <View style={styles.screen}>
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Text style={styles.headerTitle}>{t('recyclerLot.incomingLots') || 'Incoming Lots'}</Text>
-          <LanguageSelector />
-        </View>
-        <Text style={styles.headerSubtitle}>
-          {t('recyclerLot.incomingLotsDesc') || 'Lots available for quoting'}
-        </Text>
-      </View>
+      <BrandedHeader
+        showBack
+        title={t('recyclerLot.incomingLots') || 'Incoming Lots'}
+        subtitle={t('recyclerLot.incomingLotsDesc') || 'Lots available for quoting'}
+        rightElement={<LanguageSelector />}
+      />
 
       <View style={styles.filters}>
         <TextInput
