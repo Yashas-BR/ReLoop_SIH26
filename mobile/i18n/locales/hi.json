@@ -79,7 +79,6 @@
     "phoneRequired10": "फ़ोन नंबर आवश्यक है",
     "phoneInvalid10": "वैध 10 अंकों का फ़ोन नंबर दर्ज करें",
     "signingInDots": "साइन इन हो रहा है...",
-    "signIn": "साइन इन करें",
     "phoneHintCollector": "अपने संग्रहकर्ता खाते से पंजीकृत फ़ोन नंबर दर्ज करें।",
     "noAccountQuestion": "खाता नहीं है?",
     "createAccountLink": "खाता बनाएं",
@@ -134,7 +133,8 @@
     "lotId": "लॉट आईडी",
     "signOut": "साइन आउट",
     "all": "सभी",
-    "ok": "ठीक है"
+    "ok": "ठीक है",
+    "genericError": "Something went wrong"
   },
   "status": {
     "quoted": "अनुमानित",
@@ -153,7 +153,16 @@
     "accepted": "स्वीकृत",
     "rejected": "अस्वीकृत",
     "expired": "समाप्त",
-    "cancelled": "रद्द"
+    "cancelled": "रद्द",
+    "handedOver": "सुपुर्द किया गया",
+    "renewalPending": "नवीनीकरण लंबित",
+    "expiringSoon": "जल्द समाप्त होगा",
+    "onRequest": "अनुरोध पर",
+    "available": "उपलब्ध",
+    "completed": "पूर्ण",
+    "unauthorized": "अनधिकृत",
+    "authorized": "अधिकृत",
+    "active": "सक्रिय"
   },
   "offline": {
     "offline": "ऑफलाइन",
@@ -359,7 +368,8 @@
     "errors": {
       "selectCategory": "कृपया एक सामग्री श्रेणी चुनें।",
       "validWeight": "0 से अधिक एक वैध वज़न दर्ज करें।",
-      "submitFailed": "लॉट बनाने में विफल। कृपया फिर कोशिश करें।"
+      "submitFailed": "लॉट बनाने में विफल। कृपया फिर कोशिश करें।",
+      "validLocation": "Please select a valid location"
     },
     "offlineSaved": {
       "title": "लॉट ऑफ़लाइन सहेजा गया",
@@ -884,7 +894,6 @@
   "recyclerDash": {
     "title": "रीसायक्लर डैशबोर्ड",
     "subtitle": "आपके रीसायकलिंग कार्यों का अवलोकन",
-    "newLotsTitle": "{{count}} नए लॉट उपलब्ध हैं",
     "newLotsDesc": "कलेक्टरों ने आपके द्वारा स्वीकार की जाने वाली सामग्री से मेल खाते नए लॉट पोस्ट किए हैं।",
     "viewLots": "लॉट देखें",
     "incomingLots": "आने वाले लॉट",
@@ -914,7 +923,15 @@
     "saveChanges": "बदलाव सहेजें",
     "profileUpdated": "प्रोफ़ाइल सफलतापूर्वक अपडेट हुई।",
     "profileUpdateFail": "प्रोफ़ाइल सहेजी नहीं जा सकी। कृपया फिर कोशिश करें।",
-    "profileError": "प्रोफ़ाइल लोड नहीं हो सकी।"
+    "profileError": "प्रोफ़ाइल लोड नहीं हो सकी।",
+    "newLotsTitle_zero": "0 new lots available",
+    "newLotsTitle_one": "{{count}} new lot available",
+    "newLotsTitle_other": "{{count}} new lots available",
+    "newLotsTitle": "नए लॉट उपलब्ध हैं",
+    "availableToQuote": "कोट करने के लिए उपलब्ध",
+    "newLotsAvailable": "{{count}} नए लॉट उपलब्ध",
+    "activity": "गतिविधि",
+    "profile": "प्रोफ़ाइल"
   },
   "incomingLots": {
     "title": "आने वाले लॉट्स",
@@ -1127,7 +1144,8 @@
     "handed_over": "सौंपा गया",
     "suspended": "निलंबित",
     "rejected": "अस्वीकृत",
-    "unknown": "अज्ञात"
+    "unknown": "अज्ञात",
+    "accepted": "Accepted"
   },
   "recyclerLot": {
     "lot": "लॉट",
@@ -1159,7 +1177,9 @@
     "incomingLots": "आने वाले लॉट",
     "incomingLotsDesc": "कोटेशन के लिए उपलब्ध लॉट",
     "noLots": "कोई लॉट नहीं मिला",
-    "noLotsDesc": "आपके मानदंड से मेल खाने वाले कोई लॉट नहीं हैं।"
+    "noLotsDesc": "आपके मानदंड से मेल खाने वाले कोई लॉट नहीं हैं।",
+    "availableToQuote": "Available to Quote",
+    "myRequests": "My Requests"
   },
   "recyclerActivity": {
     "title": "मेरी गतिविधि",
@@ -1172,7 +1192,9 @@
     "records": "रिकॉर्ड",
     "loadError": "रीसाइक्लर गतिविधि लोड नहीं हो सकी।",
     "empty": "कोई गतिविधि नहीं मिली",
-    "emptyDesc": "आपकी रीसाइक्लर गतिविधि यहाँ दिखाई देगी।"
+    "emptyDesc": "आपकी रीसाइक्लर गतिविधि यहाँ दिखाई देगी।",
+    "accepted": "Accepted",
+    "handoverInitiated": "Pickup started successfully"
   },
   "recyclerHistory": {
     "lot": "लॉट",
@@ -1211,5 +1233,37 @@
   },
   "brand": {
     "name": "E-Setu"
+  },
+  "collectorQr": {
+    "showQrCode": "Show QR Code",
+    "lotQrCode": "Lot QR Code",
+    "handoverQrCode": "Handover QR Code",
+    "letRecyclerScan": "Let the Recycler scan this QR code",
+    "lotId": "Lot ID",
+    "handoverReference": "Handover Reference",
+    "back": "Back",
+    "qrUnavailable": "QR unavailable",
+    "unableToGenerate": "Unable to generate QR code",
+    "pickupVerified": "Pickup Actions",
+    "enterFinalWeight": "Enter Final Weight",
+    "recordFinalWeight": "Record Final Weight",
+    "completePayment": "Record Payment",
+    "paymentCompleted": "Payment Completed",
+    "recordPayment": "भुगतान दर्ज करें",
+    "confirmPayment": "भुगतान की पुष्टि करें",
+    "title": "लॉट क्यूआर कोड",
+    "showQr": "क्यूआर दिखाएं",
+    "pickupQr": "पिकअप क्यूआर",
+    "scanInstruction": "रिसाइकलर को यह क्यूआर कोड स्कैन करने दें"
+  },
+  "payment": {
+    "pending": "भुगतान लंबित",
+    "sent": "भुगतान भेजा गया",
+    "received": "भुगतान प्राप्त",
+    "confirmed": "भुगतान की पुष्टि",
+    "paid": "भुगतान किया गया"
+  },
+  "collectorLot": {
+    "loadError": "Failed to load lot"
   }
 }

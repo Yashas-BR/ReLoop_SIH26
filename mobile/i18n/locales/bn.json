@@ -445,7 +445,6 @@
     "phoneRequired10": "ফোন নম্বর প্রয়োজন",
     "phoneInvalid10": "সঠিক ১০ সংখ্যার ফোন নম্বর লিখুন",
     "signingInDots": "সাইন ইন হচ্ছে...",
-    "signIn": "সাইন ইন করুন",
     "phoneHintCollector": "আপনার সংগ্রাহক অ্যাকাউন্টে নিবন্ধিত ফোন নম্বর লিখুন।",
     "noAccountQuestion": "অ্যাকাউন্ট নেই?",
     "createAccountLink": "অ্যাকাউন্ট তৈরি করুন",
@@ -500,7 +499,8 @@
     "lotId": "অনেক আইডি",
     "signOut": "সাইন আউট",
     "all": "সব",
-    "ok": "ঠিক আছে"
+    "ok": "ঠিক আছে",
+    "genericError": "Something went wrong"
   },
   "status": {
     "quoted": "আনুমানিক",
@@ -519,7 +519,16 @@
     "accepted": "গৃহীত",
     "rejected": "প্রত্যাখ্যাত",
     "expired": "সমাপ্ত",
-    "cancelled": "বাতিল"
+    "cancelled": "বাতিল",
+    "handedOver": "হস্তান্তর করা হয়েছে",
+    "renewalPending": "নবায়ন মুলতুবি",
+    "expiringSoon": "শীঘ্রই মেয়াদ শেষ হবে",
+    "onRequest": "অনুরোধে",
+    "available": "উপলব্ধ",
+    "completed": "সম্পন্ন",
+    "unauthorized": "অননুমোদিত",
+    "authorized": "অনুমোদিত",
+    "active": "সক্রিয়"
   },
   "offline": {
     "offline": "অফলাইন",
@@ -694,7 +703,8 @@
     "errors": {
       "selectCategory": "একটি বিষয়বস্তু বিভাগ নির্বাচন করুন.",
       "validWeight": "0-এর বেশি একটি বৈধ ওজন লিখুন।",
-      "submitFailed": "অনেক তৈরি করতে ব্যর্থ. আবার চেষ্টা করুন."
+      "submitFailed": "অনেক তৈরি করতে ব্যর্থ. আবার চেষ্টা করুন.",
+      "validLocation": "Please select a valid location"
     },
     "offlineSaved": {
       "title": "অনেক অফলাইনে সংরক্ষিত",
@@ -921,7 +931,6 @@
   "recyclerDash": {
     "title": "রিসাইক্লার ড্যাশবোর্ড",
     "subtitle": "আপনার রিসাইক্লিং কাজের ওভারভিউ",
-    "newLotsTitle": "{{count}} টি নতুন লট উপলব্ধ",
     "newLotsDesc": "সংগ্রাহকরা আপনার গ্রহণযোগ্য উপাদানের সাথে মিলে যাওয়া নতুন লট পোস্ট করেছেন।",
     "viewLots": "লট দেখুন",
     "incomingLots": "আগত লট",
@@ -951,7 +960,15 @@
     "saveChanges": "পরিবর্তন সংরক্ষণ করুন",
     "profileUpdated": "প্রোফাইল সফলভাবে আপডেট করা হয়েছে৷",
     "profileUpdateFail": "প্রোফাইল সংরক্ষণ করা যায়নি. আবার চেষ্টা করুন.",
-    "profileError": "প্রোফাইল লোড করা যায়নি."
+    "profileError": "প্রোফাইল লোড করা যায়নি.",
+    "newLotsTitle_zero": "0 new lots available",
+    "newLotsTitle_one": "{{count}} new lot available",
+    "newLotsTitle_other": "{{count}} new lots available",
+    "newLotsTitle": "নতুন লট পাওয়া যাচ্ছে",
+    "availableToQuote": "কোট করতে উপলব্ধ",
+    "newLotsAvailable": "{{count}} নতুন লট উপলব্ধ",
+    "activity": "কার্যকলাপ",
+    "profile": "প্রোফাইল"
   },
   "recyclerLotDetail": {
     "title": "অনেক বর্ণনা",
@@ -1127,7 +1144,8 @@
     "handed_over": "হস্তান্তর করা হয়েছে",
     "suspended": "স্থগিত",
     "rejected": "প্রত্যাখ্যাত",
-    "unknown": "অজানা"
+    "unknown": "অজানা",
+    "accepted": "Accepted"
   },
   "recyclerLot": {
     "lot": "লট",
@@ -1159,7 +1177,9 @@
     "incomingLots": "আগত লট",
     "incomingLotsDesc": "কোট করার জন্য উপলব্ধ লট",
     "noLots": "কোন লট পাওয়া যায়নি",
-    "noLotsDesc": "আপনার সন্ধানের সাথে মিল রয়েছে এমন কোনও লট নেই।"
+    "noLotsDesc": "আপনার সন্ধানের সাথে মিল রয়েছে এমন কোনও লট নেই।",
+    "availableToQuote": "Available to Quote",
+    "myRequests": "My Requests"
   },
   "recyclerActivity": {
     "title": "আমার কার্যক্রম",
@@ -1172,7 +1192,9 @@
     "records": "রেকর্ড",
     "loadError": "রিসাইক্লার কার্যক্রম লোড করা যায়নি।",
     "empty": "কোনো কার্যক্রম নেই",
-    "emptyDesc": "আপনার রিসাইক্লার কার্যক্রম এখানে দেখা যাবে।"
+    "emptyDesc": "আপনার রিসাইক্লার কার্যক্রম এখানে দেখা যাবে।",
+    "accepted": "Accepted",
+    "handoverInitiated": "Pickup started successfully"
   },
   "recyclerHistory": {
     "lot": "লট",
@@ -1211,5 +1233,37 @@
   },
   "brand": {
     "name": "E-Setu"
+  },
+  "collectorQr": {
+    "showQrCode": "Show QR Code",
+    "lotQrCode": "Lot QR Code",
+    "handoverQrCode": "Handover QR Code",
+    "letRecyclerScan": "Let the Recycler scan this QR code",
+    "lotId": "Lot ID",
+    "handoverReference": "Handover Reference",
+    "back": "Back",
+    "qrUnavailable": "QR unavailable",
+    "unableToGenerate": "Unable to generate QR code",
+    "pickupVerified": "Pickup Actions",
+    "enterFinalWeight": "Enter Final Weight",
+    "recordFinalWeight": "Record Final Weight",
+    "completePayment": "Record Payment",
+    "paymentCompleted": "Payment Completed",
+    "recordPayment": "পেমেন্ট রেকর্ড করুন",
+    "confirmPayment": "পেমেন্ট নিশ্চিত করুন",
+    "title": "লট QR কোড",
+    "showQr": "QR দেখান",
+    "pickupQr": "পিকআপ QR",
+    "scanInstruction": "রিসাইক্লারকে এই QR কোডটি স্ক্যান করতে দিন"
+  },
+  "payment": {
+    "pending": "পেমেন্ট মুলতুবি",
+    "sent": "পেমেন্ট পাঠানো হয়েছে",
+    "received": "পেমেন্ট প্রাপ্ত",
+    "confirmed": "পেমেন্ট নিশ্চিত",
+    "paid": "পরিশোধিত"
+  },
+  "collectorLot": {
+    "loadError": "Failed to load lot"
   }
 }

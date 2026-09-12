@@ -64,3 +64,35 @@ export function getRecyclerStatusLabel(rawStatus: string | null | undefined, t: 
   // Ultimate fallback
   return rawStatus.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
 }
+
+export type LotWithId = {
+  lot_id?: string | number | null;
+  id?: string | number | null;
+};
+
+export function getLotId(lot: LotWithId | any): string | null {
+  if (!lot) return null;
+  const value = lot.lot_id ?? lot.id;
+  if (value === null || value === undefined) return null;
+  const id = String(value).trim();
+  return id || null;
+}
+
+export function normalizeLot(raw: any): RecyclerIncomingLot {
+  if (!raw || typeof raw !== 'object') return raw;
+  return {
+    ...raw,
+    estimated_value: raw.estimated_value ?? raw.market_estimate ?? null,
+    location: raw.location ?? raw.collection_location ?? raw.operating_location ?? null,
+  };
+}
+
+export function unwrapLotArray(response: any): RecyclerIncomingLot[] {
+  let arr: any[] = [];
+  if (Array.isArray(response)) {
+    arr = response;
+  } else if (response && Array.isArray(response.data)) {
+    arr = response.data;
+  }
+  return arr.map(normalizeLot);
+}

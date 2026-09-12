@@ -79,7 +79,6 @@
     "phoneRequired10": "ಫೋನ್ ನಂಬರ್ ಅಗತ್ಯವಿದೆ",
     "phoneInvalid10": "ಮಾನ್ಯ 10 ಅಂಕಿಯ ಫೋನ್ ನಂಬರ್ ನಮೂದಿಸಿ",
     "signingInDots": "ಸೈನ್ ಇನ್ ಆಗುತ್ತಿದೆ...",
-    "signIn": "ಸೈನ್ ಇನ್ ಮಾಡಿ",
     "phoneHintCollector": "ನಿಮ್ಮ ಸಂಗ್ರಹಕಾರ ಖಾತೆಯಲ್ಲಿ ನೋಂದಾಯಿಸಿದ ಫೋನ್ ನಂಬರ್ ನಮೂದಿಸಿ.",
     "noAccountQuestion": "ಖಾತೆ ಇಲ್ಲವೇ?",
     "createAccountLink": "ಖಾತೆ ರಚಿಸಿ",
@@ -134,7 +133,8 @@
     "lotId": "ಲಾಟ್ ID",
     "signOut": "ಸೈನ್ ಔಟ್",
     "all": "ಎಲ್ಲಾ",
-    "ok": "ಸರಿ"
+    "ok": "ಸರಿ",
+    "genericError": "Something went wrong"
   },
   "status": {
     "quoted": "ಕೋಟ್ ಮಾಡಲಾಗಿದೆ",
@@ -153,7 +153,16 @@
     "accepted": "ಸ್ವೀಕರಿಸಲಾಗಿದೆ",
     "rejected": "ನಿರಾಕರಿಸಲಾಗಿದೆ",
     "expired": "ಗಡುವು ಮುಗಿದಿದೆ",
-    "cancelled": "ರದ್ದುಗೊಳಿಸಲಾಗಿದೆ"
+    "cancelled": "ರದ್ದುಗೊಳಿಸಲಾಗಿದೆ",
+    "handedOver": "ಹಸ್ತಾಂತರಿಸಲಾಗಿದೆ",
+    "renewalPending": "ನವೀಕರಣ ಬಾಕಿ",
+    "expiringSoon": "ಶೀಘ್ರದಲ್ಲಿ ಅವಧಿ ಮೀರಲಿದೆ",
+    "onRequest": "ವಿನಂತಿಯ ಮೇರೆಗೆ",
+    "available": "ಲಭ್ಯ",
+    "completed": "ಪೂರ್ಣ",
+    "unauthorized": "ಅನಧಿಕೃತ",
+    "authorized": "ಅಧಿಕೃತ",
+    "active": "ಸಕ್ರಿಯ"
   },
   "offline": {
     "offline": "ಆಫ್‌ಲೈನ್",
@@ -359,7 +368,8 @@
     "errors": {
       "selectCategory": "ದಯವಿಟ್ಟು ವಸ್ತುವಿನ ವರ್ಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ.",
       "validWeight": "0 ಕ್ಕಿಂತ ಹೆಚ್ಚಿರುವ ಮಾನ್ಯ ತೂಕವನ್ನು ನಮೂದಿಸಿ.",
-      "submitFailed": "ಲಾಟ್ ರಚಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
+      "submitFailed": "ಲಾಟ್ ರಚಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+      "validLocation": "Please select a valid location"
     },
     "offlineSaved": {
       "title": "ಲಾಟ್ ಆಫ್‌ಲೈನ್‌ನಲ್ಲಿ ಉಳಿಸಲಾಗಿದೆ",
@@ -884,7 +894,6 @@
   "recyclerDash": {
     "title": "ರಿಸೈಕ್ಲರ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್",
     "subtitle": "ನಿಮ್ಮ ಮರುಬಳಕೆ ಕಾರ್ಯಾಚರಣೆಗಳ ಅವಲೋಕನ",
-    "newLotsTitle": "{{count}} ಹೊಸ ಲಾಟ್‌ಗಳು ಲಭ್ಯವಿದೆ",
     "newLotsDesc": "ನೀವು ಸ್ವೀಕರಿಸುವ ವಸ್ತುಗಳಿಗೆ ಹೊಂದಿಕೆಯಾಗುವ ಹೊಸ ಲಾಟ್‌ಗಳನ್ನು ಕಲೆಕ್ಟರ್‌ಗಳು ಪೋಸ್ಟ್ ಮಾಡಿದ್ದಾರೆ.",
     "viewLots": "ಲಾಟ್‌ಗಳನ್ನು ವೀಕ್ಷಿಸಿ",
     "incomingLots": "ಬರುವ ಲಾಟ್‌ಗಳು",
@@ -914,7 +923,15 @@
     "saveChanges": "ಬದಲಾವಣೆಗಳನ್ನು ಉಳಿಸಿ",
     "profileUpdated": "ಪ್ರೊಫೈಲ್ ಯಶಸ್ವಿಯಾಗಿ ನವೀಕರಿಸಲಾಗಿದೆ.",
     "profileUpdateFail": "ಪ್ರೊಫೈಲ್ ಉಳಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
-    "profileError": "ಪ್ರೊಫೈಲ್ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ."
+    "profileError": "ಪ್ರೊಫೈಲ್ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+    "newLotsTitle_zero": "0 new lots available",
+    "newLotsTitle_one": "{{count}} new lot available",
+    "newLotsTitle_other": "{{count}} new lots available",
+    "newLotsTitle": "ಹೊಸ ಲಾಟ್‌ಗಳು ಲಭ್ಯವಿದೆ",
+    "availableToQuote": "ಕೋಟ್ ಮಾಡಲು ಲಭ್ಯ",
+    "newLotsAvailable": "{{count}} ಹೊಸ ಲಾಟ್‌ಗಳು ಲಭ್ಯ",
+    "activity": "ಚಟುವಟಿಕೆ",
+    "profile": "ಪ್ರೊಫೈಲ್"
   },
   "incomingLots": {
     "title": "ಬರುವ ಲಾಟ್‌ಗಳು",
@@ -1127,7 +1144,8 @@
     "handed_over": "ಹಸ್ತಾಂತರಿಸಲಾಗಿದೆ",
     "suspended": "ಅಮಾನತುಗೊಳಿಸಲಾಗಿದೆ",
     "rejected": "ತಿರಸ್ಕರಿಸಲಾಗಿದೆ",
-    "unknown": "ಅಜ್ಞಾತ"
+    "unknown": "ಅಜ್ಞಾತ",
+    "accepted": "Accepted"
   },
   "recyclerLot": {
     "lot": "ಲಾಟ್",
@@ -1159,7 +1177,9 @@
     "incomingLots": "ಬರುವ ಲಾಟ್‌ಗಳು",
     "incomingLotsDesc": "ಉಲ್ಲೇಖಕ್ಕಾಗಿ ಲಭ್ಯವಿರುವ ಲಾಟ್‌ಗಳು",
     "noLots": "ಯಾವುದೇ ಲಾಟ್‌ಗಳು ಕಂಡುಬಂದಿಲ್ಲ",
-    "noLotsDesc": "ನಿಮ್ಮ ಮಾನದಂಡಕ್ಕೆ ಹೊಂದಿಕೆಯಾಗುವ ಯಾವುದೇ ಲಾಟ್‌ಗಳಿಲ್ಲ."
+    "noLotsDesc": "ನಿಮ್ಮ ಮಾನದಂಡಕ್ಕೆ ಹೊಂದಿಕೆಯಾಗುವ ಯಾವುದೇ ಲಾಟ್‌ಗಳಿಲ್ಲ.",
+    "availableToQuote": "Available to Quote",
+    "myRequests": "My Requests"
   },
   "recyclerActivity": {
     "title": "ನನ್ನ ಚಟುವಟಿಕೆ",
@@ -1172,7 +1192,9 @@
     "records": "ದಾಖಲೆಗಳು",
     "loadError": "ರಿಸೈಕ್ಲರ್ ಚಟುವಟಿಕೆ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
     "empty": "ಯಾವುದೇ ಚಟುವಟಿಕೆ ಕಂಡುಬಂದಿಲ್ಲ",
-    "emptyDesc": "ನಿಮ್ಮ ರಿಸೈಕ್ಲರ್ ಚಟುವಟಿಕೆ ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತದೆ."
+    "emptyDesc": "ನಿಮ್ಮ ರಿಸೈಕ್ಲರ್ ಚಟುವಟಿಕೆ ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತದೆ.",
+    "accepted": "Accepted",
+    "handoverInitiated": "Pickup started successfully"
   },
   "recyclerHistory": {
     "lot": "ಲಾಟ್",
@@ -1211,5 +1233,37 @@
   },
   "brand": {
     "name": "E-Setu"
+  },
+  "collectorQr": {
+    "showQrCode": "Show QR Code",
+    "lotQrCode": "Lot QR Code",
+    "handoverQrCode": "Handover QR Code",
+    "letRecyclerScan": "Let the Recycler scan this QR code",
+    "lotId": "Lot ID",
+    "handoverReference": "Handover Reference",
+    "back": "Back",
+    "qrUnavailable": "QR unavailable",
+    "unableToGenerate": "Unable to generate QR code",
+    "pickupVerified": "Pickup Actions",
+    "enterFinalWeight": "Enter Final Weight",
+    "recordFinalWeight": "Record Final Weight",
+    "completePayment": "Record Payment",
+    "paymentCompleted": "Payment Completed",
+    "recordPayment": "ಪಾವತಿ ದಾಖಲಿಸಿ",
+    "confirmPayment": "ಪಾವತಿ ದೃಢೀಕರಿಸಿ",
+    "title": "ಲಾಟ್ ಕ್ಯೂಆರ್ ಕೋಡ್",
+    "showQr": "ಕ್ಯೂಆರ್ ತೋರಿಸಿ",
+    "pickupQr": "ಪಿಕಪ್ ಕ್ಯೂಆರ್",
+    "scanInstruction": "ರಿಸೈಕ್ಲರ್ ಈ ಕ್ಯೂಆರ್ ಕೋಡ್ ಸ್ಕ್ಯಾನ್ ಮಾಡಲಿ"
+  },
+  "payment": {
+    "pending": "ಪಾವತಿ ಬಾಕಿ",
+    "sent": "ಪಾವತಿ ಕಳುಹಿಸಲಾಗಿದೆ",
+    "received": "ಪಾವತಿ ಸ್ವೀಕರಿಸಲಾಗಿದೆ",
+    "confirmed": "ಪಾವತಿ ದೃಢೀಕರಿಸಲಾಗಿದೆ",
+    "paid": "ಪಾವತಿ ಆಗಿದೆ"
+  },
+  "collectorLot": {
+    "loadError": "Failed to load lot"
   }
 }

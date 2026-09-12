@@ -445,7 +445,6 @@
     "phoneRequired10": "ఫోన్ నంబర్ అవసరం",
     "phoneInvalid10": "చెల్లుబాటు అయ్యే 10 అంకెల ఫోన్ నంబర్ నమోదు చేయండి",
     "signingInDots": "సైన్ ఇన్ అవుతోంది...",
-    "signIn": "సైన్ ఇన్ చేయండి",
     "phoneHintCollector": "మీ సేకరించేవారి ఖాతాతో నమోదు చేసిన ఫోన్ నంబర్ నమోదు చేయండి.",
     "noAccountQuestion": "ఖాతా లేదా?",
     "createAccountLink": "ఖాతా సృష్టించండి",
@@ -500,7 +499,8 @@
     "lotId": "చాలా ID",
     "signOut": "సైన్ అవుట్",
     "all": "అన్నీ",
-    "ok": "సరే"
+    "ok": "సరే",
+    "genericError": "Something went wrong"
   },
   "status": {
     "quoted": "అంచనా వేయబడింది",
@@ -519,7 +519,16 @@
     "accepted": "అంగీకరించారు",
     "rejected": "తిరస్కరించారు",
     "expired": "పూర్తయింది",
-    "cancelled": "రద్దు చేయబడింది"
+    "cancelled": "రద్దు చేయబడింది",
+    "handedOver": "అప్పగించబడింది",
+    "renewalPending": "పునరుద్ధరణ పెండింగ్",
+    "expiringSoon": "త్వరలో గడువు ముగుస్తుంది",
+    "onRequest": "అభ్యర్థనపై",
+    "available": "అందుబాటులో",
+    "completed": "పూర్తయింది",
+    "unauthorized": "అనధికారం",
+    "authorized": "అధికారం",
+    "active": "చురుకు"
   },
   "offline": {
     "offline": "ఆఫ్‌లైన్",
@@ -694,7 +703,8 @@
     "errors": {
       "selectCategory": "దయచేసి కంటెంట్ వర్గాన్ని ఎంచుకోండి.",
       "validWeight": "0 కంటే ఎక్కువ చెల్లుబాటు అయ్యే బరువును నమోదు చేయండి.",
-      "submitFailed": "చాలా సృష్టించడం విఫలమైంది. దయచేసి మళ్లీ ప్రయత్నించండి."
+      "submitFailed": "చాలా సృష్టించడం విఫలమైంది. దయచేసి మళ్లీ ప్రయత్నించండి.",
+      "validLocation": "Please select a valid location"
     },
     "offlineSaved": {
       "title": "చాలా ఆఫ్‌లైన్‌లో సేవ్ చేయబడింది",
@@ -921,7 +931,6 @@
   "recyclerDash": {
     "title": "రీసైక్లర్ డాష్‌బోర్డ్",
     "subtitle": "మీ రీసైక్లింగ్ కార్యకలాపాల అవలోకనం",
-    "newLotsTitle": "{{count}} కొత్త లాట్‌లు అందుబాటులో ఉన్నాయి",
     "newLotsDesc": "కలెక్టర్లు మీరు అంగీకరించే మెటీరియల్‌తో సరిపోలే కొత్త లాట్‌లను పోస్ట్ చేసారు.",
     "viewLots": "లాట్‌లను చూడండి",
     "incomingLots": "వస్తున్న లాట్‌లు",
@@ -951,7 +960,15 @@
     "saveChanges": "మార్పులను సేవ్ చేయండి",
     "profileUpdated": "ప్రొఫైల్ విజయవంతంగా నవీకరించబడింది.",
     "profileUpdateFail": "ప్రొఫైల్ సేవ్ చేయబడలేదు. దయచేసి మళ్లీ ప్రయత్నించండి.",
-    "profileError": "ప్రొఫైల్ లోడ్ చేయబడలేదు."
+    "profileError": "ప్రొఫైల్ లోడ్ చేయబడలేదు.",
+    "newLotsTitle_zero": "0 new lots available",
+    "newLotsTitle_one": "{{count}} new lot available",
+    "newLotsTitle_other": "{{count}} new lots available",
+    "newLotsTitle": "కొత్త లాట్‌లు అందుబాటులో ఉన్నాయి",
+    "availableToQuote": "కోట్ చేయడానికి అందుబాటులో",
+    "newLotsAvailable": "{{count}} కొత్త లాట్‌లు అందుబాటులో",
+    "activity": "కార్యకలాపం",
+    "profile": "ప్రొఫైల్"
   },
   "recyclerLotDetail": {
     "title": "లాట్ వివరణ",
@@ -1127,7 +1144,8 @@
     "handed_over": "అప్పగించబడింది",
     "suspended": "తాత్కాలికంగా నిలిపివేయబడింది",
     "rejected": "తిరస్కరించబడింది",
-    "unknown": "తెలియనిది"
+    "unknown": "తెలియనిది",
+    "accepted": "Accepted"
   },
   "recyclerLot": {
     "lot": "లాట్",
@@ -1159,7 +1177,9 @@
     "incomingLots": "వస్తున్న లాట్‌లు",
     "incomingLotsDesc": "కోట్ చేయడానికి అందుబాటులో ఉన్న లాట్‌లు",
     "noLots": "ఏ లాట్‌లు కనుగొనబడలేదు",
-    "noLotsDesc": "మీ శోధనకు ఏ లాట్‌లు సరిపోలడం లేదు."
+    "noLotsDesc": "మీ శోధనకు ఏ లాట్‌లు సరిపోలడం లేదు.",
+    "availableToQuote": "Available to Quote",
+    "myRequests": "My Requests"
   },
   "recyclerActivity": {
     "title": "నా కార్యకలాపం",
@@ -1172,7 +1192,9 @@
     "records": "రికార్డులు",
     "loadError": "రీసైక్లర్ కార్యకలాపాన్ని లోడ్ చేయలేకపోయాము.",
     "empty": "కార్యకలాపం లేదు",
-    "emptyDesc": "మీ రీసైక్లర్ కార్యకలాపం ఇక్కడ కనిపిస్తుంది."
+    "emptyDesc": "మీ రీసైక్లర్ కార్యకలాపం ఇక్కడ కనిపిస్తుంది.",
+    "accepted": "Accepted",
+    "handoverInitiated": "Pickup started successfully"
   },
   "recyclerHistory": {
     "lot": "లాట్",
@@ -1211,5 +1233,37 @@
   },
   "brand": {
     "name": "E-Setu"
+  },
+  "collectorQr": {
+    "showQrCode": "Show QR Code",
+    "lotQrCode": "Lot QR Code",
+    "handoverQrCode": "Handover QR Code",
+    "letRecyclerScan": "Let the Recycler scan this QR code",
+    "lotId": "Lot ID",
+    "handoverReference": "Handover Reference",
+    "back": "Back",
+    "qrUnavailable": "QR unavailable",
+    "unableToGenerate": "Unable to generate QR code",
+    "pickupVerified": "Pickup Actions",
+    "enterFinalWeight": "Enter Final Weight",
+    "recordFinalWeight": "Record Final Weight",
+    "completePayment": "Record Payment",
+    "paymentCompleted": "Payment Completed",
+    "recordPayment": "చెల్లింపు నమోదు చేయండి",
+    "confirmPayment": "చెల్లింపు నిర్ధారించండి",
+    "title": "లాట్ QR కోడ్",
+    "showQr": "QR చూపించు",
+    "pickupQr": "పికప్ QR",
+    "scanInstruction": "రీసైక్లర్ ఈ QR కోడ్ స్కాన్ చేయనివ్వండి"
+  },
+  "payment": {
+    "pending": "చెల్లింపు పెండింగ్",
+    "sent": "చెల్లింపు పంపబడింది",
+    "received": "చెల్లింపు స్వీకరించబడింది",
+    "confirmed": "చెల్లింపు నిర్ధారించబడింది",
+    "paid": "చెల్లించబడింది"
+  },
+  "collectorLot": {
+    "loadError": "Failed to load lot"
   }
 }

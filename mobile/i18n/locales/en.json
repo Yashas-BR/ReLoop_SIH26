@@ -33,7 +33,7 @@
     "kabadiwala": "Kabadiwala (Collector)",
     "phoneLabel": "Mobile number",
     "phonePlaceholder": "Enter 10-digit mobile number",
-    "signIn": "Sign in",
+    "signIn": "Sign In",
     "signingIn": "Signing in…",
     "phoneHint": "Use a 10-digit Indian mobile number, e.g. 9876543210",
     "phoneRequired": "Please enter your 10-digit mobile number",
@@ -81,7 +81,6 @@
     "phoneRequired10": "Phone number is required",
     "phoneInvalid10": "Enter a valid 10-digit phone number",
     "signingInDots": "Signing in...",
-    "signIn": "Sign In",
     "phoneHintCollector": "Enter the phone number registered with your collector account.",
     "noAccountQuestion": "Don't have an account?",
     "createAccountLink": "Create Account",
@@ -139,7 +138,8 @@
     "search": "Search",
     "ok": "OK",
     "of": "of",
-    "status": "Status"
+    "status": "Status",
+    "genericError": "Something went wrong"
   },
   "status": {
     "quoted": "Quoted",
@@ -158,7 +158,16 @@
     "accepted": "Accepted",
     "rejected": "Rejected",
     "expired": "Expired",
-    "cancelled": "Cancelled"
+    "cancelled": "Cancelled",
+    "handedOver": "Handed Over",
+    "renewalPending": "Renewal Pending",
+    "expiringSoon": "Expiring Soon",
+    "onRequest": "On Request",
+    "available": "Available",
+    "completed": "Completed",
+    "unauthorized": "Unauthorized",
+    "authorized": "Authorized",
+    "active": "Active"
   },
   "offline": {
     "offline": "Offline",
@@ -364,14 +373,21 @@
     "errors": {
       "selectCategory": "Please select a material category.",
       "validWeight": "Enter a valid weight greater than 0.",
-      "submitFailed": "Failed to create lot. Please try again."
+      "submitFailed": "Failed to create lot. Please try again.",
+      "validLocation": "Please select a valid location"
     },
     "offlineSaved": {
       "title": "Lot saved offline",
       "desc": "You are offline, so this lot is saved on your device. It will sync automatically when you are back online.",
-      "queueNote": "Pending syncs appear in the status chip at the bottom of the screen.",
       "action": "Back to Dashboard"
-    }
+    },
+    "successTitle": "Lot Created",
+    "successDesc": "Your e-waste lot was created successfully.",
+    "locating": "Locating...",
+    "detectGps": "📍 Detect GPS",
+    "permissionDenied": "Location permission denied.",
+    "acquiringGps": "Acquiring precise GPS coordinates...",
+    "validLocation": "Please select a location."
   },
   "materials": {
     "CRT": "CRTs",
@@ -570,8 +586,7 @@
     "cancelledBanner": "This lot was cancelled on {{date}}. Reason: {{reason}}",
     "lotLocked": "Handover or payment in progress — lot cannot be cancelled.",
     "lotDeletedSuccess": "Draft lot was deleted successfully.",
-    "lotCancelledSuccess": "Lot cancelled successfully.",
-    "handoverStatus": "Handover Status"
+    "lotCancelledSuccess": "Lot cancelled successfully."
   },
   "traceability": {
     "title": "Traceability",
@@ -890,7 +905,6 @@
   "recyclerDash": {
     "title": "Recycler Dashboard",
     "subtitle": "Overview of your recycling operations",
-    "newLotsTitle": "{{count}} new lots available",
     "newLotsDesc": "Collectors have posted new lots matching your accepted materials.",
     "viewLots": "View Lots",
     "incomingLots": "Incoming Lots",
@@ -920,7 +934,15 @@
     "saveChanges": "Save Changes",
     "profileUpdated": "Profile updated successfully.",
     "profileUpdateFail": "Could not save profile. Please try again.",
-    "profileError": "Could not load profile."
+    "profileError": "Could not load profile.",
+    "newLotsTitle_zero": "0 new lots available",
+    "newLotsTitle_one": "{{count}} new lot available",
+    "newLotsTitle_other": "{{count}} new lots available",
+    "newLotsTitle": "New Lots Available",
+    "availableToQuote": "Available to Quote",
+    "newLotsAvailable": "{{count}} new lot(s) available",
+    "activity": "Activity",
+    "profile": "Profile"
   },
   "incomingLots": {
     "title": "Incoming Lots",
@@ -1135,7 +1157,8 @@
     "handed_over": "Handed Over",
     "suspended": "Suspended",
     "rejected": "Rejected",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "accepted": "Accepted"
   },
   "recyclerLot": {
     "incomingLots": "Incoming Lots",
@@ -1167,7 +1190,9 @@
     "notFound": "Lot not found",
     "loadError": "Failed to load lots",
     "noLots": "No Lots Found",
-    "noLotsDesc": "There are no incoming lots matching your criteria."
+    "noLotsDesc": "There are no incoming lots matching your criteria.",
+    "availableToQuote": "Available to Quote",
+    "myRequests": "My Requests"
   },
   "recyclerActivity": {
     "title": "My Activity",
@@ -1195,11 +1220,14 @@
     "search": "Search by lot, material, location or reference",
     "all": "All",
     "matched": "Matched",
+    "quoted": "Quoted",
     "confirmed": "Confirmed",
     "handedOver": "Handed Over",
     "records": "records",
     "loadError": "Unable to load Recycler activity.",
-    "empty": "No activity found"
+    "empty": "No activity found",
+    "accepted": "Accepted",
+    "handoverInitiated": "Pickup started successfully"
   },
   "recyclerHistory": {
     "lot": "Lot",
@@ -1238,5 +1266,37 @@
   },
   "brand": {
     "name": "E-Setu"
+  },
+  "collectorQr": {
+    "showQrCode": "Show QR Code",
+    "lotQrCode": "Lot QR Code",
+    "handoverQrCode": "Handover QR Code",
+    "letRecyclerScan": "Let the Recycler scan this QR code",
+    "lotId": "Lot ID",
+    "handoverReference": "Handover Reference",
+    "back": "Back",
+    "qrUnavailable": "QR unavailable",
+    "unableToGenerate": "Unable to generate QR code",
+    "pickupVerified": "Pickup Actions",
+    "enterFinalWeight": "Enter Final Weight",
+    "recordFinalWeight": "Record Final Weight",
+    "completePayment": "Record Payment",
+    "paymentCompleted": "Payment Completed",
+    "recordPayment": "Record Payment",
+    "confirmPayment": "Confirm Payment",
+    "title": "Lot QR Code",
+    "showQr": "Show QR",
+    "pickupQr": "Pickup QR",
+    "scanInstruction": "Let the Recycler scan this QR code"
+  },
+  "payment": {
+    "pending": "Payment Pending",
+    "sent": "Payment Sent",
+    "received": "Payment Received",
+    "confirmed": "Payment Confirmed",
+    "paid": "Paid"
+  },
+  "collectorLot": {
+    "loadError": "Failed to load lot"
   }
 }

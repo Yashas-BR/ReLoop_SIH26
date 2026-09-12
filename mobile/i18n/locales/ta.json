@@ -445,7 +445,6 @@
     "phoneRequired10": "தொலைபேசி எண் தேவை",
     "phoneInvalid10": "சரியான 10 இலக்க தொலைபேசி எண்ணை உள்ளிடவும்",
     "signingInDots": "உள்நுழைகிறது...",
-    "signIn": "உள்நுழைக",
     "phoneHintCollector": "உங்கள் சேகரிப்பாளர் கணக்கில் பதிவு செய்யப்பட்ட தொலைபேசி எண்ணை உள்ளிடவும்.",
     "noAccountQuestion": "கணக்கு இல்லையா?",
     "createAccountLink": "கணக்கு உருவாக்கவும்",
@@ -501,7 +500,8 @@
     "edit:": "திருத்து",
     "signOut": "வெளியேறு",
     "all": "அனைத்தும்",
-    "ok": "சரி"
+    "ok": "சரி",
+    "genericError": "Something went wrong"
   },
   "status": {
     "quoted": "மதிப்பிடப்பட்டுள்ளது",
@@ -520,7 +520,16 @@
     "accepted": "ஏற்றுக்கொள்ளப்பட்டது",
     "rejected": "நிராகரிக்கப்பட்டது",
     "expired": "முடிந்தது",
-    "cancelled": "ரத்து செய்யப்பட்டது"
+    "cancelled": "ரத்து செய்யப்பட்டது",
+    "handedOver": "ஒப்படைக்கப்பட்டது",
+    "renewalPending": "புதுப்பிப்பு நிலுவையில்",
+    "expiringSoon": "விரைவில் காலாவதியாகும்",
+    "onRequest": "கோரிக்கையில்",
+    "available": "கிடைக்கிறது",
+    "completed": "முடிந்தது",
+    "unauthorized": "அங்கீகரிக்கப்படவில்லை",
+    "authorized": "அங்கீகரிக்கப்பட்டது",
+    "active": "செயலில்"
   },
   "offline": {
     "offline": "ஆஃப்லைனில்",
@@ -695,7 +704,8 @@
     "errors": {
       "selectCategory": "உள்ளடக்க வகையைத் தேர்ந்தெடுக்கவும்.",
       "validWeight": "0 க்கும் அதிகமான சரியான எடையை உள்ளிடவும்.",
-      "submitFailed": "லாட் உருவாக்கவும் முடியவில்லை. மீண்டும் முயற்சிக்கவும்."
+      "submitFailed": "லாட் உருவாக்கவும் முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
+      "validLocation": "Please select a valid location"
     },
     "offlineSaved": {
       "title": "நிறைய ஆஃப்லைனில் சேமிக்கப்பட்டது",
@@ -922,7 +932,6 @@
   "recyclerDash": {
     "title": "மறுசுழற்சி டாஷ்போர்டு",
     "subtitle": "உங்கள் மறுசுழற்சி செயல்பாடுகளின் கண்ணோட்டம்",
-    "newLotsTitle": "{{count}} புதிய லாட்கள் உள்ளன",
     "newLotsDesc": "நீங்கள் ஏற்கும் பொருட்களுடன் பொருந்தும் புதிய லாட்களை சேகரிப்பாளர்கள் பதிவிட்டுள்ளனர்.",
     "viewLots": "லாட்களைப் பார்",
     "incomingLots": "வரும் லாட்கள்",
@@ -952,7 +961,15 @@
     "saveChanges": "மாற்றங்களை சேமிக்க",
     "profileUpdated": "சுயவிவரம் வெற்றிகரமாக புதுப்பிக்கப்பட்டது.",
     "profileUpdateFail": "சுயவிவரத்தை சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
-    "profileError": "சுயவிவரத்தை ஏற்ற முடியவில்லை."
+    "profileError": "சுயவிவரத்தை ஏற்ற முடியவில்லை.",
+    "newLotsTitle_zero": "0 new lots available",
+    "newLotsTitle_one": "{{count}} new lot available",
+    "newLotsTitle_other": "{{count}} new lots available",
+    "newLotsTitle": "புதிய லாட்கள் உள்ளன",
+    "availableToQuote": "மேற்கோள் காட்ட கிடைக்கிறது",
+    "newLotsAvailable": "{{count}} புதிய லாட்கள் உள்ளன",
+    "activity": "செயல்பாடு",
+    "profile": "சுயவிவரம்"
   },
   "recyclerLotDetail": {
     "title": "நிறைய விளக்கம்",
@@ -1128,7 +1145,8 @@
     "handed_over": "ஒப்படைக்கப்பட்டது",
     "suspended": "இடைநீக்கம்",
     "rejected": "நிராகரிக்கப்பட்டது",
-    "unknown": "தெரியாத"
+    "unknown": "தெரியாத",
+    "accepted": "Accepted"
   },
   "recyclerLot": {
     "lot": "லாட்",
@@ -1160,7 +1178,9 @@
     "incomingLots": "வரும் லாட்கள்",
     "incomingLotsDesc": "மேற்கோளுக்கு கிடைக்கும் லாட்கள்",
     "noLots": "எந்த லாட்களும் கிடைக்கவில்லை",
-    "noLotsDesc": "உங்கள் தேடலுக்கு எந்த லாட்களும் பொருந்தவில்லை."
+    "noLotsDesc": "உங்கள் தேடலுக்கு எந்த லாட்களும் பொருந்தவில்லை.",
+    "availableToQuote": "Available to Quote",
+    "myRequests": "My Requests"
   },
   "recyclerActivity": {
     "title": "எனது செயல்பாடு",
@@ -1173,7 +1193,9 @@
     "records": "பதிவுகள்",
     "loadError": "மறுசுழற்சி செயல்பாட்டை ஏற்ற முடியவில்லை.",
     "empty": "செயல்பாடு இல்லை",
-    "emptyDesc": "உங்கள் மறுசுழற்சி செயல்பாடு இங்கே தோன்றும்."
+    "emptyDesc": "உங்கள் மறுசுழற்சி செயல்பாடு இங்கே தோன்றும்.",
+    "accepted": "Accepted",
+    "handoverInitiated": "Pickup started successfully"
   },
   "recyclerHistory": {
     "lot": "லாட்",
@@ -1212,5 +1234,37 @@
   },
   "brand": {
     "name": "E-Setu"
+  },
+  "collectorQr": {
+    "showQrCode": "Show QR Code",
+    "lotQrCode": "Lot QR Code",
+    "handoverQrCode": "Handover QR Code",
+    "letRecyclerScan": "Let the Recycler scan this QR code",
+    "lotId": "Lot ID",
+    "handoverReference": "Handover Reference",
+    "back": "Back",
+    "qrUnavailable": "QR unavailable",
+    "unableToGenerate": "Unable to generate QR code",
+    "pickupVerified": "Pickup Actions",
+    "enterFinalWeight": "Enter Final Weight",
+    "recordFinalWeight": "Record Final Weight",
+    "completePayment": "Record Payment",
+    "paymentCompleted": "Payment Completed",
+    "recordPayment": "கட்டணம் பதிவு செய்யுங்கள்",
+    "confirmPayment": "கட்டணம் உறுதிப்படுத்தவும்",
+    "title": "லாட் QR குறியீடு",
+    "showQr": "QR காட்டு",
+    "pickupQr": "பிக்கப் QR",
+    "scanInstruction": "மறுசுழற்சியாளர் இந்த QR குறியீட்டை ஸ்கேன் செய்யட்டும்"
+  },
+  "payment": {
+    "pending": "கட்டணம் நிலுவையில்",
+    "sent": "கட்டணம் அனுப்பப்பட்டது",
+    "received": "கட்டணம் பெறப்பட்டது",
+    "confirmed": "கட்டணம் உறுதிப்படுத்தப்பட்டது",
+    "paid": "கட்டணம் செலுத்தப்பட்டது"
+  },
+  "collectorLot": {
+    "loadError": "Failed to load lot"
   }
 }

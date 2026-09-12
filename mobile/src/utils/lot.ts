@@ -1,7 +1,12 @@
-import type { RecyclerIncomingLot } from '../types/recycler-lot';
+type LotWithId = {
+  lot_id?: string | number | null;
+  id?: string | number | null;
+};
 
-export function getLotId(lot: RecyclerIncomingLot | any): string | null {
-  const value = lot.lot_id ?? lot.id ?? null;
+export function getLotId(
+  lot: LotWithId,
+): string | null {
+  const value = lot.lot_id ?? lot.id;
 
   if (value === null || value === undefined) {
     return null;

@@ -445,7 +445,6 @@
     "phoneRequired10": "ഫോൺ നമ്പർ ആവശ്യമാണ്",
     "phoneInvalid10": "സാധുവായ 10 അക്ക ഫോൺ നമ്പർ നൽകുക",
     "signingInDots": "സൈൻ ഇൻ ആകുന്നു...",
-    "signIn": "സൈൻ ഇൻ ചെയ്യുക",
     "phoneHintCollector": "നിങ്ങളുടെ ശേഖരണ അക്കൗണ്ടിൽ രജിസ്റ്റർ ചെയ്ത ഫോൺ നമ്പർ നൽകുക.",
     "noAccountQuestion": "അക്കൗണ്ട് ഇല്ലേ?",
     "createAccountLink": "അക്കൗണ്ട് സൃഷ്ടിക്കുക",
@@ -500,7 +499,8 @@
     "lotId": "ലോട്ട് ഐഡി",
     "signOut": "സൈൻ ഔട്ട് ചെയ്യുക",
     "all": "എല്ലാം",
-    "ok": "ശരി"
+    "ok": "ശരി",
+    "genericError": "Something went wrong"
   },
   "status": {
     "quoted": "കണക്കാക്കിയത്",
@@ -519,7 +519,16 @@
     "accepted": "സ്വീകരിച്ചു",
     "rejected": "നിരസിച്ചു",
     "expired": "തീർന്നു",
-    "cancelled": "റദ്ദാക്കി"
+    "cancelled": "റദ്ദാക്കി",
+    "handedOver": "കൈമാറി",
+    "renewalPending": "പുതുക്കൽ തീർച്ചയില്ല",
+    "expiringSoon": "ഉടൻ കാലഹരണപ്പെടും",
+    "onRequest": "അഭ്യർഥനയിൽ",
+    "available": "ലഭ്യം",
+    "completed": "പൂർത്തിയായി",
+    "unauthorized": "അനധികൃതം",
+    "authorized": "അധികൃതം",
+    "active": "സജീവം"
   },
   "offline": {
     "offline": "ഓഫ്‌ലൈൻ",
@@ -694,7 +703,8 @@
     "errors": {
       "selectCategory": "ദയവായി ഒരു ഉള്ളടക്ക വിഭാഗം തിരഞ്ഞെടുക്കുക.",
       "validWeight": "0-ൽ കൂടുതലുള്ള സാധുവായ ഭാരം നൽകുക.",
-      "submitFailed": "ഒരുപാട് സൃഷ്ടിക്കുന്നതിൽ പരാജയപ്പെട്ടു. ദയവായി വീണ്ടും ശ്രമിക്കുക."
+      "submitFailed": "ഒരുപാട് സൃഷ്ടിക്കുന്നതിൽ പരാജയപ്പെട്ടു. ദയവായി വീണ്ടും ശ്രമിക്കുക.",
+      "validLocation": "Please select a valid location"
     },
     "offlineSaved": {
       "title": "ധാരാളം ഓഫ്‌ലൈനിൽ സംരക്ഷിച്ചു",
@@ -921,7 +931,6 @@
   "recyclerDash": {
     "title": "റീസൈക്ലർ ഡാഷ്ബോർഡ്",
     "subtitle": "നിങ്ങളുടെ റീസൈക്ലിംഗ് പ്രവർത്തനങ്ങളുടെ അവലോകനം",
-    "newLotsTitle": "{{count}} പുതിയ ലോട്ടുകൾ ലഭ്യമാണ്",
     "newLotsDesc": "നിങ്ങൾ സ്വീകരിക്കുന്ന മെറ്റീരിയലുകളുമായി പൊരുത്തപ്പെടുന്ന പുതിയ ലോട്ടുകൾ കളക്ടർമാർ പോസ്റ്റ് ചെയ്തിട്ടുണ്ട്.",
     "viewLots": "ലോട്ടുകൾ കാണുക",
     "incomingLots": "വരുന്ന ലോട്ടുകൾ",
@@ -951,7 +960,15 @@
     "saveChanges": "മാറ്റങ്ങൾ സംരക്ഷിക്കുക",
     "profileUpdated": "പ്രൊഫൈൽ വിജയകരമായി അപ്ഡേറ്റ് ചെയ്തു.",
     "profileUpdateFail": "പ്രൊഫൈൽ സംരക്ഷിക്കാനായില്ല. ദയവായി വീണ്ടും ശ്രമിക്കുക.",
-    "profileError": "പ്രൊഫൈൽ ലോഡ് ചെയ്യാൻ കഴിഞ്ഞില്ല."
+    "profileError": "പ്രൊഫൈൽ ലോഡ് ചെയ്യാൻ കഴിഞ്ഞില്ല.",
+    "newLotsTitle_zero": "0 new lots available",
+    "newLotsTitle_one": "{{count}} new lot available",
+    "newLotsTitle_other": "{{count}} new lots available",
+    "newLotsTitle": "പുതിയ ലോട്ടുകൾ ലഭ്യം",
+    "availableToQuote": "ക്വോട്ടിന് ലഭ്യം",
+    "newLotsAvailable": "{{count}} പുതിയ ലോട്ടുകൾ ലഭ്യം",
+    "activity": "പ്രവർത്തനം",
+    "profile": "പ്രൊഫൈൽ"
   },
   "recyclerLotDetail": {
     "title": "ലോട്ട് വിവരണം",
@@ -1127,7 +1144,8 @@
     "handed_over": "കൈമാറി",
     "suspended": "സസ്പെൻഡ് ചെയ്തു",
     "rejected": "നിരസിച്ചു",
-    "unknown": "അറിയപ്പെടാത്ത"
+    "unknown": "അറിയപ്പെടാത്ത",
+    "accepted": "Accepted"
   },
   "recyclerLot": {
     "lot": "ലോട്ട്",
@@ -1159,7 +1177,9 @@
     "incomingLots": "വരുന്ന ലോട്ടുകൾ",
     "incomingLotsDesc": "ക്വോട്ട് ചെയ്യുന്നതിനായി ലഭ്യമായ ലോട്ടുകൾ",
     "noLots": "ലോട്ടുകളൊന്നും കണ്ടെത്തിയില്ല",
-    "noLotsDesc": "നിങ്ങളുടെ തിരയലിന് അനുയോജ്യമായ ലോട്ടുകളില്ല."
+    "noLotsDesc": "നിങ്ങളുടെ തിരയലിന് അനുയോജ്യമായ ലോട്ടുകളില്ല.",
+    "availableToQuote": "Available to Quote",
+    "myRequests": "My Requests"
   },
   "recyclerActivity": {
     "title": "എന്റെ പ്രവർത്തനം",
@@ -1172,7 +1192,9 @@
     "records": "രേഖകൾ",
     "loadError": "റീസൈക്ലർ പ്രവർത്തനം ലോഡ് ചെയ്യാൻ കഴിഞ്ഞില്ല.",
     "empty": "പ്രവർത്തനം കണ്ടെത്തിയില്ല",
-    "emptyDesc": "നിങ്ങളുടെ റീസൈക്ലർ പ്രവർത്തനം ഇവിടെ കാണിക്കും."
+    "emptyDesc": "നിങ്ങളുടെ റീസൈക്ലർ പ്രവർത്തനം ഇവിടെ കാണിക്കും.",
+    "accepted": "Accepted",
+    "handoverInitiated": "Pickup started successfully"
   },
   "recyclerHistory": {
     "lot": "ലോട്ട്",
@@ -1211,5 +1233,37 @@
   },
   "brand": {
     "name": "E-Setu"
+  },
+  "collectorQr": {
+    "showQrCode": "Show QR Code",
+    "lotQrCode": "Lot QR Code",
+    "handoverQrCode": "Handover QR Code",
+    "letRecyclerScan": "Let the Recycler scan this QR code",
+    "lotId": "Lot ID",
+    "handoverReference": "Handover Reference",
+    "back": "Back",
+    "qrUnavailable": "QR unavailable",
+    "unableToGenerate": "Unable to generate QR code",
+    "pickupVerified": "Pickup Actions",
+    "enterFinalWeight": "Enter Final Weight",
+    "recordFinalWeight": "Record Final Weight",
+    "completePayment": "Record Payment",
+    "paymentCompleted": "Payment Completed",
+    "recordPayment": "പേമന്റ് രേഖപ്പെടുത്തുക",
+    "confirmPayment": "പേമന്റ് സ്ഥിരീകരിക്കുക",
+    "title": "ലോട്ട് QR കോഡ്",
+    "showQr": "QR കാണിക്കുക",
+    "pickupQr": "പിക്കപ്പ് QR",
+    "scanInstruction": "റീസൈക്ലർ ഈ QR കോഡ് സ്കാൻ ചെയ്യട്ടെ"
+  },
+  "payment": {
+    "pending": "പേമന്റ് കാത്തിരിക്കുന്നു",
+    "sent": "പേമന്റ് അയച്ചു",
+    "received": "പേമന്റ് ലഭിച്ചു",
+    "confirmed": "പേമന്റ് സ്ഥിരീകരിച്ചു",
+    "paid": "അടച്ചു"
+  },
+  "collectorLot": {
+    "loadError": "Failed to load lot"
   }
 }

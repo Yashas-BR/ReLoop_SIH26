@@ -56,11 +56,60 @@ const STATUS_KEYS: Record<string, string> = {
   unauthorized: 'unauthorized',
   expired: 'expired',
   renewal_pending: 'renewalPending',
+  expiring_soon: 'expiringSoon',
   active: 'active',
   paid: 'paid',
   unpaid: 'unpaid',
+  payment_pending: 'pending',
+  payment_sent: 'sent',
+  payment_received: 'received',
+  payment_confirmed: 'confirmed',
   unknown: 'unknown',
 };
+
+/**
+ * Fallback humanizer for unknown raw status values.
+ */
+export function humanizeFallback(value?: string | null): string {
+  if (!value) {
+    return '—';
+  }
+
+  return value
+    .replaceAll('_', ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, char => char.toUpperCase());
+}
+
+/**
+ * Gets the translated label for a given raw status.
+ * If the status is a payment status, it tries the 'payment.' namespace first.
+ */
+export function getStatusLabel(rawStatus: string | null | undefined, t: any): string {
+  if (!rawStatus) return '—';
+  
+  const normalized = normalizeStatus(rawStatus);
+  
+  if (normalized.startsWith('payment_')) {
+    const key = STATUS_KEYS[normalized];
+    if (key) {
+      const translated = t(`payment.${key}`);
+      if (translated && !translated.includes('payment.')) {
+        return translated;
+      }
+    }
+  }
+
+  const statusKey = STATUS_KEYS[normalized];
+  if (statusKey) {
+    const translated = t(`status.${statusKey}`);
+    if (translated && !translated.includes('status.')) {
+      return translated;
+    }
+  }
+
+  return humanizeFallback(rawStatus);
+}
 
 /**
  * Get the i18n key suffix for a given raw status.
