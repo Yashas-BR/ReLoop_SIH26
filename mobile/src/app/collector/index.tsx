@@ -17,6 +17,7 @@ import {
   getLotsByCollector,
 } from '../../../api/client';
 
+import { useTranslation } from '../../../i18n/config';
 import { currentCollectorId } from '../../../services/auth';
 import { BrandedHeader } from '../../components/branding/BrandedHeader';
 
@@ -38,6 +39,10 @@ type Lot = {
   payment_status?: string;
 };
 
+/* --------------------------------
+   CURRENCY
+-------------------------------- */
+
 function fmt(value: number | null | undefined) {
   if (value == null) return '—';
 
@@ -46,15 +51,37 @@ function fmt(value: number | null | undefined) {
   })}`;
 }
 
-function fmtDate(date?: string) {
+/* --------------------------------
+   DATE
+-------------------------------- */
+
+function fmtDate(date?: string, lang = 'en') {
   if (!date) return '';
 
-  return new Date(date).toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+  const localeMap: Record<string, string> = {
+    en: 'en-IN',
+    hi: 'hi-IN',
+    mr: 'mr-IN',
+    kn: 'kn-IN',
+    ta: 'ta-IN',
+    te: 'te-IN',
+    ml: 'ml-IN',
+    bn: 'bn-IN',
+  };
+
+  return new Date(date).toLocaleDateString(
+    localeMap[lang] || 'en-IN',
+    {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    }
+  );
 }
+
+/* --------------------------------
+   STATUS STYLE
+-------------------------------- */
 
 function getStatusStyle(status?: string) {
   const value = (status || '').toLowerCase();
@@ -97,15 +124,30 @@ function getStatusStyle(status?: string) {
   };
 }
 
+/* --------------------------------
+   DASHBOARD
+-------------------------------- */
+
 export default function CollectorDashboard() {
-  const [earnings, setEarnings] = useState<Earnings | null>(null);
-  const [lots, setLots] = useState<Lot[]>([]);
+  const { t, lang } = useTranslation();
 
-  const [loadingEarnings, setLoadingEarnings] = useState(true);
-  const [loadingLots, setLoadingLots] = useState(true);
+  const [earnings, setEarnings] =
+    useState<Earnings | null>(null);
 
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState('');
+  const [lots, setLots] =
+    useState<Lot[]>([]);
+
+  const [loadingEarnings, setLoadingEarnings] =
+    useState(true);
+
+  const [loadingLots, setLoadingLots] =
+    useState(true);
+
+  const [refreshing, setRefreshing] =
+    useState(false);
+
+  const [error, setError] =
+    useState(false);
 
   async function loadDashboard(showRefresh = false) {
     if (showRefresh) {
@@ -113,27 +155,29 @@ export default function CollectorDashboard() {
     }
 
     try {
-      setError('');
+      setError(false);
 
-      const storedCollectorId = await currentCollectorId();
+      const storedCollectorId =
+        await currentCollectorId();
 
       const collectorId =
         storedCollectorId ?? DEMO_COLLECTOR_ID;
 
-      const results = await Promise.allSettled([
-        getEarningsSummary(collectorId),
-        getLotsByCollector(collectorId),
-      ]);
+      const results =
+        await Promise.allSettled([
+          getEarningsSummary(collectorId),
+          getLotsByCollector(collectorId),
+        ]);
 
       const earningsResult = results[0];
       const lotsResult = results[1];
 
       if (earningsResult.status === 'fulfilled') {
-        setEarnings(earningsResult.value?.data ?? null);
-      } else {
-        setError(
-          'Could not load all dashboard information. Please check your connection.'
+        setEarnings(
+          earningsResult.value?.data ?? null
         );
+      } else {
+        setError(true);
       }
 
       if (lotsResult.status === 'fulfilled') {
@@ -144,13 +188,16 @@ export default function CollectorDashboard() {
             ? data.slice(0, 6)
             : []
         );
+      } else {
+        setError(true);
       }
     } catch (err) {
-      console.error('Dashboard load error:', err);
-
-      setError(
-        'Unable to connect to the backend. Please try again.'
+      console.error(
+        'Dashboard load error:',
+        err
       );
+
+      setError(true);
     } finally {
       setLoadingEarnings(false);
       setLoadingLots(false);
@@ -161,6 +208,7 @@ export default function CollectorDashboard() {
   useEffect(() => {
     loadDashboard();
   }, []);
+
   return (
     <ScrollView
       style={styles.screen}
@@ -169,30 +217,36 @@ export default function CollectorDashboard() {
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
-          onRefresh={() => loadDashboard(true)}
+          onRefresh={() =>
+            loadDashboard(true)
+          }
         />
       }
     >
-      {/* Header */}
+      {/* HEADER */}
 
       <BrandedHeader
-        title="Collector Dashboard"
-        subtitle="Manage your e-waste lots and earnings"
+        title={t('dashboard.title')}
+        subtitle={t('dashboard.subtitle')}
         rightElement={
           <Pressable
             style={styles.createButton}
             onPress={() =>
-              router.push('/collector/create-lot')
+              router.push(
+                '/collector/create-lot'
+              )
             }
           >
-            <Text style={styles.createButtonText}>
-              + Create New Lot
+            <Text
+              style={styles.createButtonText}
+            >
+              + {t('dashboard.createNewLot')}
             </Text>
           </Pressable>
         }
       />
 
-      {/* Error */}
+      {/* ERROR */}
 
       {error ? (
         <View style={styles.warningBanner}>
@@ -201,15 +255,15 @@ export default function CollectorDashboard() {
           </Text>
 
           <Text style={styles.warningText}>
-            {error}
+            {t('dashboard.backendError')}
           </Text>
         </View>
       ) : null}
 
-      {/* Earnings */}
+      {/* EARNINGS */}
 
       <Text style={styles.sectionTitle}>
-        Earnings
+        {t('dashboard.earnings')}
       </Text>
 
       {loadingEarnings ? (
@@ -220,104 +274,152 @@ export default function CollectorDashboard() {
           />
 
           <Text style={styles.loadingText}>
-            Loading earnings...
+            {t('common.loading')}
           </Text>
         </View>
       ) : (
         <View style={styles.statsGrid}>
           <StatCard
             icon="₹"
-            label="Total Earned"
-            value={fmt(earnings?.total_earned)}
-            sub="All time"
+            label={t(
+              'dashboard.totalEarned'
+            )}
+            value={fmt(
+              earnings?.total_earned
+            )}
+            sub={t('common.allTime')}
           />
 
           <StatCard
             icon="✓"
-            label="Paid Out"
-            value={fmt(earnings?.total_paid)}
-            sub="Completed"
+            label={t(
+              'dashboard.paidOut'
+            )}
+            value={fmt(
+              earnings?.total_paid
+            )}
+            sub={t('common.completed')}
           />
 
           <StatCard
             icon="⏳"
-            label="Pending"
-            value={fmt(earnings?.total_pending)}
-            sub="Pending payment"
+            label={t(
+              'dashboard.pending'
+            )}
+            value={fmt(
+              earnings?.total_pending
+            )}
+            sub={t(
+              'common.pendingPayment'
+            )}
           />
 
           <StatCard
             icon="📦"
-            label="Total Lots"
+            label={t(
+              'dashboard.totalLots'
+            )}
             value={
               earnings?.total_transactions?.toString() ??
               '—'
             }
-            sub="Created so far"
+            sub={t(
+              'common.createdSoFar'
+            )}
           />
         </View>
       )}
 
-      {/* Quick Actions */}
+      {/* QUICK ACTIONS */}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>
-          Quick Actions
+          {t('dashboard.quickActions')}
         </Text>
 
         <View style={styles.actionsGrid}>
           <QuickAction
             icon="➕"
-            label="Create Lot"
-            description="Add new e-waste"
+            label={t(
+              'dashboard.createLot'
+            )}
+            description={t(
+              'dashboard.createLotDesc'
+            )}
             onPress={() =>
-              router.push('/collector/create-lot')
+              router.push(
+                '/collector/create-lot'
+              )
             }
           />
 
           <QuickAction
             icon="₹"
-            label="Price Board"
-            description="Check market prices"
+            label={t(
+              'dashboard.priceBoard'
+            )}
+            description={t(
+              'dashboard.priceBoardDesc'
+            )}
             onPress={() =>
-              router.push('/collector/price-discovery')
+              router.push(
+                '/collector/price-discovery'
+              )
             }
           />
 
           <QuickAction
             icon="♻️"
-            label="Find Recyclers"
-            description="View matched recyclers"
+            label={t(
+              'dashboard.findRecyclers'
+            )}
+            description={t(
+              'dashboard.findRecyclersDesc'
+            )}
             onPress={() =>
-              router.push('/collector/find-recyclers')
+              router.push(
+                '/collector/find-recyclers'
+              )
             }
           />
 
           <QuickAction
             icon="💰"
-            label="Earnings Ledger"
-            description="View payment history"
+            label={t(
+              'dashboard.earningsLedger'
+            )}
+            description={t(
+              'dashboard.earningsLedgerDesc'
+            )}
             onPress={() =>
-              router.push('/collector/earnings')
+              router.push(
+                '/collector/earnings'
+              )
             }
           />
 
           <QuickAction
             icon="🛡️"
-            label="Safety Guidance"
-            description="Safe e-waste handling"
+            label={t(
+              'dashboard.safetyGuidance'
+            )}
+            description={t(
+              'dashboard.safetyGuidanceDesc'
+            )}
             onPress={() =>
-              router.push('/collector/safety')
+              router.push(
+                '/collector/safety'
+              )
             }
           />
         </View>
       </View>
 
-      {/* Recent Lots */}
+      {/* RECENT LOTS */}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>
-          Recent Lots
+          {t('dashboard.recentLots')}
         </Text>
 
         {loadingLots ? (
@@ -328,7 +430,7 @@ export default function CollectorDashboard() {
             />
 
             <Text style={styles.loadingText}>
-              Loading lots...
+              {t('common.loading')}
             </Text>
           </View>
         ) : lots.length === 0 ? (
@@ -338,22 +440,33 @@ export default function CollectorDashboard() {
             </Text>
 
             <Text style={styles.emptyTitle}>
-              No lots yet
+              {t('dashboard.noLots')}
             </Text>
 
-            <Text style={styles.emptyDescription}>
-              Create your first e-waste lot to get
-              started.
+            <Text
+              style={
+                styles.emptyDescription
+              }
+            >
+              {t('dashboard.noLotsDesc')}
             </Text>
 
             <Pressable
               style={styles.emptyButton}
               onPress={() =>
-                router.push('/collector/create-lot')
+                router.push(
+                  '/collector/create-lot'
+                )
               }
             >
-              <Text style={styles.emptyButtonText}>
-                Create First Lot
+              <Text
+                style={
+                  styles.emptyButtonText
+                }
+              >
+                {t(
+                  'dashboard.createFirstLot'
+                )}
               </Text>
             </Pressable>
           </View>
@@ -361,13 +474,20 @@ export default function CollectorDashboard() {
           <View style={styles.lotsList}>
             {lots.map((lot) => (
               <LotRow
-                key={String(lot.lot_id)}
+                key={String(
+                  lot.lot_id
+                )}
                 lot={lot}
+                lang={lang}
+                t={t}
                 onPress={() =>
                   router.push({
-                    pathname: '/collector/lots/[lotId]',
+                    pathname:
+                      '/collector/lots/[lotId]',
                     params: {
-                      lotId: String(lot.lot_id),
+                      lotId: String(
+                        lot.lot_id
+                      ),
                     },
                   })
                 }
@@ -382,9 +502,9 @@ export default function CollectorDashboard() {
   );
 }
 
-/* -------------------------
+/* --------------------------------
    STAT CARD
--------------------------- */
+-------------------------------- */
 
 function StatCard({
   icon,
@@ -401,7 +521,9 @@ function StatCard({
     <View style={styles.statCard}>
       <View style={styles.statTopRow}>
         <View style={styles.statIcon}>
-          <Text style={styles.statIconText}>
+          <Text
+            style={styles.statIconText}
+          >
             {icon}
           </Text>
         </View>
@@ -422,9 +544,9 @@ function StatCard({
   );
 }
 
-/* -------------------------
+/* --------------------------------
    QUICK ACTION
--------------------------- */
+-------------------------------- */
 
 function QuickAction({
   icon,
@@ -441,20 +563,27 @@ function QuickAction({
     <Pressable
       style={({ pressed }) => [
         styles.quickAction,
-        pressed && styles.quickActionPressed,
+        pressed &&
+        styles.quickActionPressed,
       ]}
       onPress={onPress}
     >
-      <Text style={styles.quickActionIcon}>
+      <Text
+        style={styles.quickActionIcon}
+      >
         {icon}
       </Text>
 
-      <Text style={styles.quickActionLabel}>
+      <Text
+        style={styles.quickActionLabel}
+      >
         {label}
       </Text>
 
       <Text
-        style={styles.quickActionDescription}
+        style={
+          styles.quickActionDescription
+        }
         numberOfLines={2}
       >
         {description}
@@ -463,41 +592,73 @@ function QuickAction({
   );
 }
 
-/* -------------------------
+/* --------------------------------
    LOT ROW
--------------------------- */
+-------------------------------- */
 
 function LotRow({
   lot,
   onPress,
+  t,
+  lang,
 }: {
   lot: Lot;
   onPress: () => void;
+  t: (key: string) => string;
+  lang: string;
 }) {
   const status =
     lot.transaction_status ||
     lot.payment_status ||
     'quoted';
 
+  const normalizedStatus =
+    status.toLowerCase();
+
   const statusStyle =
     getStatusStyle(status);
+
+  function translatedStatus() {
+    /*
+      "completed" does not exist inside
+      status.* in the provided JSON.
+    */
+
+    if (
+      normalizedStatus === 'completed'
+    ) {
+      return t('common.completed');
+    }
+
+    return t(
+      `status.${normalizedStatus}`
+    );
+  }
 
   return (
     <Pressable
       style={({ pressed }) => [
         styles.lotRow,
-        pressed && styles.lotRowPressed,
+        pressed &&
+        styles.lotRowPressed,
       ]}
       onPress={onPress}
     >
-      <View style={styles.categoryBadge}>
-        <Text style={styles.categoryBadgeText}>
+      <View
+        style={styles.categoryBadge}
+      >
+        <Text
+          style={
+            styles.categoryBadgeText
+          }
+        >
           ♻️
         </Text>
       </View>
 
       <View style={styles.lotInfo}>
         <Text style={styles.lotId}>
+          {t('dashboard.lotId')}:{' '}
           {lot.lot_id}
         </Text>
 
@@ -505,23 +666,29 @@ function LotRow({
           style={styles.lotCategory}
           numberOfLines={1}
         >
-          {lot.category || 'E-Waste'}
+          {lot.category || '—'}
         </Text>
 
         <Text style={styles.lotMeta}>
           {lot.approx_weight_kg ??
             lot.weight_kg ??
             '?'}{' '}
-          kg
+          {t('common.kg')}
+
           {lot.created_at
-            ? ` • ${fmtDate(lot.created_at)}`
+            ? ` • ${fmtDate(
+              lot.created_at,
+              lang
+            )}`
             : ''}
         </Text>
       </View>
 
       <View style={styles.lotRight}>
         <Text style={styles.lotValue}>
-          {fmt(lot.estimated_value)}
+          {fmt(
+            lot.estimated_value
+          )}
         </Text>
 
         <View
@@ -537,11 +704,12 @@ function LotRow({
             style={[
               styles.statusText,
               {
-                color: statusStyle.color,
+                color:
+                  statusStyle.color,
               },
             ]}
           >
-            {status}
+            {translatedStatus()}
           </Text>
         </View>
       </View>
@@ -553,9 +721,9 @@ function LotRow({
   );
 }
 
-/* -------------------------
+/* --------------------------------
    STYLES
--------------------------- */
+-------------------------------- */
 
 const styles = StyleSheet.create({
   screen: {
@@ -648,8 +816,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 
-  /* Stats */
-
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -715,8 +881,6 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
   },
 
-  /* Quick actions */
-
   actionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -761,8 +925,6 @@ const styles = StyleSheet.create({
     lineHeight: 14,
   },
 
-  /* Empty */
-
   emptyCard: {
     backgroundColor: '#ffffff',
     borderWidth: 1,
@@ -803,8 +965,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-
-  /* Lots */
 
   lotsList: {
     gap: 10,
@@ -891,7 +1051,6 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 9,
     fontWeight: '700',
-    textTransform: 'capitalize',
   },
 
   chevron: {

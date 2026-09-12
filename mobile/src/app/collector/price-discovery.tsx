@@ -1,8 +1,25 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+/**
+ * Price Discovery Screen — Mobile
+ * Full feature parity with frontend/src/collector/PriceDiscovery.jsx
+ *
+ * Features:
+ *   - SVG line chart with gradient fill + market range band
+ *   - Statistics row (min/avg/max/latest/change%)
+ *   - Market intelligence analytics chips
+ *   - Historical progression ticker
+ *   - Expandable price-history data table
+ *   - Speak prices  (expo-speech)
+ *   - Live market pulse banner
+ *   - Material rate cards (all categories)
+ *   - GPS location detect
+ *   - Sync Live Market
+ *   - Recycler rates table with vs-market badge
+ */
 
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
+    Dimensions,
     Pressable,
     RefreshControl,
     ScrollView,
@@ -11,2607 +28,1027 @@ import {
     TextInput,
     View,
 } from 'react-native';
-
+import * as Speech from 'expo-speech';
 import * as Location from 'expo-location';
+import Svg, {
+    Circle,
+    Defs,
+    Line as SVGLine,
+    LinearGradient,
+    Path,
+    Stop,
+} from 'react-native-svg';
 
 import {
-    DEFAULT_LAT,
-    DEFAULT_LNG,
-    getMatchedRecyclers,
-    getOffersByLot,
-    initiateHandover,
-    rejectOffer,
-    requestQuote,
-    acceptOffer,
+    DEFAULT_LOCATION,
+    MATERIAL_CATEGORIES,
+    getInstantValuation,
+    getMarketPulse,
+    getPriceTrends,
+    getRecyclerRateBoard,
+    refreshMarketPrices,
 } from '../../../api/client';
 import { BrandedHeader } from '../../components/branding/BrandedHeader';
+import { useTranslation } from '../../../i18n/config';
 
-import { getSession } from '../../../services/auth';
+/* =========================================================
+   CONSTANTS
+========================================================= */
+
+const LOCATIONS = [
+    'Bengaluru', 'Delhi', 'Mumbai', 'Hyderabad', 'Chennai',
+    'Pune', 'Kolkata', 'Ahmedabad', 'Jaipur', 'Surat',
+    'Lucknow', 'Nagpur', 'Indore', 'Kochi', 'Coimbatore',
+];
+
+const BENCHMARK_HUBS = [
+    { name: 'Bengaluru', lat: 12.9716, lng: 77.5946 },
+    { name: 'Chennai',   lat: 13.0827, lng: 80.2707 },
+    { name: 'Hyderabad', lat: 17.3850, lng: 78.4867 },
+    { name: 'Mumbai',    lat: 19.0760, lng: 72.8777 },
+    { name: 'Pune',      lat: 18.5204, lng: 73.8567 },
+    { name: 'Delhi',     lat: 28.6139, lng: 77.2090 },
+    { name: 'Jaipur',    lat: 26.9124, lng: 75.7873 },
+    { name: 'Ahmedabad', lat: 23.0225, lng: 72.5714 },
+    { name: 'Kolkata',   lat: 22.5726, lng: 88.3639 },
+];
+
+const SCREEN_W = Dimensions.get('window').width;
+const CHART_H = 210;
+const CHART_PAD_L = 8;   // left padding inside SVG (y-labels are outside in RN View)
+const CHART_PAD_R = 10;
+const CHART_PAD_T = 12;
+const CHART_PAD_B = 28;
+const Y_LABEL_W = 46;     // RN view width for y-axis text
 
 /* =========================================================
    TYPES
 ========================================================= */
 
-type Recycler = {
-    id?: number;
-    recycler_id?: number;
-
-    name?: string;
-
-    service_area?: string;
-    facility_location?: string;
-
-    suitability?: number;
-    match_score?: number;
-
-    score_price?: number;
-    score_distance?: number;
-    score_pickup?: number;
-    score_reliability?: number;
-
-    distance_km?: number;
-
-    offered_rate?: number | string;
-
-    pickup_availability?: string;
-
-    materials_accepted?: string[];
+type PriceTrend = {
+    price_date: string;
+    buying_price?: number | string;
+    market_range_low?: number | null;
+    market_range_high?: number | null;
 };
 
-type Offer = {
-    id: number;
+type Analytics = {
+    benchmark_rate?: number;
+    recycler_quote_avg?: number;
+    recycler_quote_median?: number;
+    quote_observations_count?: number;
+    completed_transaction_avg?: number;
+};
 
-    recycler_id: number;
+type PriceCard = {
+    market_benchmark?: number;
+    unit_price?: number;
+    market_range_low?: number;
+    market_range_high?: number;
+};
 
-    recycler_name?: string;
-
-    offer_status:
-    | 'requested'
-    | 'offered'
-    | 'accepted'
-    | 'rejected'
-    | string;
-
-    offered_price?: number | string;
-
-    contact_details?: string;
-    recycler_contact_details?: string;
-
+type RecyclerRow = {
+    recycler_id?: number | string;
+    name?: string;
+    facility_location?: string;
+    service_area?: string;
+    offered_rate?: number | string;
+    latitude?: number | string;
+    longitude?: number | string;
+    materials_accepted?: string[];
     pickup_availability?: string;
+    rate_date?: string;
+    distance?: number | null;
+};
 
-    recycler_facility?: string;
-    recycler_service_area?: string;
+type PulseItem = {
+    material_category: string;
+    unit_price?: number;
+    market_range?: string;
+    regional_demand?: string;
+    hub?: string;
 };
 
 /* =========================================================
-   SCREEN
+   HELPERS
 ========================================================= */
 
-export default function MatchedRecyclersScreen() {
-    /*
-     * These values come from Create Lot.
-     */
-    const params = useLocalSearchParams<{
-        lotId?: string;
-        category?: string;
-        location?: string;
-        lat?: string;
-        lng?: string;
-        weight?: string;
-        estimatedValue?: string;
-    }>();
+function fmt(v?: number | string | null): string {
+    if (v == null || v === '') return '—';
+    return `₹${Number(v).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+}
 
-    const lotId = params.lotId
-        ? String(params.lotId)
-        : '';
+function distKm(lat1: number, lon1: number, lat2: number, lon2: number): number | null {
+    if (!isFinite(lat1 + lon1 + lat2 + lon2)) return null;
+    const R = 6371;
+    const dL = ((lat2 - lat1) * Math.PI) / 180;
+    const dN = ((lon2 - lon1) * Math.PI) / 180;
+    const a = Math.sin(dL / 2) ** 2 +
+        Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dN / 2) ** 2;
+    return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
+}
 
-    const category =
-        params.category || 'PCB';
+function trendStats(arr: PriceTrend[]) {
+    if (!arr?.length) return null;
+    const prices = arr.map(t => Number(t.buying_price)).filter(p => isFinite(p) && p > 0);
+    if (!prices.length) return null;
+    const first = prices[0], last = prices[prices.length - 1];
+    return {
+        min: Math.min(...prices),
+        max: Math.max(...prices),
+        avg: prices.reduce((a, b) => a + b, 0) / prices.length,
+        latest: last,
+        change: first ? ((last - first) / first) * 100 : null,
+    };
+}
 
-    const passedLocation =
-        params.location || '';
+/* =========================================================
+   SVG LINE CHART
+   Renders:  market-range band (light purple fill)
+             area gradient under buying-price line
+             smooth bezier buying-price line (purple)
+             last-point glow dot
+             grid lines  (horizontal, faint)
+             x-axis date labels
+   Y-axis labels rendered in a sibling RN View (easier text control)
+========================================================= */
 
-    const passedLat =
-        params.lat != null
-            ? Number(params.lat)
-            : null;
+type ChartProps = {
+    trends: PriceTrend[];
+    width: number;   // full SVG width
+    height: number;  // full SVG height
+};
 
-    const passedLng =
-        params.lng != null
-            ? Number(params.lng)
-            : null;
+function PriceLineChart({ trends, width, height }: ChartProps) {
+    const pl = CHART_PAD_L;
+    const pr = CHART_PAD_R;
+    const pt = CHART_PAD_T;
+    const pb = CHART_PAD_B;
+    const cw = width - pl - pr;   // chart inner width
+    const ch = height - pt - pb;  // chart inner height
 
-    const lotWeight =
-        params.weight
-            ? Number(params.weight)
-            : null;
+    const n = trends.length;
+    const buyPrices = trends.map(t => Number(t.buying_price));
+    const rangeLows  = trends.map(t => t.market_range_low  != null ? Number(t.market_range_low)  : null);
+    const rangeHighs = trends.map(t => t.market_range_high != null ? Number(t.market_range_high) : null);
+    const hasRange = rangeLows.some(v => v != null) && rangeHighs.some(v => v != null);
 
-    const estimatedValue =
-        params.estimatedValue
-            ? Number(params.estimatedValue)
-            : null;
+    const allVals = [
+        ...buyPrices,
+        ...(hasRange ? rangeLows.filter((v): v is number => v != null)  : []),
+        ...(hasRange ? rangeHighs.filter((v): v is number => v != null) : []),
+    ].filter(v => isFinite(v) && v > 0);
 
-    /* =======================================================
-       STATE
-    ======================================================= */
+    if (!allVals.length) return null;
 
-    const [
-        sessionLoaded,
-        setSessionLoaded,
-    ] = useState(false);
+    const minV = Math.min(...allVals) * 0.97;
+    const maxV = Math.max(...allVals) * 1.03;
+    const span = maxV - minV || 1;
 
-    const [
-        city,
-        setCity,
-    ] = useState(
-        passedLocation
-    );
+    const xOf = (i: number) => pl + (i / Math.max(n - 1, 1)) * cw;
+    const yOf = (v: number) => pt + ch - ((v - minV) / span) * ch;
 
-    const [
-        lat,
-        setLat,
-    ] = useState<number>(
-        passedLat ??
-        Number(DEFAULT_LAT)
-    );
+    /* ---- buying price bezier path ---- */
+    const pts = buyPrices.map((p, i) => ({ x: xOf(i), y: yOf(p) }));
+    let linePath = '';
+    pts.forEach((p, i) => {
+        if (i === 0) {
+            linePath += `M${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+        } else {
+            const cpx = ((pts[i - 1].x + p.x) / 2).toFixed(1);
+            linePath += ` C${cpx},${pts[i-1].y.toFixed(1)} ${cpx},${p.y.toFixed(1)} ${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+        }
+    });
+    const bottom = (pt + ch).toFixed(1);
+    const areaPath = linePath
+        + ` L${pts[pts.length-1].x.toFixed(1)},${bottom}`
+        + ` L${pts[0].x.toFixed(1)},${bottom} Z`;
 
-    const [
-        lng,
-        setLng,
-    ] = useState<number>(
-        passedLng ??
-        Number(DEFAULT_LNG)
-    );
-
-    const [
-        detectingGps,
-        setDetectingGps,
-    ] = useState(false);
-
-    const [
-        radiusKm,
-        setRadiusKm,
-    ] = useState(150);
-
-    const [
-        recyclers,
-        setRecyclers,
-    ] = useState<Recycler[]>([]);
-
-    const [
-        searchTerm,
-        setSearchTerm,
-    ] = useState('');
-
-    const [
-        loading,
-        setLoading,
-    ] = useState(true);
-
-    const [
-        refreshing,
-        setRefreshing,
-    ] = useState(false);
-
-    const [
-        error,
-        setError,
-    ] = useState('');
-
-    const [
-        offers,
-        setOffers,
-    ] = useState<Offer[]>([]);
-
-    const [
-        offersError,
-        setOffersError,
-    ] = useState('');
-
-    const [
-        requesting,
-        setRequesting,
-    ] = useState<
-        number | null
-    >(null);
-
-    const [
-        offerBusy,
-        setOfferBusy,
-    ] = useState<
-        number | null
-    >(null);
-
-    const [
-        successMessage,
-        setSuccessMessage,
-    ] = useState('');
-
-    const [
-        selectedId,
-        setSelectedId,
-    ] = useState<
-        number | null
-    >(null);
-
-    const [
-        handingOver,
-        setHandingOver,
-    ] = useState(false);
-
-    const [
-        handoverReference,
-        setHandoverReference,
-    ] = useState<string | null>(null);
-
-    /* =======================================================
-       SESSION + LOCATION
-    ======================================================= */
-
-    useEffect(() => {
-        async function initialise() {
-            try {
-                const session =
-                    await getSession();
-
-                /*
-                 * Priority:
-                 *
-                 * 1. coordinates passed from Create Lot
-                 * 2. coordinates embedded in location text
-                 * 3. registered collector coordinates
-                 * 4. default Bengaluru
-                 */
-
-                let initialLat =
-                    passedLat;
-
-                let initialLng =
-                    passedLng;
-
-                if (
-                    (initialLat == null ||
-                        initialLng == null) &&
-                    passedLocation
-                ) {
-                    const match =
-                        String(
-                            passedLocation
-                        ).match(
-                            /(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)/
-                        );
-
-                    if (match) {
-                        initialLat =
-                            parseFloat(
-                                match[1]
-                            );
-
-                        initialLng =
-                            parseFloat(
-                                match[2]
-                            );
-                    }
-                }
-
-                if (
-                    initialLat == null ||
-                    initialLng == null
-                ) {
-                    if (
-                        session?.latitude !=
-                        null &&
-                        session?.longitude !=
-                        null
-                    ) {
-                        initialLat =
-                            Number(
-                                session.latitude
-                            );
-
-                        initialLng =
-                            Number(
-                                session.longitude
-                            );
-                    }
-                }
-
-                if (
-                    initialLat != null
-                ) {
-                    setLat(
-                        initialLat
-                    );
-                }
-
-                if (
-                    initialLng != null
-                ) {
-                    setLng(
-                        initialLng
-                    );
-                }
-
-                if (
-                    !passedLocation &&
-                    session?.operating_location
-                ) {
-                    setCity(
-                        session.operating_location
-                    );
-                }
-
-                /*
-                 * If Create Lot did not pass GPS
-                 * AND account does not contain GPS,
-                 * try phone location.
-                 */
-                if (
-                    passedLat == null &&
-                    passedLng == null &&
-                    (session?.latitude ==
-                        null ||
-                        session?.longitude ==
-                        null)
-                ) {
-                    await detectPhoneLocation();
-                }
-            } finally {
-                setSessionLoaded(
-                    true
-                );
+    /* ---- market-range band path ---- */
+    let bandPath = '';
+    if (hasRange) {
+        const topPts: {x:number;y:number}[] = [];
+        const botPts: {x:number;y:number}[] = [];
+        for (let i = 0; i < n; i++) {
+            const lo = rangeLows[i], hi = rangeHighs[i];
+            if (lo != null && hi != null) {
+                topPts.push({ x: xOf(i), y: yOf(hi) });
+                botPts.push({ x: xOf(i), y: yOf(lo) });
             }
         }
-
-        initialise();
-    }, []);
-
-    async function detectPhoneLocation() {
-        try {
-            setDetectingGps(
-                true
-            );
-
-            const permission =
-                await Location.requestForegroundPermissionsAsync();
-
-            if (
-                permission.status !==
-                'granted'
-            ) {
-                return;
-            }
-
-            const result =
-                await Location.getCurrentPositionAsync(
-                    {
-                        accuracy:
-                            Location
-                                .Accuracy
-                                .Balanced,
-                    }
-                );
-
-            setLat(
-                result.coords.latitude
-            );
-
-            setLng(
-                result.coords.longitude
-            );
-        } catch (err) {
-            console.log(
-                'Location error:',
-                err
-            );
-        } finally {
-            setDetectingGps(
-                false
-            );
+        if (topPts.length > 1) {
+            const top = topPts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+            const bot = [...botPts].reverse().map(p => `L${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+            bandPath = top + ' ' + bot + ' Z';
         }
     }
 
-    /* =======================================================
-       MATCHED RECYCLERS
-    ======================================================= */
+    /* ---- horizontal grid lines ---- */
+    const TICKS = 4;
+    const gridYs: number[] = [];
+    for (let i = 0; i <= TICKS; i++) gridYs.push(yOf(minV + (span * i) / TICKS));
 
-    const fetchRecyclers =
-        useCallback(
-            async (
-                searchRadius?:
-                    number
-            ) => {
-                const radius =
-                    searchRadius ??
-                    radiusKm;
-
-                setError('');
-
-                try {
-                    const response =
-                        await getMatchedRecyclers(
-                            {
-                                category,
-
-                                maxDistanceKm:
-                                    radius,
-
-                                lat,
-                                lng,
-
-                                location:
-                                    city ||
-                                    undefined,
-                            }
-                        );
-
-                    if (
-                        response
-                            ?.location?.lat !=
-                        null &&
-                        response
-                            ?.location?.lng !=
-                        null
-                    ) {
-                        setLat(
-                            Number(
-                                response
-                                    .location
-                                    .lat
-                            )
-                        );
-
-                        setLng(
-                            Number(
-                                response
-                                    .location
-                                    .lng
-                            )
-                        );
-                    }
-
-                    const list =
-                        Array.isArray(
-                            response?.data
-                        )
-                            ? response.data
-                            : [];
-
-                    setRecyclers(
-                        list
-                    );
-
-                    /*
-                     * Same behavior as web:
-                     * if nothing is nearby,
-                     * automatically expand.
-                     */
-                    if (
-                        list.length ===
-                        0 &&
-                        radius < 1000
-                    ) {
-                        try {
-                            const expanded =
-                                await getMatchedRecyclers(
-                                    {
-                                        category,
-
-                                        maxDistanceKm:
-                                            1500,
-
-                                        lat,
-                                        lng,
-
-                                        location:
-                                            city ||
-                                            undefined,
-                                    }
-                                );
-
-                            if (
-                                Array.isArray(
-                                    expanded?.data
-                                ) &&
-                                expanded.data
-                                    .length >
-                                0
-                            ) {
-                                setRecyclers(
-                                    expanded.data
-                                );
-
-                                setRadiusKm(
-                                    1500
-                                );
-                            }
-                        } catch {
-                            // keep original empty result
-                        }
-                    }
-                } catch (
-                err: any
-                ) {
-                    console.log(
-                        'Recycler load error:',
-                        err
-                    );
-
-                    setError(
-                        err?.message ||
-                        'Could not load matched recyclers.'
-                    );
-                }
-            },
-            [
-                category,
-                lat,
-                lng,
-                city,
-                radiusKm,
-            ]
-        );
-
-    /* =======================================================
-       OFFERS
-    ======================================================= */
-
-    const loadOffers =
-        useCallback(
-            async () => {
-                if (!lotId) {
-                    return;
-                }
-
-                setOffersError(
-                    ''
-                );
-
-                try {
-                    const response =
-                        await getOffersByLot(
-                            lotId
-                        );
-
-                    setOffers(
-                        Array.isArray(
-                            response?.data
-                        )
-                            ? response.data
-                            : []
-                    );
-                } catch (
-                err
-                ) {
-                    console.log(
-                        'Offers load error:',
-                        err
-                    );
-
-                    setOffersError(
-                        'Could not load quote offers.'
-                    );
-                }
-            },
-            [lotId]
-        );
-
-    /* =======================================================
-       INITIAL LOAD
-    ======================================================= */
-
-    useEffect(() => {
-        if (
-            !sessionLoaded
-        ) {
-            return;
-        }
-
-        async function load() {
-            setLoading(true);
-
-            try {
-                await Promise.all([
-                    fetchRecyclers(),
-                    loadOffers(),
-                ]);
-            } finally {
-                setLoading(
-                    false
-                );
-            }
-        }
-
-        load();
-    }, [sessionLoaded]);
-
-    /* =======================================================
-       REFRESH
-    ======================================================= */
-
-    async function refresh() {
-        setRefreshing(
-            true
-        );
-
-        try {
-            await Promise.all([
-                fetchRecyclers(),
-                loadOffers(),
-            ]);
-        } finally {
-            setRefreshing(
-                false
-            );
+    /* ---- x-axis date labels ---- */
+    const MAX_X = Math.min(6, n);
+    const xLabels: { x: number; label: string }[] = [];
+    for (let i = 0; i < MAX_X; i++) {
+        const idx = Math.round((i / Math.max(MAX_X - 1, 1)) * (n - 1));
+        const d = trends[idx];
+        if (d) {
+            xLabels.push({
+                x: xOf(idx),
+                label: new Date(d.price_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+            });
         }
     }
 
-    /* =======================================================
-       REQUEST QUOTE
-    ======================================================= */
-
-    async function handleRequestQuote(
-        recycler: Recycler
-    ) {
-        if (!lotId) {
-            setError(
-                'Lot information is missing.'
-            );
-
-            return;
-        }
-
-        const recyclerId =
-            recycler.id ??
-            recycler.recycler_id;
-
-        if (!recyclerId) {
-            setError(
-                'Recycler ID is missing.'
-            );
-
-            return;
-        }
-
-        setRequesting(
-            recyclerId
-        );
-
-        setError('');
-        setSuccessMessage(
-            ''
-        );
-
-        try {
-            await requestQuote(
-                lotId,
-                recyclerId
-            );
-
-            setSuccessMessage(
-                `Quote requested from ${recycler.name ||
-                'recycler'
-                }.`
-            );
-
-            await loadOffers();
-        } catch (
-        err: any
-        ) {
-            setError(
-                err?.message ||
-                'Could not request quote.'
-            );
-        } finally {
-            setRequesting(
-                null
-            );
-        }
-    }
-
-    /* =======================================================
-       ACCEPT / REJECT
-    ======================================================= */
-
-    async function handleOfferAction(
-        offerId: number,
-        decision:
-            | 'accept'
-            | 'reject'
-    ) {
-        setOfferBusy(
-            offerId
-        );
-
-        setError('');
-        setSuccessMessage(
-            ''
-        );
-
-        try {
-            if (
-                decision ===
-                'accept'
-            ) {
-                await acceptOffer(
-                    offerId
-                );
-
-                setSuccessMessage(
-                    'Quote accepted successfully.'
-                );
-            } else {
-                await rejectOffer(
-                    offerId
-                );
-
-                setSuccessMessage(
-                    'Quote rejected.'
-                );
-            }
-
-            await loadOffers();
-            await fetchRecyclers();
-        } catch (
-        err: any
-        ) {
-            setError(
-                err?.message ||
-                'Could not update quote.'
-            );
-        } finally {
-            setOfferBusy(
-                null
-            );
-        }
-    }
-
-    /* =======================================================
-       INITIATE HANDOVER
-    ======================================================= */
-
-    async function handleInitiateHandover() {
-        if (!lotId || !acceptedOffer) {
-            setError(
-                'A lot and an accepted recycler quote are required before handover.'
-            );
-            return;
-        }
-
-        const recyclerId =
-            Number(acceptedOffer.recycler_id);
-
-        if (!recyclerId) {
-            setError(
-                'Accepted recycler information is missing.'
-            );
-            return;
-        }
-
-        setHandingOver(true);
-        setError('');
-        setSuccessMessage('');
-
-        try {
-            const session =
-                await getSession();
-
-            const collectorId =
-                session?.role === 'collector' &&
-                    session?.userId
-                    ? Number(session.userId)
-                    : null;
-
-            if (!collectorId) {
-                throw new Error(
-                    'Collector session is missing. Please log in again.'
-                );
-            }
-
-            const result =
-                await initiateHandover({
-                    lot_id: lotId,
-                    collector_id: collectorId,
-                    recycler_id: recyclerId,
-                    photo_refs: [],
-                    weight_kg:
-                        lotWeight && lotWeight > 0
-                            ? lotWeight
-                            : 1,
-                    gps_lat: lat,
-                    gps_lng: lng,
-                    handover_location:
-                        city || 'Bengaluru',
-                });
-
-            const reference =
-                result?.data?.handover_reference_number ??
-                result?.handover_reference_number ??
-                result?.data?.traceability?.handover_reference_number ??
-                null;
-
-            setHandoverReference(
-                reference
-                    ? String(reference)
-                    : 'Created'
-            );
-
-            setSuccessMessage(
-                reference
-                    ? `Handover initiated successfully. Reference: ${reference}`
-                    : 'Handover initiated successfully.'
-            );
-        } catch (err: any) {
-            console.log(
-                'Handover initiation error:',
-                err
-            );
-
-            setError(
-                err?.message ||
-                'Could not initiate handover.'
-            );
-        } finally {
-            setHandingOver(false);
-        }
-    }
-
-    /* =======================================================
-       HELPERS
-    ======================================================= */
-
-    function recyclerIdOf(
-        recycler: Recycler
-    ) {
-        return (
-            recycler.id ??
-            recycler.recycler_id
-        );
-    }
-
-    function suitabilityOf(
-        recycler: Recycler
-    ) {
-        if (
-            recycler.suitability !=
-            null
-        ) {
-            return Math.max(
-                0,
-                Math.min(
-                    100,
-                    Math.round(
-                        Number(
-                            recycler.suitability
-                        )
-                    )
-                )
-            );
-        }
-
-        return Math.max(
-            0,
-            Math.round(
-                (1 -
-                    Math.min(
-                        recycler.match_score ??
-                        0.5,
-                        1
-                    )) *
-                100
-            )
-        );
-    }
-
-    function pctScore(
-        value?: number
-    ) {
-        return Math.max(
-            0,
-            Math.min(
-                100,
-                Math.round(
-                    (value ?? 0.5) *
-                    100
-                )
-            )
-        );
-    }
-
-    function offerForRecycler(
-        recyclerId?: number
-    ) {
-        if (!recyclerId) {
-            return undefined;
-        }
-
-        return offers.find(
-            (offer) =>
-                Number(
-                    offer.recycler_id
-                ) ===
-                Number(
-                    recyclerId
-                )
-        );
-    }
-
-    const acceptedOffer =
-        useMemo(
-            () =>
-                offers.find(
-                    (offer) =>
-                        offer.offer_status ===
-                        'accepted'
-                ),
-
-            [offers]
-        );
-
-    const openOffers =
-        useMemo(
-            () =>
-                offers.filter(
-                    (offer) =>
-                        [
-                            'requested',
-                            'offered',
-                        ].includes(
-                            offer.offer_status
-                        )
-                ),
-
-            [offers]
-        );
-
-    const filteredRecyclers =
-        useMemo(() => {
-            if (
-                !searchTerm.trim()
-            ) {
-                return recyclers;
-            }
-
-            const query =
-                searchTerm
-                    .toLowerCase()
-                    .trim();
-
-            return recyclers.filter(
-                (recycler) => {
-                    const name =
-                        (
-                            recycler.name ||
-                            ''
-                        ).toLowerCase();
-
-                    const location =
-                        (
-                            recycler.facility_location ||
-                            recycler.service_area ||
-                            ''
-                        ).toLowerCase();
-
-                    return (
-                        name.includes(
-                            query
-                        ) ||
-                        location.includes(
-                            query
-                        )
-                    );
-                }
-            );
-        }, [
-            recyclers,
-            searchTerm,
-        ]);
-
-    /* =======================================================
-       UI
-    ======================================================= */
+    const lastPt = pts[pts.length - 1];
+    const rightEdge = (width - pr).toFixed(1);
 
     return (
-        <ScrollView
-            style={
-                styles.screen
-            }
-            contentContainerStyle={
-                styles.container
-            }
-            refreshControl={
-                <RefreshControl
-                    refreshing={
-                        refreshing
-                    }
-                    onRefresh={
-                        refresh
-                    }
+        <Svg width={width} height={height}>
+            <Defs>
+                <LinearGradient id="pdAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset="0%"   stopColor="#7c3aed" stopOpacity={0.20} />
+                    <Stop offset="100%" stopColor="#7c3aed" stopOpacity={0.01} />
+                </LinearGradient>
+                <LinearGradient id="pdBandGrad" x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset="0%"   stopColor="#a78bfa" stopOpacity={0.18} />
+                    <Stop offset="100%" stopColor="#a78bfa" stopOpacity={0.04} />
+                </LinearGradient>
+            </Defs>
+
+            {/* Horizontal grid */}
+            {gridYs.map((y, i) => (
+                <SVGLine
+                    key={i}
+                    x1={pl} y1={y.toFixed(1)}
+                    x2={rightEdge} y2={y.toFixed(1)}
+                    stroke="rgba(124,58,237,0.07)"
+                    strokeWidth={1}
                 />
-            }
-            showsVerticalScrollIndicator={
-                false
-            }
-        >
-            <BrandedHeader
-                showBack
-                title="Matched Recyclers"
-                subtitle={`Authorized recyclers matched for your ${category} lot.`}
+            ))}
+
+            {/* Market range band */}
+            {bandPath !== '' && <Path d={bandPath} fill="url(#pdBandGrad)" />}
+
+            {/* Area fill */}
+            <Path d={areaPath} fill="url(#pdAreaGrad)" />
+
+            {/* Buying-price line */}
+            <Path
+                d={linePath}
+                stroke="#7c3aed"
+                strokeWidth={2.5}
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
             />
 
-            <View
-                style={
-                    styles.locationRow
-                }
-            >
-                {detectingGps ? (
-                    <>
-                        <ActivityIndicator
-                            size="small"
-                            color="#16a34a"
-                        />
+            {/* Last-point glow dot */}
+            {lastPt && (
+                <>
+                    <Circle cx={lastPt.x.toFixed(1)} cy={lastPt.y.toFixed(1)} r={9}  fill="rgba(124,58,237,0.15)" />
+                    <Circle cx={lastPt.x.toFixed(1)} cy={lastPt.y.toFixed(1)} r={5}  fill="#7c3aed" />
+                    <Circle cx={lastPt.x.toFixed(1)} cy={lastPt.y.toFixed(1)} r={2.5} fill="#fff" />
+                </>
+            )}
+        </Svg>
+    );
+}
 
-                        <Text
-                            style={
-                                styles.locationText
-                            }
-                        >
-                            Detecting your
-                            location...
-                        </Text>
-                    </>
-                ) : (
-                    <Text
-                        style={
-                            styles.locationText
+/* Y-axis labels — rendered in a sibling RN View */
+function YLabels({ trends, height }: { trends: PriceTrend[]; height: number }) {
+    const prices = trends.map(t => Number(t.buying_price)).filter(p => isFinite(p) && p > 0);
+    if (!prices.length) return null;
+    const minV = Math.min(...prices) * 0.97;
+    const maxV = Math.max(...prices) * 1.03;
+    const span = maxV - minV || 1;
+    const ch = height - CHART_PAD_T - CHART_PAD_B;
+    const TICKS = 4;
+    const labels = Array.from({ length: TICKS + 1 }, (_, i) => ({
+        val: minV + (span * i) / TICKS,
+        y: CHART_PAD_T + ch - (i / TICKS) * ch,
+    }));
+    return (
+        <View style={{ position: 'absolute', left: 0, top: 0, width: Y_LABEL_W, height }}>
+            {labels.map((l, i) => (
+                <Text
+                    key={i}
+                    style={{
+                        position: 'absolute',
+                        top: l.y - 7,
+                        right: 4,
+                        fontSize: 9,
+                        color: '#64748b',
+                        fontWeight: '500',
+                    }}
+                >
+                    ₹{Math.round(l.val)}
+                </Text>
+            ))}
+        </View>
+    );
+}
+
+/* X-axis date labels — rendered in a RN View below the SVG */
+function XLabels({ trends, svgWidth }: { trends: PriceTrend[]; svgWidth: number }) {
+    const n = trends.length;
+    const pl = CHART_PAD_L;
+    const cw = svgWidth - pl - CHART_PAD_R;
+    const MAX_X = Math.min(6, n);
+    const labels = Array.from({ length: MAX_X }, (_, i) => {
+        const idx = Math.round((i / Math.max(MAX_X - 1, 1)) * (n - 1));
+        const d = trends[idx];
+        if (!d) return null;
+        return {
+            x: pl + (idx / Math.max(n - 1, 1)) * cw,
+            label: new Date(d.price_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+        };
+    }).filter(Boolean) as { x: number; label: string }[];
+
+    return (
+        <View style={{ position: 'relative', height: 20, marginTop: 2 }}>
+            {labels.map((l, i) => (
+                <Text
+                    key={i}
+                    style={{
+                        position: 'absolute',
+                        left: Y_LABEL_W + l.x - 16,
+                        fontSize: 9,
+                        color: '#64748b',
+                        width: 32,
+                        textAlign: 'center',
+                    }}
+                >
+                    {l.label}
+                </Text>
+            ))}
+        </View>
+    );
+}
+
+/* =========================================================
+   MAIN SCREEN
+========================================================= */
+
+export default function PriceDiscoveryScreen() {
+    const { t, lang } = useTranslation();
+
+    /* ---- filter state ---- */
+    const [category, setCategory] = useState(MATERIAL_CATEGORIES[2].id); // PCB
+    const [location, setLocation] = useState(DEFAULT_LOCATION);
+    const [days, setDays] = useState(90);
+
+    /* ---- data ---- */
+    const [trends,     setTrends]     = useState<PriceTrend[]>([]);
+    const [analytics,  setAnalytics]  = useState<Analytics | null>(null);
+    const [rateRows,   setRateRows]   = useState<RecyclerRow[]>([]);
+    const [priceCards, setPriceCards] = useState<Record<string, PriceCard>>({});
+    const [pulse,      setPulse]      = useState<PulseItem[] | null>(null);
+    const [search,     setSearch]     = useState('');
+    const [showTable,  setShowTable]  = useState(false);
+
+    /* ---- loading / error ---- */
+    const [loadingTrend, setLoadingTrend] = useState(true);
+    const [loadingRec,   setLoadingRec]   = useState(true);
+    const [loadingCards, setLoadingCards] = useState(true);
+    const [syncing,      setSyncing]      = useState(false);
+    const [gpsLoading,   setGpsLoading]   = useState(false);
+    const [refreshing,   setRefreshing]   = useState(false);
+    const [error,        setError]        = useState('');
+    const [gpsError,     setGpsError]     = useState('');
+    const [syncToast,    setSyncToast]    = useState('');
+    const [speaking,     setSpeaking]     = useState(false);
+
+    /* ---- GPS coords ---- */
+    const [userCoords, setUserCoords] = useState<{
+        lat: number; lng: number; closestHub: string; distanceToHub: number;
+    } | null>(null);
+
+    /* =========================================================
+       COMPUTED
+    ========================================================= */
+
+    const stats     = useMemo(() => trendStats(trends), [trends]);
+    const rawCat    = MATERIAL_CATEGORIES.find(c => c.id === category);
+    const catLabel  = t(`materials.${category}`) || rawCat?.label || category;
+    const card      = priceCards[category];
+    const benchmark = card?.market_benchmark ?? analytics?.benchmark_rate ?? stats?.latest;
+    const pulseItem = pulse?.find(p => p.material_category === category) ?? null;
+
+    // Chart width = screen minus paddings minus y-label column
+    const chartSvgW = SCREEN_W - 36 - Y_LABEL_W;  // 18*2 horizontal padding, minus y-label view
+
+    const filtered = useMemo(() => {
+        const catMatch = (mats: string[]) => {
+            if (mats.includes(category)) return true;
+            if (category === 'Plastic' && mats.some(m => m.includes('Plastic'))) return true;
+            if (category === 'Motor'   && mats.some(m => m.includes('Motor')))   return true;
+            if (category === 'LCD'     && mats.some(m => m.includes('LCD')))     return true;
+            return false;
+        };
+        return [...rateRows]
+            .filter(r => catMatch(r.materials_accepted || []))
+            .map(r => ({
+                ...r,
+                distance: userCoords
+                    ? distKm(userCoords.lat, userCoords.lng, Number(r.latitude), Number(r.longitude))
+                    : null,
+            }))
+            .filter(r => {
+                if (!search.trim()) return true;
+                const q = search.toLowerCase();
+                return (r.name || '').toLowerCase().includes(q) ||
+                    (r.facility_location || r.service_area || '').toLowerCase().includes(q);
+            })
+            .sort((a, b) =>
+                userCoords && a.distance != null && b.distance != null
+                    ? a.distance - b.distance
+                    : Number(b.offered_rate || 0) - Number(a.offered_rate || 0),
+            );
+    }, [rateRows, category, search, userCoords]);
+
+    const rateAsOf = rateRows.reduce<string | null>(
+        (best, r) => r.rate_date && (!best || r.rate_date > best) ? r.rate_date : best, null,
+    );
+
+    /* =========================================================
+       DATA FETCHERS
+    ========================================================= */
+
+    const loadCards = useCallback(() => {
+        setLoadingCards(true);
+        Promise.allSettled(
+            MATERIAL_CATEGORIES.map(cat =>
+                (getInstantValuation as any)({ category: cat.id, location, weight: 1 })
+                    .then((r: any) => ({ id: cat.id, data: r?.data ?? r }))
+                    .catch(() => ({ id: cat.id, data: null })),
+            ),
+        ).then(results => {
+            const map: Record<string, PriceCard> = {};
+            results.forEach(r => {
+                if (r.status === 'fulfilled' && r.value.data) map[r.value.id] = r.value.data;
+            });
+            setPriceCards(map);
+        }).finally(() => setLoadingCards(false));
+    }, [location]);
+
+    const fetchTrends = useCallback(() => {
+        setLoadingTrend(true);
+        setError('');
+        (getPriceTrends as any)({ category, location, days })
+            .then((r: any) => {
+                setTrends(Array.isArray(r?.data) ? r.data : []);
+                if (r?.analytics) setAnalytics(r.analytics);
+                else setAnalytics(null);
+            })
+            .catch(() => { setTrends([]); setError(t('prices.loadError')); })
+            .finally(() => setLoadingTrend(false));
+    }, [category, location, days, t]);
+
+    const fetchRates = useCallback(() => {
+        setLoadingRec(true);
+        (getRecyclerRateBoard as any)({ category, location })
+            .then((r: any) => setRateRows(Array.isArray(r?.data) ? r.data : []))
+            .catch(() => setRateRows([]))
+            .finally(() => setLoadingRec(false));
+    }, [category, location]);
+
+    const fetchPulse = useCallback(() => {
+        (getMarketPulse as any)(location)
+            .then((r: any) => setPulse(Array.isArray(r?.pulse) ? r.pulse : null))
+            .catch(() => {});
+    }, [location]);
+
+    useEffect(() => { loadCards();    }, [loadCards]);
+    useEffect(() => { fetchTrends();  }, [fetchTrends]);
+    useEffect(() => { fetchRates();   }, [fetchRates]);
+    useEffect(() => { fetchPulse();   }, [fetchPulse]);
+
+    /* =========================================================
+       ACTIONS
+    ========================================================= */
+
+    async function onRefresh() {
+        setRefreshing(true);
+        await Promise.allSettled([fetchTrends(), fetchRates(), loadCards()]);
+        fetchPulse();
+        setRefreshing(false);
+    }
+
+    async function onSync() {
+        setSyncing(true);
+        setSyncToast('');
+        setError('');
+        try {
+            await (refreshMarketPrices as any)(days);
+            setSyncToast('Market rates synchronized with live commodity scrap indices.');
+            fetchTrends(); loadCards(); fetchRates(); fetchPulse();
+            setTimeout(() => setSyncToast(''), 4000);
+        } catch {
+            setError('Could not refresh market prices. Using cached indexes.');
+        } finally {
+            setSyncing(false);
+        }
+    }
+
+    async function onGPS() {
+        setGpsLoading(true);
+        setGpsError('');
+        try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') { setGpsError('Location access denied.'); return; }
+            const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+            const { latitude: lat, longitude: lng } = pos.coords;
+            let best = 'Bengaluru', minD = Infinity;
+            for (const h of BENCHMARK_HUBS) {
+                const d = distKm(lat, lng, h.lat, h.lng);
+                if (d != null && d < minD) { minD = d; best = h.name; }
+            }
+            setUserCoords({ lat, lng, closestHub: best, distanceToHub: minD });
+            setLocation(best);
+        } catch { setGpsError('Failed to get location. Pick a city manually.'); }
+        finally  { setGpsLoading(false); }
+    }
+
+    function onSpeak() {
+        if (speaking) { Speech.stop(); setSpeaking(false); return; }
+        const price = benchmark;
+        let txt = price
+            ? `Current ${catLabel} price in ${location} is Rupees ${Math.round(price)} per kilogram.`
+            : `No price data available for ${catLabel} in ${location}.`;
+        if (price && stats?.change != null && Math.abs(stats.change) > 0.01) {
+            const ch = Math.abs(stats.change).toFixed(1);
+            txt += stats.change > 0
+                ? ` Price has increased by ${ch} percent over the last ${days} days.`
+                : ` Price has decreased by ${ch} percent over the last ${days} days.`;
+        }
+        const langMap: Record<string,string> = {
+            en:'en-IN', hi:'hi-IN', kn:'kn-IN', mr:'mr-IN',
+            ta:'ta-IN', te:'te-IN', ml:'ml-IN', bn:'bn-IN',
+        };
+        setSpeaking(true);
+        Speech.speak(txt, {
+            language: langMap[lang] || 'en-IN',
+            rate: 0.9,
+            onDone:    () => setSpeaking(false),
+            onError:   () => setSpeaking(false),
+            onStopped: () => setSpeaking(false),
+        });
+    }
+
+    /* =========================================================
+       RENDER
+    ========================================================= */
+    return (
+        <ScrollView
+            style={S.screen}
+            contentContainerStyle={S.container}
+            showsVerticalScrollIndicator={false}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" />}
+        >
+            {/* ── Header ── */}
+            <BrandedHeader
+                title={t('priceDiscovery.title')}
+                subtitle={t('priceDiscovery.subtitle')}
+                rightElement={
+                    <Pressable style={[S.syncBtn, syncing && S.disabled]} onPress={onSync} disabled={syncing}>
+                        {syncing
+                            ? <ActivityIndicator size="small" color="#fff" />
+                            : <Text style={S.syncBtnTxt}>🔄 {t('priceDiscovery.syncLiveMarket')}</Text>
                         }
-                    >
-                        📍{' '}
-                        {city &&
-                            !city.startsWith(
-                                'GPS Location'
-                            )
-                            ? `${city} · ${lat.toFixed(
-                                4
-                            )}, ${lng.toFixed(
-                                4
-                            )}`
-                            : `${lat.toFixed(
-                                4
-                            )}, ${lng.toFixed(
-                                4
-                            )}`}
+                    </Pressable>
+                }
+            />
+
+            {/* ── Toast ── */}
+            {!!syncToast && (
+                <View style={S.toastGreen}>
+                    <Text style={S.toastGreenTxt}>✅  {syncToast}</Text>
+                </View>
+            )}
+            {!!error && (
+                <View style={S.toastWarn}>
+                    <Text style={S.toastWarnTxt}>⚠️  {error}</Text>
+                </View>
+            )}
+
+            {/* ── Live Pulse Banner ── */}
+            {pulseItem && (
+                <View style={S.pulse}>
+                    <View style={S.pulseL}>
+                        <View style={S.liveDot} />
+                        <Text style={S.liveTxt}>{t('priceDiscovery.liveCommodityIndex')}</Text>
+                    </View>
+                    <View style={S.pulseM}>
+                        <Text style={S.pulseCat}>{catLabel} {t('priceDiscovery.benchmark')}:</Text>
+                        <Text style={S.pulsePrice}>{fmt(benchmark)}/kg</Text>
+                    </View>
+                    <View style={S.pulseR}>
+                        {pulseItem.regional_demand && (
+                            <View style={S.demandBadge}>
+                                <Text style={S.demandTxt}>
+                                    {t('priceDiscovery.demand')}: {pulseItem.regional_demand}
+                                </Text>
+                            </View>
+                        )}
+                        {pulseItem.hub && (
+                            <View style={S.hubBadge}>
+                                <Text style={S.hubTxt}>{pulseItem.hub}</Text>
+                            </View>
+                        )}
+                    </View>
+                </View>
+            )}
+
+            {/* ── Controls: Location ── */}
+            <View style={S.block}>
+                <View style={S.controlRow}>
+                    <Text style={S.ctrlLabel}>{t('prices.location')}</Text>
+                    <Pressable style={[S.gpsBtn, gpsLoading && S.disabled]} onPress={onGPS} disabled={gpsLoading}>
+                        <Text style={S.gpsTxt}>{gpsLoading ? t('priceDiscovery.locating') : t('priceDiscovery.useGps')}</Text>
+                    </Pressable>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {LOCATIONS.map(loc => (
+                        <Pressable
+                            key={loc}
+                            style={[S.chip, location === loc && S.chipOn]}
+                            onPress={() => { setLocation(loc); setUserCoords(null); setGpsError(''); }}
+                        >
+                            <Text style={[S.chipTxt, location === loc && S.chipTxtOn]}>{loc}</Text>
+                        </Pressable>
+                    ))}
+                </ScrollView>
+                {userCoords && (
+                    <Text style={S.gpsNote}>
+                        📍 GPS {userCoords.lat.toFixed(4)}, {userCoords.lng.toFixed(4)}
+                        {'  '}({userCoords.distanceToHub.toFixed(1)} km to {userCoords.closestHub} hub)
                     </Text>
+                )}
+                {!!gpsError && <Text style={S.gpsErr}>⚠️  {gpsError}</Text>}
+            </View>
+
+            {/* ── Controls: Days ── */}
+            <View style={S.daysRow}>
+                <Text style={S.ctrlLabel}>{t('prices.days')}</Text>
+                <View style={S.dayTabs}>
+                    {([30, 60, 90] as const).map(d => (
+                        <Pressable key={d} style={[S.dayTab, days === d && S.dayTabOn]} onPress={() => setDays(d)}>
+                            <Text style={[S.dayTabTxt, days === d && S.dayTabTxtOn]}>
+                                {d === 30 ? t('prices.day30') : d === 60 ? t('prices.day60') : t('prices.day90')}
+                            </Text>
+                        </Pressable>
+                    ))}
+                </View>
+            </View>
+
+            {/* ══════════════════════════════════════════
+                SECTION 1 — Current Market Rates (cards)
+            ══════════════════════════════════════════ */}
+            <View style={S.secRow}>
+                <Text style={S.secTitle}>{t('priceDiscovery.regionalPrices')}</Text>
+                <Text style={S.secSub}>{location} · {t('prices.buyingPrice').toLowerCase()}</Text>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={S.cardScroll}>
+                {MATERIAL_CATEGORIES.map(cat => {
+                    const c = priceCards[cat.id];
+                    const on = category === cat.id;
+                    return (
+                        <Pressable key={cat.id} style={[S.matCard, on && S.matCardOn]} onPress={() => setCategory(cat.id)}>
+                            <Text style={S.matIcon}>{cat.icon}</Text>
+                            <Text style={[S.matName, on && S.matNameOn]} numberOfLines={1}>
+                                {t(`materials.${cat.id}`) || cat.label}
+                            </Text>
+                            {loadingCards
+                                ? <ActivityIndicator size="small" color="#7c3aed" style={{ marginTop: 4 }} />
+                                : <>
+                                    <View style={S.matRow}>
+                                        <Text style={S.matRowLbl} numberOfLines={1}>{t('priceDiscovery.currentMarketBenchmark')}</Text>
+                                        <Text style={[S.matPrice, on && S.matPriceOn]}>
+                                            {c ? fmt(c.market_benchmark ?? c.unit_price) : '—'}/kg
+                                        </Text>
+                                    </View>
+                                    {c?.market_range_low != null && c?.market_range_high != null && (
+                                        <View style={S.matRow}>
+                                            <Text style={S.matRowLbl}>{t('priceDiscovery.marketRange')}</Text>
+                                            <Text style={S.matRange}>{fmt(c.market_range_low)}–{fmt(c.market_range_high)}</Text>
+                                        </View>
+                                    )}
+                                </>
+                            }
+                            {on && <View style={S.matActiveLine} />}
+                        </Pressable>
+                    );
+                })}
+            </ScrollView>
+
+            {/* ══════════════════════════════════════════
+                SECTION 2 — Hero price + category tabs + Speak
+            ══════════════════════════════════════════ */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={S.tabsScroll}>
+                {MATERIAL_CATEGORIES.map(cat => (
+                    <Pressable
+                        key={cat.id}
+                        style={[S.catTab, category === cat.id && S.catTabOn]}
+                        onPress={() => setCategory(cat.id)}
+                    >
+                        <Text style={S.catTabIcon}>{cat.icon}</Text>
+                        <Text style={[S.catTabTxt, category === cat.id && S.catTabTxtOn]}>
+                            {t(`materials.${cat.id}`) || cat.label}
+                        </Text>
+                    </Pressable>
+                ))}
+            </ScrollView>
+
+            <View style={S.hero}>
+                <View style={{ flex: 1 }}>
+                    <Text style={S.heroKicker}>{t('priceDiscovery.currentMarketBenchmark')}</Text>
+                    <Text style={S.heroCatLoc}>{catLabel} · {location}</Text>
+                    <View style={S.heroPriceRow}>
+                        {loadingTrend
+                            ? <ActivityIndicator color="#7c3aed" />
+                            : <>
+                                <Text style={S.heroPrice}>{benchmark ? fmt(benchmark) : '—'}</Text>
+                                {benchmark != null && <Text style={S.heroUnit}> / kg</Text>}
+                            </>
+                        }
+                    </View>
+                    <Text style={S.heroDesc}>{t('priceDiscovery.heroDesc')}</Text>
+                    {stats?.change != null && (
+                        <Text style={[S.chg, stats.change >= 0 ? S.chgUp : S.chgDown]}>
+                            {stats.change >= 0 ? '▲' : '▼'} {Math.abs(stats.change).toFixed(1)}% vs {days}d ago
+                        </Text>
+                    )}
+                </View>
+                <Pressable style={[S.speakBtn, speaking && S.speakBtnOn]} onPress={onSpeak}>
+                    <Text style={S.speakIcon}>{speaking ? '🔊' : '🔉'}</Text>
+                    <Text style={[S.speakTxt, speaking && S.speakTxtOn]}>
+                        {speaking ? t('priceDiscovery.stopAudio') : t('priceDiscovery.speakPrice')}
+                    </Text>
+                </Pressable>
+            </View>
+
+            {/* ══════════════════════════════════════════
+                SECTION 3 — Trend Chart
+            ══════════════════════════════════════════ */}
+            <View style={S.card}>
+                <View style={S.chartHdr}>
+                    <Text style={S.secTitle}>{t('prices.trendChart')} — {catLabel}</Text>
+                    <Text style={S.secSub}>{days} {t('prices.days')} · {location}</Text>
+                </View>
+
+                {/* Market intelligence analytics */}
+                {analytics && !loadingTrend && (
+                    <View style={S.analyticsBox}>
+                        <Text style={S.analyticsTitle}>
+                            📊 {t('priceDiscovery.marketIntelligence', { location })}
+                        </Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                            <View style={S.chipsRow}>
+                                <Chip label={t('priceDiscovery.marketBenchmark')}  value={`${fmt(benchmark)}/kg`} accent />
+                                {analytics.recycler_quote_avg != null && (
+                                    <Chip label={t('priceDiscovery.quotedMarketAvg')}  value={`${fmt(analytics.recycler_quote_avg)}/kg`} />
+                                )}
+                                {analytics.recycler_quote_median != null && (
+                                    <Chip label={t('priceDiscovery.medianQuote')}       value={`${fmt(analytics.recycler_quote_median)}/kg`} />
+                                )}
+                                {analytics.quote_observations_count != null && (
+                                    <Chip label={t('priceDiscovery.quoteObservations')} value={String(analytics.quote_observations_count)} />
+                                )}
+                                {analytics.completed_transaction_avg != null && (
+                                    <Chip label={t('priceDiscovery.realizedSaleAvg')}   value={`${fmt(analytics.completed_transaction_avg)}/kg`} up />
+                                )}
+                            </View>
+                        </ScrollView>
+                    </View>
+                )}
+
+                {/* Stats row */}
+                {stats && !loadingTrend && (
+                    <View style={S.statsRow}>
+                        <Mini label={t('prices.min')}    value={fmt(stats.min)} />
+                        <Mini label={t('prices.avg')}    value={fmt(stats.avg)} accent />
+                        <Mini label={t('prices.max')}    value={fmt(stats.max)} />
+                        <Mini label={t('prices.latest')} value={fmt(stats.latest)} />
+                        {stats.change != null && (
+                            <Mini
+                                label={t('prices.change')}
+                                value={`${stats.change >= 0 ? '+' : ''}${stats.change.toFixed(1)}%`}
+                                up={stats.change >= 0}
+                                down={stats.change < 0}
+                            />
+                        )}
+                    </View>
+                )}
+
+                {/* SVG chart */}
+                {loadingTrend ? (
+                    <View style={S.loader}><ActivityIndicator size="large" color="#7c3aed" /><Text style={S.loaderTxt}>Loading chart…</Text></View>
+                ) : trends.length === 0 ? (
+                    <View style={S.empty}><Text style={S.emptyTxt}>{t('prices.noTrendData')}</Text></View>
+                ) : (
+                    <>
+                        <View style={[S.chartWrap, { height: CHART_H }]}>
+                            <YLabels trends={trends} height={CHART_H} />
+                            <View style={{ marginLeft: Y_LABEL_W }}>
+                                <PriceLineChart trends={trends} width={chartSvgW} height={CHART_H} />
+                            </View>
+                        </View>
+                        <XLabels trends={trends} svgWidth={chartSvgW} />
+                    </>
+                )}
+
+                {/* Historical progression ticker */}
+                {trends.length > 0 && !loadingTrend && (
+                    <View style={S.progressBox}>
+                        <Text style={S.progressTitle}>
+                            📈 {t('priceDiscovery.historicalProgression', { days: String(days) })}
+                        </Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                            <View style={S.progressRow}>
+                                {trends.slice(-6).map((item, i, arr) => (
+                                    <View key={item.price_date || i} style={S.progressItem}>
+                                        <Text style={S.progressPrice}>₹{Math.round(Number(item.buying_price))}</Text>
+                                        {i < arr.length - 1 && <Text style={S.progressArrow}> → </Text>}
+                                    </View>
+                                ))}
+                            </View>
+                        </ScrollView>
+                    </View>
+                )}
+
+                {/* Expandable data table */}
+                {trends.length > 0 && !loadingTrend && (
+                    <>
+                        <Pressable style={S.toggleBtn} onPress={() => setShowTable(v => !v)}>
+                            <Text style={S.toggleTxt}>
+                                {showTable ? '▲ Hide' : '▼ Show'} {t('prices.trendChartDesc')} ({trends.length} {t('prices.dataPoints')})
+                            </Text>
+                        </Pressable>
+                        {showTable && (
+                            <ScrollView horizontal showsHorizontalScrollIndicator>
+                                <View>
+                                    <View style={[S.tr, S.tHdr]}>
+                                        {['Date','Location','Buying Price','Min','Max'].map(h => (
+                                            <Text key={h} style={[S.td, S.tHdrTxt, { width: h === 'Date' ? 80 : h === 'Location' ? 80 : 90 }]}>{h}</Text>
+                                        ))}
+                                    </View>
+                                    {[...trends].reverse().slice(0, 30).map((item, i) => (
+                                        <View key={i} style={[S.tr, i % 2 === 0 && S.trAlt]}>
+                                            <Text style={[S.td, { width: 80 }]}>{new Date(item.price_date).toLocaleDateString('en-IN')}</Text>
+                                            <Text style={[S.td, { width: 80 }]}>{location}</Text>
+                                            <Text style={[S.td, { width: 90, color: '#7c3aed', fontWeight: '700' }]}>{fmt(item.buying_price)}/kg</Text>
+                                            <Text style={[S.td, { width: 90 }]}>{fmt(item.market_range_low)}</Text>
+                                            <Text style={[S.td, { width: 90 }]}>{fmt(item.market_range_high)}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            </ScrollView>
+                        )}
+                    </>
                 )}
             </View>
 
-            {/* LOT SUMMARY */}
+            {/* ══════════════════════════════════════════
+                SECTION 4 — Recycler Rates Table
+            ══════════════════════════════════════════ */}
+            <View style={S.card}>
+                <Text style={S.secTitle}>{t('prices.recyclerRates')} — {catLabel}</Text>
+                <Text style={S.secSub2}>{t('prices.currentRatesDesc')}</Text>
+                {rateAsOf && <Text style={S.rateAsOf}>{t('prices.rateAsOf', { date: rateAsOf })}</Text>}
 
-            {lotId ? (
-                <View
-                    style={
-                        styles.lotSummary
-                    }
-                >
-                    <View>
-                        <Text
-                            style={
-                                styles.lotId
-                            }
-                        >
-                            {lotId}
-                        </Text>
-
-                        <Text
-                            style={
-                                styles.lotCategory
-                            }
-                        >
-                            {category}
-                            {lotWeight
-                                ? ` · ${lotWeight} kg`
-                                : ''}
-                        </Text>
-                    </View>
-
-                    {estimatedValue !=
-                        null ? (
-                        <View
-                            style={
-                                styles.estimateBlock
-                            }
-                        >
-                            <Text
-                                style={
-                                    styles.estimateLabel
-                                }
-                            >
-                                PLATFORM
-                                ESTIMATE
-                            </Text>
-
-                            <Text
-                                style={
-                                    styles.estimateValue
-                                }
-                            >
-                                ₹
-                                {estimatedValue.toLocaleString(
-                                    'en-IN'
-                                )}
-                            </Text>
-                        </View>
-                    ) : null}
-                </View>
-            ) : null}
-
-            {/* SUCCESS */}
-
-            {successMessage ? (
-                <View
-                    style={
-                        styles.successBanner
-                    }
-                >
-                    <Text
-                        style={
-                            styles.successText
-                        }
-                    >
-                        ✓{' '}
-                        {
-                            successMessage
-                        }
-                    </Text>
-                </View>
-            ) : null}
-
-            {/* ERROR */}
-
-            {error ? (
-                <View
-                    style={
-                        styles.errorBanner
-                    }
-                >
-                    <Text
-                        style={
-                            styles.errorText
-                        }
-                    >
-                        ⚠️ {error}
-                    </Text>
-                </View>
-            ) : null}
-
-            {offersError ? (
-                <View
-                    style={
-                        styles.warningBanner
-                    }
-                >
-                    <Text
-                        style={
-                            styles.warningText
-                        }
-                    >
-                        ⚠️{' '}
-                        {offersError}
-                    </Text>
-                </View>
-            ) : null}
-
-            {/* =================================================
-          QUOTES RECEIVED
-      ================================================= */}
-
-            {lotId &&
-                (openOffers.length >
-                    0 ||
-                    acceptedOffer) ? (
-                <View
-                    style={
-                        styles.card
-                    }
-                >
-                    <View
-                        style={
-                            styles.sectionHeader
-                        }
-                    >
-                        <Text
-                            style={
-                                styles.sectionTitle
-                            }
-                        >
-                            Quotes Received
-                        </Text>
-
-                        {acceptedOffer ? (
-                            <View
-                                style={
-                                    styles.acceptedBadge
-                                }
-                            >
-                                <Text
-                                    style={
-                                        styles.acceptedBadgeText
-                                    }
-                                >
-                                    ✓ Accepted
-                                </Text>
-                            </View>
-                        ) : null}
-                    </View>
-
-                    {acceptedOffer ? (
-                        <AcceptedOfferCard
-                            offer={
-                                acceptedOffer
-                            }
-                            lotWeight={
-                                lotWeight
-                            }
-                        />
-                    ) : (
-                        <>
-                            <View
-                                style={
-                                    styles.privacyNotice
-                                }
-                            >
-                                <Text
-                                    style={
-                                        styles.privacyText
-                                    }
-                                >
-                                    🔐 Recycler
-                                    contact details
-                                    remain protected
-                                    until you accept
-                                    a quote.
-                                </Text>
-                            </View>
-
-                            {openOffers.map(
-                                (offer) => (
-                                    <OfferCard
-                                        key={
-                                            offer.id
-                                        }
-                                        offer={
-                                            offer
-                                        }
-                                        lotWeight={
-                                            lotWeight
-                                        }
-                                        busy={
-                                            offerBusy ===
-                                            offer.id
-                                        }
-                                        disableActions={
-                                            offerBusy !=
-                                            null
-                                        }
-                                        onAccept={() =>
-                                            handleOfferAction(
-                                                offer.id,
-                                                'accept'
-                                            )
-                                        }
-                                        onReject={() =>
-                                            handleOfferAction(
-                                                offer.id,
-                                                'reject'
-                                            )
-                                        }
-                                    />
-                                )
-                            )}
-                        </>
+                {/* Search */}
+                <View style={S.searchBox}>
+                    <Text style={S.searchIcon}>🔍</Text>
+                    <TextInput
+                        style={S.searchInput}
+                        value={search}
+                        onChangeText={setSearch}
+                        placeholder={t('priceDiscovery.filterRecyclersPlaceholder')}
+                        placeholderTextColor="#9ca3af"
+                    />
+                    {!!search && (
+                        <Pressable onPress={() => setSearch('')} style={S.clearX}>
+                            <Text style={S.clearXTxt}>✕</Text>
+                        </Pressable>
                     )}
                 </View>
-            ) : null}
-
-            {/* =================================================
-          SEARCH
-      ================================================= */}
-
-            {!loading &&
-                recyclers.length >
-                0 ? (
-                <View
-                    style={
-                        styles.searchCard
-                    }
-                >
-                    <Text
-                        style={
-                            styles.searchIcon
-                        }
-                    >
-                        🔍
+                {!!search.trim() && (
+                    <Text style={S.rateCount}>
+                        {t('priceDiscovery.showingRecyclers', {
+                            count: String(filtered.length),
+                            total: String(rateRows.filter(r => (r.materials_accepted || []).includes(category)).length),
+                        })}
                     </Text>
-
-                    <TextInput
-                        value={
-                            searchTerm
-                        }
-                        onChangeText={
-                            setSearchTerm
-                        }
-                        placeholder="Search recyclers by name or location"
-                        placeholderTextColor="#9ca3af"
-                        style={
-                            styles.searchInput
-                        }
-                    />
-
-                    {searchTerm ? (
-                        <Pressable
-                            onPress={() =>
-                                setSearchTerm(
-                                    ''
-                                )
-                            }
-                        >
-                            <Text
-                                style={
-                                    styles.clearSearch
-                                }
-                            >
-                                ✕
-                            </Text>
-                        </Pressable>
-                    ) : null}
-                </View>
-            ) : null}
-
-            {searchTerm ? (
-                <Text
-                    style={
-                        styles.searchCount
-                    }
-                >
-                    Showing{' '}
-                    {
-                        filteredRecyclers.length
-                    }{' '}
-                    of{' '}
-                    {
-                        recyclers.length
-                    }{' '}
-                    matched recyclers
-                </Text>
-            ) : null}
-
-            {/* =================================================
-          LOADING
-      ================================================= */}
-
-            {loading ? (
-                <View
-                    style={
-                        styles.loadingBox
-                    }
-                >
-                    <ActivityIndicator
-                        size="large"
-                        color="#16a34a"
-                    />
-
-                    <Text
-                        style={
-                            styles.loadingText
-                        }
-                    >
-                        Finding the best
-                        recyclers...
-                    </Text>
-                </View>
-            ) : null}
-
-            {/* =================================================
-          NO RECYCLERS
-      ================================================= */}
-
-            {!loading &&
-                recyclers.length ===
-                0 ? (
-                <View
-                    style={
-                        styles.emptyCard
-                    }
-                >
-                    <Text
-                        style={
-                            styles.emptyIcon
-                        }
-                    >
-                        ♻️
-                    </Text>
-
-                    <Text
-                        style={
-                            styles.emptyTitle
-                        }
-                    >
-                        No recyclers found
-                    </Text>
-
-                    <Text
-                        style={
-                            styles.emptyText
-                        }
-                    >
-                        We couldn't find a
-                        matching recycler
-                        near this location.
-                    </Text>
-
-                    <Pressable
-                        style={
-                            styles.outlineButton
-                        }
-                        onPress={
-                            refresh
-                        }
-                    >
-                        <Text
-                            style={
-                                styles.outlineButtonText
-                            }
-                        >
-                            Try Again
-                        </Text>
-                    </Pressable>
-                </View>
-            ) : null}
-
-            {/* =================================================
-          SEARCH EMPTY
-      ================================================= */}
-
-            {!loading &&
-                recyclers.length >
-                0 &&
-                filteredRecyclers.length ===
-                0 ? (
-                <View
-                    style={
-                        styles.emptyCard
-                    }
-                >
-                    <Text
-                        style={
-                            styles.emptyTitle
-                        }
-                    >
-                        No search matches
-                    </Text>
-
-                    <Pressable
-                        style={
-                            styles.outlineButton
-                        }
-                        onPress={() =>
-                            setSearchTerm('')
-                        }
-                    >
-                        <Text
-                            style={
-                                styles.outlineButtonText
-                            }
-                        >
-                            Clear Search
-                        </Text>
-                    </Pressable>
-                </View>
-            ) : null}
-
-            {/* =================================================
-          RECYCLER CARDS
-      ================================================= */}
-
-            {!loading &&
-                filteredRecyclers.map(
-                    (recycler) => {
-                        const recyclerId =
-                            recyclerIdOf(
-                                recycler
-                            );
-
-                        if (!recyclerId) {
-                            return null;
-                        }
-
-                        const suitability =
-                            suitabilityOf(
-                                recycler
-                            );
-
-                        const myOffer =
-                            offerForRecycler(
-                                recyclerId
-                            );
-
-                        const isSelected =
-                            selectedId ===
-                            recyclerId;
-
-                        const isRequesting =
-                            requesting ===
-                            recyclerId;
-
-                        const isAcceptedRecycler =
-                            acceptedOffer &&
-                            Number(
-                                acceptedOffer.recycler_id
-                            ) ===
-                            Number(
-                                recyclerId
-                            );
-
-                        return (
-                            <Pressable
-                                key={
-                                    recyclerId
-                                }
-                                onPress={() =>
-                                    setSelectedId(
-                                        recyclerId
-                                    )
-                                }
-                                style={[
-                                    styles.recyclerCard,
-
-                                    isSelected &&
-                                    styles.recyclerCardSelected,
-
-                                    isAcceptedRecycler &&
-                                    styles.recyclerCardAccepted,
-                                ]}
-                            >
-                                {/* HEADER */}
-
-                                <View
-                                    style={
-                                        styles.recyclerHeader
-                                    }
-                                >
-                                    <View
-                                        style={
-                                            styles.recyclerNameWrap
-                                        }
-                                    >
-                                        <View
-                                            style={
-                                                styles.recyclerAvatar
-                                            }
-                                        >
-                                            <Text
-                                                style={
-                                                    styles.recyclerAvatarText
-                                                }
-                                            >
-                                                ♻
-                                            </Text>
-                                        </View>
-
-                                        <View
-                                            style={{
-                                                flex: 1,
-                                            }}
-                                        >
-                                            <Text
-                                                style={
-                                                    styles.recyclerName
-                                                }
-                                            >
-                                                {recycler.name ||
-                                                    'Authorized Recycler'}
-                                            </Text>
-
-                                            <Text
-                                                style={
-                                                    styles.recyclerLocation
-                                                }
-                                            >
-                                                {recycler.service_area ||
-                                                    recycler.facility_location ||
-                                                    'Location unavailable'}
-                                            </Text>
-                                        </View>
-                                    </View>
-
-                                    <View
-                                        style={
-                                            styles.authorizedBadge
-                                        }
-                                    >
-                                        <Text
-                                            style={
-                                                styles.authorizedText
-                                            }
-                                        >
-                                            ✓ Authorized
-                                        </Text>
-                                    </View>
-                                </View>
-
-                                {/* SUITABILITY */}
-
-                                <View
-                                    style={
-                                        styles.scoreSection
-                                    }
-                                >
-                                    <View
-                                        style={
-                                            styles.scoreHeader
-                                        }
-                                    >
-                                        <Text
-                                            style={
-                                                styles.scoreLabel
-                                            }
-                                        >
-                                            Suitability
-                                        </Text>
-
-                                        <Text
-                                            style={
-                                                styles.scoreValue
-                                            }
-                                        >
-                                            {
-                                                suitability
-                                            }
-                                            %
-                                        </Text>
-                                    </View>
-
-                                    <View
-                                        style={
-                                            styles.scoreTrack
-                                        }
-                                    >
-                                        <View
-                                            style={[
-                                                styles.scoreFill,
-
-                                                {
-                                                    width:
-                                                        `${suitability}%`,
-                                                },
-                                            ]}
-                                        />
-                                    </View>
-                                </View>
-
-                                {/* SCORE BREAKDOWN */}
-
-                                {recycler.score_price !=
-                                    null ||
-                                    recycler.score_reliability !=
-                                    null ? (
-                                    <View
-                                        style={
-                                            styles.scoreChips
-                                        }
-                                    >
-                                        <ScoreChip
-                                            text={`Price ${pctScore(
-                                                recycler.score_price
-                                            )}%`}
-                                        />
-
-                                        <ScoreChip
-                                            text={`Distance ${pctScore(
-                                                recycler.score_distance
-                                            )}%`}
-                                        />
-
-                                        <ScoreChip
-                                            text={`Pickup ${pctScore(
-                                                recycler.score_pickup
-                                            )}%`}
-                                        />
-
-                                        <ScoreChip
-                                            text={`Reliability ${pctScore(
-                                                recycler.score_reliability
-                                            )}%`}
-                                        />
-                                    </View>
-                                ) : null}
-
-                                {/* STATS */}
-
-                                <View
-                                    style={
-                                        styles.stats
-                                    }
-                                >
-                                    <Stat
-                                        icon="📍"
-                                        label="Distance"
-                                        value={
-                                            recycler.distance_km !=
-                                                null
-                                                ? `${Number(
-                                                    recycler.distance_km
-                                                ).toFixed(
-                                                    1
-                                                )} km`
-                                                : '—'
-                                        }
-                                    />
-
-                                    <Stat
-                                        icon="₹"
-                                        label="Recycler Rate"
-                                        value={
-                                            recycler.offered_rate
-                                                ? `₹${recycler.offered_rate}/kg`
-                                                : '—'
-                                        }
-                                        subValue={
-                                            lotWeight &&
-                                                recycler.offered_rate
-                                                ? `Est. ₹${Math.round(
-                                                    Number(
-                                                        lotWeight
-                                                    ) *
-                                                    Number(
-                                                        recycler.offered_rate
-                                                    )
-                                                ).toLocaleString(
-                                                    'en-IN'
-                                                )}`
-                                                : undefined
-                                        }
-                                    />
-
-                                    <Stat
-                                        icon="🚚"
-                                        label="Pickup"
-                                        value={
-                                            recycler.pickup_availability ===
-                                                'daily'
-                                                ? 'Available'
-                                                : recycler.pickup_availability ||
-                                                'On request'
-                                        }
-                                    />
-                                </View>
-
-                                {/* MATERIALS */}
-
-                                {Array.isArray(
-                                    recycler.materials_accepted
-                                ) &&
-                                    recycler
-                                        .materials_accepted
-                                        .length >
-                                    0 ? (
-                                    <View
-                                        style={
-                                            styles.materials
-                                        }
-                                    >
-                                        {recycler.materials_accepted.map(
-                                            (
-                                                material
-                                            ) => (
-                                                <View
-                                                    key={
-                                                        material
-                                                    }
-                                                    style={
-                                                        styles.materialChip
-                                                    }
-                                                >
-                                                    <Text
-                                                        style={
-                                                            styles.materialText
-                                                        }
-                                                    >
-                                                        {
-                                                            material
-                                                        }
-                                                    </Text>
-                                                </View>
-                                            )
-                                        )}
-                                    </View>
-                                ) : null}
-
-                                {/* =================================================
-                    ACTION STATE
-                ================================================= */}
-
-                                {acceptedOffer ? (
-                                    isAcceptedRecycler ? (
-                                        <View>
-                                            <View
-                                                style={
-                                                    styles.acceptedRecyclerBox
-                                                }
-                                            >
-                                                <Text
-                                                    style={
-                                                        styles.acceptedRecyclerTitle
-                                                    }
-                                                >
-                                                    ✓ Accepted
-                                                    Recycler
-                                                </Text>
-
-                                                <Text
-                                                    style={
-                                                        styles.acceptedRecyclerRate
-                                                    }
-                                                >
-                                                    ₹
-                                                    {
-                                                        acceptedOffer.offered_price
-                                                    }{' '}
-                                                    / kg
-                                                </Text>
-
-                                                {lotWeight &&
-                                                    acceptedOffer.offered_price ? (
-                                                    <Text
-                                                        style={
-                                                            styles.acceptedRecyclerPayout
-                                                        }
-                                                    >
-                                                        Agreed
-                                                        payout:{' '}
-                                                        ₹
-                                                        {Math.round(
-                                                            Number(
-                                                                lotWeight
-                                                            ) *
-                                                            Number(
-                                                                acceptedOffer.offered_price
-                                                            )
-                                                        ).toLocaleString(
-                                                            'en-IN'
-                                                        )}
-                                                    </Text>
-                                                ) : null}
-                                            </View>
-
-                                            {/* HANDOVER */}
-
-                                            {handoverReference ? (
-                                                <View
-                                                    style={
-                                                        styles.handoverSuccessBox
-                                                    }
-                                                >
-                                                    <Text
-                                                        style={
-                                                            styles.handoverSuccessTitle
-                                                        }
-                                                    >
-                                                        ✓ Handover Initiated
-                                                    </Text>
-
-                                                    <Text
-                                                        style={
-                                                            styles.handoverSuccessText
-                                                        }
-                                                    >
-                                                        Reference:{' '}
-                                                        {handoverReference}
-                                                    </Text>
-
-                                                    <Pressable
-                                                        style={
-                                                            styles.dashboardButton
-                                                        }
-                                                        onPress={() =>
-                                                            router.replace(
-                                                                '/collector'
-                                                            )
-                                                        }
-                                                    >
-                                                        <Text
-                                                            style={
-                                                                styles.dashboardButtonText
-                                                            }
-                                                        >
-                                                            Back to Dashboard
-                                                        </Text>
-                                                    </Pressable>
-                                                </View>
-                                            ) : (
-                                                <View
-                                                    style={
-                                                        styles.nextPartBox
-                                                    }
-                                                >
-                                                    <Text
-                                                        style={
-                                                            styles.nextPartText
-                                                        }
-                                                    >
-                                                        The recycler is confirmed.
-                                                        Start the physical handover
-                                                        when you are ready.
-                                                    </Text>
-
-                                                    <Pressable
-                                                        style={[
-                                                            styles.handoverButton,
-
-                                                            handingOver &&
-                                                            styles.disabledButton,
-                                                        ]}
-                                                        disabled={
-                                                            handingOver
-                                                        }
-                                                        onPress={
-                                                            handleInitiateHandover
-                                                        }
-                                                    >
-                                                        {handingOver ? (
-                                                            <View
-                                                                style={
-                                                                    styles.buttonLoading
-                                                                }
-                                                            >
-                                                                <ActivityIndicator
-                                                                    size="small"
-                                                                    color="#ffffff"
-                                                                />
-
-                                                                <Text
-                                                                    style={
-                                                                        styles.handoverButtonText
-                                                                    }
-                                                                >
-                                                                    Initiating...
-                                                                </Text>
-                                                            </View>
-                                                        ) : (
-                                                            <Text
-                                                                style={
-                                                                    styles.handoverButtonText
-                                                                }
-                                                            >
-                                                                Proceed to Handover
-                                                            </Text>
-                                                        )}
-                                                    </Pressable>
-                                                </View>
-                                            )}
-                                        </View>
-                                    ) : (
-                                        <Text
-                                            style={
-                                                styles.unavailableText
-                                            }
-                                        >
-                                            Another
-                                            recycler's
-                                            quote has been
-                                            accepted.
-                                        </Text>
-                                    )
-                                ) : !myOffer ? (
-                                    <Pressable
-                                        style={[
-                                            styles.primaryButton,
-
-                                            requesting !=
-                                            null &&
-                                            styles.disabledButton,
-                                        ]}
-                                        disabled={
-                                            requesting !=
-                                            null
-                                        }
-                                        onPress={() =>
-                                            handleRequestQuote(
-                                                recycler
-                                            )
-                                        }
-                                    >
-                                        {isRequesting ? (
-                                            <View
-                                                style={
-                                                    styles.buttonLoading
-                                                }
-                                            >
-                                                <ActivityIndicator
-                                                    size="small"
-                                                    color="#ffffff"
-                                                />
-
-                                                <Text
-                                                    style={
-                                                        styles.primaryButtonText
-                                                    }
-                                                >
-                                                    Requesting...
-                                                </Text>
-                                            </View>
-                                        ) : (
-                                            <Text
-                                                style={
-                                                    styles.primaryButtonText
-                                                }
-                                            >
-                                                Request Quote
-                                            </Text>
-                                        )}
-                                    </Pressable>
-                                ) : myOffer.offer_status ===
-                                    'requested' ? (
-                                    <View
-                                        style={
-                                            styles.waitingBox
-                                        }
-                                    >
-                                        <Text
-                                            style={
-                                                styles.waitingText
-                                            }
-                                        >
-                                            ⏳ Quote
-                                            requested —
-                                            awaiting
-                                            recycler
-                                        </Text>
-                                    </View>
-                                ) : myOffer.offer_status ===
-                                    'offered' ? (
-                                    <View
-                                        style={
-                                            styles.offerActionBox
-                                        }
-                                    >
-                                        <Text
-                                            style={
-                                                styles.offerSmallLabel
-                                            }
-                                        >
-                                            RECYCLER'S
-                                            OFFER
-                                        </Text>
-
-                                        <Text
-                                            style={
-                                                styles.offerPrice
-                                            }
-                                        >
-                                            ₹
-                                            {Number(
-                                                myOffer.offered_price
-                                            ).toLocaleString(
-                                                'en-IN'
-                                            )}{' '}
-                                            / kg
-                                        </Text>
-
-                                        {lotWeight &&
-                                            myOffer.offered_price ? (
-                                            <Text
-                                                style={
-                                                    styles.offerPayout
-                                                }
-                                            >
-                                                Estimated
-                                                payout: ₹
-                                                {Math.round(
-                                                    Number(
-                                                        lotWeight
-                                                    ) *
-                                                    Number(
-                                                        myOffer.offered_price
-                                                    )
-                                                ).toLocaleString(
-                                                    'en-IN'
-                                                )}
-                                            </Text>
-                                        ) : null}
-
-                                        <View
-                                            style={
-                                                styles.offerButtons
-                                            }
-                                        >
-                                            <Pressable
-                                                style={[
-                                                    styles.acceptButton,
-
-                                                    offerBusy !=
-                                                    null &&
-                                                    styles.disabledButton,
-                                                ]}
-                                                disabled={
-                                                    offerBusy !=
-                                                    null
-                                                }
-                                                onPress={() =>
-                                                    handleOfferAction(
-                                                        myOffer.id,
-                                                        'accept'
-                                                    )
-                                                }
-                                            >
-                                                {offerBusy ===
-                                                    myOffer.id ? (
-                                                    <ActivityIndicator
-                                                        size="small"
-                                                        color="#ffffff"
-                                                    />
-                                                ) : (
-                                                    <Text
-                                                        style={
-                                                            styles.acceptButtonText
-                                                        }
-                                                    >
-                                                        ✓ Accept
-                                                    </Text>
-                                                )}
-                                            </Pressable>
-
-                                            <Pressable
-                                                style={[
-                                                    styles.rejectButton,
-
-                                                    offerBusy !=
-                                                    null &&
-                                                    styles.disabledButton,
-                                                ]}
-                                                disabled={
-                                                    offerBusy !=
-                                                    null
-                                                }
-                                                onPress={() =>
-                                                    handleOfferAction(
-                                                        myOffer.id,
-                                                        'reject'
-                                                    )
-                                                }
-                                            >
-                                                <Text
-                                                    style={
-                                                        styles.rejectButtonText
-                                                    }
-                                                >
-                                                    Reject
-                                                </Text>
-                                            </Pressable>
-                                        </View>
-                                    </View>
-                                ) : (
-                                    <Pressable
-                                        style={
-                                            styles.primaryButton
-                                        }
-                                        onPress={() =>
-                                            handleRequestQuote(
-                                                recycler
-                                            )
-                                        }
-                                    >
-                                        <Text
-                                            style={
-                                                styles.primaryButtonText
-                                            }
-                                        >
-                                            Request Quote
-                                        </Text>
-                                    </Pressable>
-                                )}
-                            </Pressable>
-                        );
-                    }
                 )}
 
-            <View
-                style={{
-                    height: 50,
-                }}
-            />
+                {loadingRec ? (
+                    <View style={S.loader}><ActivityIndicator size="large" color="#7c3aed" /><Text style={S.loaderTxt}>Loading rates…</Text></View>
+                ) : filtered.length === 0 ? (
+                    <View style={S.empty}>
+                        <Text style={S.emptyTxt}>
+                            {search ? t('priceDiscovery.noRecyclersMatch', { search }) : t('prices.noRecyclers')}
+                        </Text>
+                        {!!search && (
+                            <Pressable style={S.clearFilterBtn} onPress={() => setSearch('')}>
+                                <Text style={S.clearFilterTxt}>{t('priceDiscovery.clearFilter')}</Text>
+                            </Pressable>
+                        )}
+                    </View>
+                ) : (
+                    <ScrollView horizontal showsHorizontalScrollIndicator>
+                        <View>
+                            {/* Header */}
+                            <View style={[S.tr, S.tHdr]}>
+                                <Text style={[S.td, S.tHdrTxt, { width: 150 }]}>{t('prices.recyclerName')}</Text>
+                                <Text style={[S.td, S.tHdrTxt, { width: 120 }]}>{t('prices.location')}</Text>
+                                {userCoords && <Text style={[S.td, S.tHdrTxt, { width: 80 }]}>{t('priceDiscovery.distance')}</Text>}
+                                <Text style={[S.td, S.tHdrTxt, { width: 100 }]}>{t('prices.offered')}</Text>
+                                <Text style={[S.td, S.tHdrTxt, { width: 70 }]}>{t('prices.pickup')}</Text>
+                                <Text style={[S.td, S.tHdrTxt, { width: 90 }]}>vs {t('prices.buyingPrice')}</Text>
+                            </View>
+                            {filtered.map((r, i) => {
+                                const mktPrice = priceCards[category]?.unit_price;
+                                const vsMkt = mktPrice && r.offered_rate
+                                    ? ((Number(r.offered_rate) - mktPrice) / mktPrice * 100).toFixed(1)
+                                    : null;
+                                const isDaily = r.pickup_availability === 'daily';
+                                return (
+                                    <View key={String(r.recycler_id || i)} style={[S.tr, i % 2 === 0 && S.trAlt]}>
+                                        {/* Name */}
+                                        <View style={[S.td, { width: 150 }]}>
+                                            <View style={S.nameRow}>
+                                                {i === 0 && r.offered_rate && (
+                                                    <View style={S.bestBadge}><Text style={S.bestTxt}>★</Text></View>
+                                                )}
+                                                <Text style={S.rName} numberOfLines={1}>
+                                                    {r.name || `Recycler ${i + 1}`}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                        <Text style={[S.td, S.muted, { width: 120 }]} numberOfLines={1}>
+                                            {r.facility_location || r.service_area || '—'}
+                                        </Text>
+                                        {userCoords && (
+                                            <Text style={[S.td, { width: 80, color: '#7c3aed', fontWeight: '500' }]}>
+                                                {r.distance != null ? `📍 ${r.distance} km` : '—'}
+                                            </Text>
+                                        )}
+                                        <Text style={[S.td, { width: 100, color: '#d97706', fontWeight: '700' }]}>
+                                            {r.offered_rate ? `${fmt(r.offered_rate)}/kg` : '—'}
+                                        </Text>
+                                        <Text style={[S.td, { width: 70, color: isDaily ? '#16a34a' : '#9ca3af' }]}>
+                                            {isDaily ? `✓ ${t('prices.yes')}` : `✗ ${t('prices.no')}`}
+                                        </Text>
+                                        <View style={[S.td, { width: 90 }]}>
+                                            {vsMkt != null ? (
+                                                <View style={[S.vsBadge, Number(vsMkt) >= 0 ? S.vsUp : S.vsDn]}>
+                                                    <Text style={[S.vsTxt, Number(vsMkt) >= 0 ? S.vsTxtUp : S.vsTxtDn]}>
+                                                        {Number(vsMkt) >= 0 ? '+' : ''}{vsMkt}%
+                                                    </Text>
+                                                </View>
+                                            ) : <Text style={S.muted}>—</Text>}
+                                        </View>
+                                    </View>
+                                );
+                            })}
+                        </View>
+                    </ScrollView>
+                )}
+            </View>
+
+            <View style={{ height: 60 }} />
         </ScrollView>
     );
 }
 
 /* =========================================================
-   COMPONENTS
+   SUB-COMPONENTS
 ========================================================= */
 
-function ScoreChip({
-    text,
-}: {
-    text: string;
-}) {
+function Chip({ label, value, accent, up }: { label: string; value: string; accent?: boolean; up?: boolean }) {
     return (
-        <View
-            style={
-                styles.scoreChip
-            }
-        >
-            <Text
-                style={
-                    styles.scoreChipText
-                }
-            >
-                {text}
-            </Text>
+        <View style={[S.chip2, accent && S.chip2Accent, up && S.chip2Up]}>
+            <Text style={S.chipLabel}>{label}</Text>
+            <Text style={[S.chipValue, accent && S.chipValueAccent, up && S.chipValueUp]}>{value}</Text>
         </View>
     );
 }
 
-function Stat({
-    icon,
-    label,
-    value,
-    subValue,
-}: {
-    icon: string;
-    label: string;
-    value: string;
-    subValue?: string;
+function Mini({ label, value, accent, up, down }: {
+    label: string; value: string; accent?: boolean; up?: boolean; down?: boolean;
 }) {
     return (
-        <View
-            style={
-                styles.stat
-            }
-        >
-            <Text
-                style={
-                    styles.statIcon
-                }
-            >
-                {icon}
-            </Text>
-
-            <Text
-                style={
-                    styles.statLabel
-                }
-            >
-                {label}
-            </Text>
-
-            <Text
-                style={
-                    styles.statValue
-                }
-            >
-                {value}
-            </Text>
-
-            {subValue ? (
-                <Text
-                    style={
-                        styles.statSubValue
-                    }
-                >
-                    {subValue}
-                </Text>
-            ) : null}
-        </View>
-    );
-}
-
-function OfferCard({
-    offer,
-    lotWeight,
-    busy,
-    disableActions,
-    onAccept,
-    onReject,
-}: {
-    offer: Offer;
-    lotWeight: number | null;
-    busy: boolean;
-    disableActions: boolean;
-    onAccept: () => void;
-    onReject: () => void;
-}) {
-    if (
-        offer.offer_status ===
-        'requested'
-    ) {
-        return (
-            <View
-                style={
-                    styles.offerCard
-                }
-            >
-                <Text
-                    style={
-                        styles.offerRecyclerName
-                    }
-                >
-                    {offer.recycler_name ||
-                        'Recycler'}
-                </Text>
-
-                <Text
-                    style={
-                        styles.awaitingText
-                    }
-                >
-                    ⏳ Awaiting recycler
-                    quote
-                </Text>
-            </View>
-        );
-    }
-
-    const price =
-        Number(
-            offer.offered_price
-        );
-
-    const payout =
-        lotWeight &&
-            Number.isFinite(price)
-            ? Math.round(
-                lotWeight * price
-            )
-            : null;
-
-    return (
-        <View
-            style={
-                styles.offerCard
-            }
-        >
-            <Text
-                style={
-                    styles.offerRecyclerName
-                }
-            >
-                {offer.recycler_name ||
-                    'Recycler'}
-            </Text>
-
-            <Text
-                style={
-                    styles.offerCardPrice
-                }
-            >
-                ₹
-                {price.toLocaleString(
-                    'en-IN'
-                )}{' '}
-                / kg
-            </Text>
-
-            {payout != null ? (
-                <Text
-                    style={
-                        styles.offerCardPayout
-                    }
-                >
-                    Estimated payout: ₹
-                    {payout.toLocaleString(
-                        'en-IN'
-                    )}
-                </Text>
-            ) : null}
-
-            <View
-                style={
-                    styles.offerButtons
-                }
-            >
-                <Pressable
-                    style={[
-                        styles.acceptButton,
-                        disableActions &&
-                        styles.disabledButton,
-                    ]}
-                    disabled={
-                        disableActions
-                    }
-                    onPress={
-                        onAccept
-                    }
-                >
-                    {busy ? (
-                        <ActivityIndicator
-                            size="small"
-                            color="#ffffff"
-                        />
-                    ) : (
-                        <Text
-                            style={
-                                styles.acceptButtonText
-                            }
-                        >
-                            ✓ Accept Quote
-                        </Text>
-                    )}
-                </Pressable>
-
-                <Pressable
-                    style={[
-                        styles.rejectButton,
-                        disableActions &&
-                        styles.disabledButton,
-                    ]}
-                    disabled={
-                        disableActions
-                    }
-                    onPress={
-                        onReject
-                    }
-                >
-                    <Text
-                        style={
-                            styles.rejectButtonText
-                        }
-                    >
-                        Reject
-                    </Text>
-                </Pressable>
-            </View>
-        </View>
-    );
-}
-
-function AcceptedOfferCard({
-    offer,
-    lotWeight,
-}: {
-    offer: Offer;
-    lotWeight: number | null;
-}) {
-    const price =
-        Number(
-            offer.offered_price
-        );
-
-    return (
-        <View>
-            <View
-                style={
-                    styles.acceptedBanner
-                }
-            >
-                <Text
-                    style={
-                        styles.acceptedBannerText
-                    }
-                >
-                    ✓ Accepted{' '}
-                    {offer.recycler_name ||
-                        'Recycler'}{' '}
-                    at ₹
-                    {price.toLocaleString(
-                        'en-IN'
-                    )}
-                    /kg
-                </Text>
-
-                {lotWeight ? (
-                    <Text
-                        style={
-                            styles.acceptedPayout
-                        }
-                    >
-                        Estimated payout: ₹
-                        {Math.round(
-                            lotWeight *
-                            price
-                        ).toLocaleString(
-                            'en-IN'
-                        )}
-                    </Text>
-                ) : null}
-            </View>
-
-            <View
-                style={
-                    styles.contactCard
-                }
-            >
-                <View
-                    style={
-                        styles.contactHeader
-                    }
-                >
-                    <Text
-                        style={
-                            styles.contactTitle
-                        }
-                    >
-                        📞 Pickup
-                        Coordination
-                    </Text>
-
-                    <View
-                        style={
-                            styles.unlockedBadge
-                        }
-                    >
-                        <Text
-                            style={
-                                styles.unlockedText
-                            }
-                        >
-                            🔓 Unlocked
-                        </Text>
-                    </View>
-                </View>
-
-                <ContactRow
-                    label="Facility"
-                    value={
-                        offer.recycler_name ||
-                        '—'
-                    }
-                />
-
-                <ContactRow
-                    label="Phone"
-                    value={
-                        offer.contact_details ||
-                        offer.recycler_contact_details ||
-                        'Available during dispatch confirmation'
-                    }
-                />
-
-                <ContactRow
-                    label="Pickup"
-                    value={
-                        offer.pickup_availability ||
-                        'Daily / On Request'
-                    }
-                />
-
-                <ContactRow
-                    label="Location"
-                    value={
-                        offer.recycler_facility ||
-                        offer.recycler_service_area ||
-                        'Bengaluru'
-                    }
-                />
-            </View>
-        </View>
-    );
-}
-
-function ContactRow({
-    label,
-    value,
-}: {
-    label: string;
-    value: string;
-}) {
-    return (
-        <View
-            style={
-                styles.contactRow
-            }
-        >
-            <Text
-                style={
-                    styles.contactLabel
-                }
-            >
-                {label}
-            </Text>
-
-            <Text
-                style={
-                    styles.contactValue
-                }
-            >
+        <View style={S.mini}>
+            <Text style={S.miniLabel}>{label}</Text>
+            <Text style={[
+                S.miniValue,
+                accent && { color: '#7c3aed' },
+                up   && { color: '#16a34a' },
+                down && { color: '#dc2626' },
+            ]}>
                 {value}
             </Text>
         </View>
@@ -2622,976 +1059,173 @@ function ContactRow({
    STYLES
 ========================================================= */
 
-const styles =
-    StyleSheet.create({
-        screen: {
-            flex: 1,
-            backgroundColor:
-                '#f8fafc',
-        },
-
-        container: {
-            padding: 18,
-        },
-
-        back: {
-            color:
-                '#16a34a',
-            fontSize: 14,
-            fontWeight:
-                '700',
-            marginBottom: 14,
-        },
-
-        title: {
-            fontSize: 29,
-            fontWeight:
-                '900',
-            color:
-                '#111827',
-        },
-
-        subtitle: {
-            fontSize: 13,
-            color:
-                '#6b7280',
-            marginTop: 5,
-        },
-
-        locationRow: {
-            marginTop: 9,
-            flexDirection:
-                'row',
-            alignItems:
-                'center',
-            gap: 7,
-        },
-
-        locationText: {
-            color:
-                '#15803d',
-            fontSize: 11,
-            flex: 1,
-        },
-
-        lotSummary: {
-            marginTop: 20,
-            borderRadius: 14,
-            padding: 15,
-            backgroundColor:
-                '#ecfdf5',
-            borderWidth: 1,
-            borderColor:
-                '#bbf7d0',
-            flexDirection:
-                'row',
-            justifyContent:
-                'space-between',
-            alignItems:
-                'center',
-            gap: 12,
-        },
-
-        lotId: {
-            color:
-                '#111827',
-            fontWeight:
-                '900',
-            fontSize: 15,
-        },
-
-        lotCategory: {
-            marginTop: 3,
-            color:
-                '#4b5563',
-            fontSize: 11,
-        },
-
-        estimateBlock: {
-            alignItems:
-                'flex-end',
-        },
-
-        estimateLabel: {
-            color:
-                '#6b7280',
-            fontSize: 8,
-            fontWeight:
-                '800',
-        },
-
-        estimateValue: {
-            color:
-                '#16a34a',
-            fontSize: 18,
-            fontWeight:
-                '900',
-            marginTop: 2,
-        },
-
-        successBanner: {
-            marginTop: 15,
-            padding: 12,
-            backgroundColor:
-                '#ecfdf5',
-            borderColor:
-                '#86efac',
-            borderWidth: 1,
-            borderRadius: 10,
-        },
-
-        successText: {
-            color:
-                '#15803d',
-            fontSize: 12,
-            fontWeight:
-                '600',
-        },
-
-        errorBanner: {
-            marginTop: 15,
-            padding: 12,
-            backgroundColor:
-                '#fef2f2',
-            borderColor:
-                '#fca5a5',
-            borderWidth: 1,
-            borderRadius: 10,
-        },
-
-        errorText: {
-            color:
-                '#b91c1c',
-            fontSize: 12,
-        },
-
-        warningBanner: {
-            marginTop: 15,
-            padding: 12,
-            backgroundColor:
-                '#fffbeb',
-            borderColor:
-                '#fcd34d',
-            borderWidth: 1,
-            borderRadius: 10,
-        },
-
-        warningText: {
-            color:
-                '#92400e',
-            fontSize: 12,
-        },
-
-        card: {
-            marginTop: 16,
-            backgroundColor:
-                '#ffffff',
-            borderWidth: 1,
-            borderColor:
-                '#e5e7eb',
-            borderRadius: 15,
-            padding: 15,
-        },
-
-        sectionHeader: {
-            flexDirection:
-                'row',
-            justifyContent:
-                'space-between',
-            alignItems:
-                'center',
-            gap: 10,
-            marginBottom: 13,
-        },
-
-        sectionTitle: {
-            color:
-                '#111827',
-            fontSize: 17,
-            fontWeight:
-                '800',
-        },
-
-        acceptedBadge: {
-            backgroundColor:
-                '#dcfce7',
-            paddingHorizontal:
-                9,
-            paddingVertical:
-                5,
-            borderRadius: 20,
-        },
-
-        acceptedBadgeText: {
-            color:
-                '#15803d',
-            fontSize: 9,
-            fontWeight:
-                '800',
-        },
-
-        privacyNotice: {
-            backgroundColor:
-                '#f8fafc',
-            padding: 10,
-            borderRadius: 9,
-            marginBottom: 10,
-        },
-
-        privacyText: {
-            color:
-                '#64748b',
-            fontSize: 10,
-            lineHeight: 15,
-        },
-
-        searchCard: {
-            marginTop: 16,
-            backgroundColor:
-                '#ffffff',
-            flexDirection:
-                'row',
-            alignItems:
-                'center',
-            borderWidth: 1,
-            borderColor:
-                '#e5e7eb',
-            borderRadius: 13,
-            paddingHorizontal: 13,
-        },
-
-        searchIcon: {
-            fontSize: 16,
-        },
-
-        searchInput: {
-            flex: 1,
-            height: 48,
-            paddingHorizontal:
-                10,
-            color:
-                '#111827',
-            fontSize: 12,
-        },
-
-        clearSearch: {
-            color:
-                '#6b7280',
-            fontSize: 15,
-            padding: 5,
-        },
-
-        searchCount: {
-            color:
-                '#6b7280',
-            marginTop: 7,
-            fontSize: 10,
-        },
-
-        loadingBox: {
-            paddingVertical:
-                70,
-            alignItems:
-                'center',
-        },
-
-        loadingText: {
-            color:
-                '#6b7280',
-            marginTop: 12,
-            fontSize: 12,
-        },
-
-        emptyCard: {
-            backgroundColor:
-                '#ffffff',
-            borderRadius: 15,
-            borderColor:
-                '#e5e7eb',
-            borderWidth: 1,
-            alignItems:
-                'center',
-            padding: 30,
-            marginTop: 16,
-        },
-
-        emptyIcon: {
-            fontSize: 35,
-        },
-
-        emptyTitle: {
-            marginTop: 10,
-            color:
-                '#111827',
-            fontWeight:
-                '800',
-            fontSize: 16,
-        },
-
-        emptyText: {
-            color:
-                '#6b7280',
-            fontSize: 11,
-            textAlign:
-                'center',
-            marginVertical: 10,
-        },
-
-        recyclerCard: {
-            backgroundColor:
-                '#ffffff',
-            borderWidth: 1.5,
-            borderColor:
-                '#e5e7eb',
-            borderRadius: 16,
-            padding: 16,
-            marginTop: 13,
-        },
-
-        recyclerCardSelected: {
-            borderColor:
-                '#16a34a',
-        },
-
-        recyclerCardAccepted: {
-            borderColor:
-                '#22c55e',
-            borderWidth: 2,
-        },
-
-        recyclerHeader: {
-            flexDirection:
-                'row',
-            justifyContent:
-                'space-between',
-            alignItems:
-                'flex-start',
-            gap: 10,
-        },
-
-        recyclerNameWrap: {
-            flex: 1,
-            flexDirection:
-                'row',
-            gap: 10,
-            alignItems:
-                'center',
-        },
-
-        recyclerAvatar: {
-            width: 42,
-            height: 42,
-            borderRadius: 21,
-            backgroundColor:
-                '#dcfce7',
-            alignItems:
-                'center',
-            justifyContent:
-                'center',
-        },
-
-        recyclerAvatarText: {
-            color:
-                '#16a34a',
-            fontSize: 22,
-        },
-
-        recyclerName: {
-            color:
-                '#111827',
-            fontSize: 15,
-            fontWeight:
-                '800',
-        },
-
-        recyclerLocation: {
-            color:
-                '#6b7280',
-            fontSize: 10,
-            marginTop: 3,
-        },
-
-        authorizedBadge: {
-            backgroundColor:
-                '#ecfdf5',
-            paddingVertical:
-                5,
-            paddingHorizontal:
-                7,
-            borderRadius: 15,
-        },
-
-        authorizedText: {
-            color:
-                '#15803d',
-            fontSize: 8,
-            fontWeight:
-                '800',
-        },
-
-        scoreSection: {
-            marginTop: 16,
-        },
-
-        scoreHeader: {
-            flexDirection:
-                'row',
-            justifyContent:
-                'space-between',
-        },
-
-        scoreLabel: {
-            color:
-                '#4b5563',
-            fontSize: 11,
-            fontWeight:
-                '600',
-        },
-
-        scoreValue: {
-            color:
-                '#16a34a',
-            fontSize: 12,
-            fontWeight:
-                '900',
-        },
-
-        scoreTrack: {
-            height: 7,
-            backgroundColor:
-                '#e5e7eb',
-            borderRadius: 4,
-            overflow:
-                'hidden',
-            marginTop: 7,
-        },
-
-        scoreFill: {
-            height: '100%',
-            backgroundColor:
-                '#16a34a',
-            borderRadius: 4,
-        },
-
-        scoreChips: {
-            flexDirection:
-                'row',
-            flexWrap:
-                'wrap',
-            gap: 6,
-            marginTop: 11,
-        },
-
-        scoreChip: {
-            backgroundColor:
-                '#f1f5f9',
-            paddingVertical:
-                5,
-            paddingHorizontal:
-                8,
-            borderRadius: 15,
-        },
-
-        scoreChipText: {
-            fontSize: 9,
-            color:
-                '#475569',
-            fontWeight:
-                '600',
-        },
-
-        stats: {
-            flexDirection:
-                'row',
-            justifyContent:
-                'space-between',
-            marginTop: 16,
-            borderTopWidth: 1,
-            borderTopColor:
-                '#f1f5f9',
-            paddingTop: 14,
-            gap: 5,
-        },
-
-        stat: {
-            flex: 1,
-            alignItems:
-                'center',
-        },
-
-        statIcon: {
-            fontSize: 16,
-        },
-
-        statLabel: {
-            color:
-                '#9ca3af',
-            fontSize: 8,
-            marginTop: 3,
-            textAlign:
-                'center',
-        },
-
-        statValue: {
-            color:
-                '#111827',
-            fontSize: 10,
-            fontWeight:
-                '700',
-            marginTop: 2,
-            textAlign:
-                'center',
-        },
-
-        statSubValue: {
-            color:
-                '#16a34a',
-            fontSize: 8,
-            marginTop: 2,
-            textAlign:
-                'center',
-        },
-
-        materials: {
-            flexDirection:
-                'row',
-            flexWrap:
-                'wrap',
-            gap: 5,
-            marginTop: 13,
-        },
-
-        materialChip: {
-            backgroundColor:
-                '#f0fdf4',
-            paddingHorizontal:
-                8,
-            paddingVertical:
-                4,
-            borderRadius: 15,
-        },
-
-        materialText: {
-            color:
-                '#15803d',
-            fontSize: 8,
-            fontWeight:
-                '600',
-        },
-
-        primaryButton: {
-            marginTop: 15,
-            backgroundColor:
-                '#16a34a',
-            borderRadius: 10,
-            minHeight: 44,
-            alignItems:
-                'center',
-            justifyContent:
-                'center',
-            paddingHorizontal:
-                14,
-        },
-
-        primaryButtonText: {
-            color:
-                '#ffffff',
-            fontWeight:
-                '800',
-            fontSize: 12,
-        },
-
-        buttonLoading: {
-            flexDirection:
-                'row',
-            gap: 8,
-            alignItems:
-                'center',
-        },
-
-        disabledButton: {
-            opacity: 0.5,
-        },
-
-        waitingBox: {
-            marginTop: 14,
-            padding: 11,
-            backgroundColor:
-                '#f8fafc',
-            borderRadius: 9,
-            alignItems:
-                'center',
-        },
-
-        waitingText: {
-            color:
-                '#64748b',
-            fontSize: 10,
-            fontWeight:
-                '600',
-        },
-
-        offerActionBox: {
-            marginTop: 14,
-            backgroundColor:
-                '#f8fafc',
-            borderRadius: 10,
-            padding: 13,
-            alignItems:
-                'center',
-        },
-
-        offerSmallLabel: {
-            color:
-                '#9ca3af',
-            fontSize: 8,
-            fontWeight:
-                '800',
-        },
-
-        offerPrice: {
-            color:
-                '#16a34a',
-            fontSize: 20,
-            fontWeight:
-                '900',
-            marginTop: 3,
-        },
-
-        offerPayout: {
-            color:
-                '#6b7280',
-            fontSize: 9,
-            marginTop: 3,
-        },
-
-        offerButtons: {
-            flexDirection:
-                'row',
-            gap: 8,
-            marginTop: 11,
-        },
-
-        acceptButton: {
-            flex: 1,
-            backgroundColor:
-                '#16a34a',
-            minHeight: 40,
-            borderRadius: 9,
-            alignItems:
-                'center',
-            justifyContent:
-                'center',
-        },
-
-        acceptButtonText: {
-            color:
-                '#ffffff',
-            fontSize: 10,
-            fontWeight:
-                '800',
-        },
-
-        rejectButton: {
-            flex: 1,
-            backgroundColor:
-                '#ffffff',
-            borderWidth: 1,
-            borderColor:
-                '#d1d5db',
-            minHeight: 40,
-            borderRadius: 9,
-            alignItems:
-                'center',
-            justifyContent:
-                'center',
-        },
-
-        rejectButtonText: {
-            color:
-                '#4b5563',
-            fontSize: 10,
-            fontWeight:
-                '700',
-        },
-
-        unavailableText: {
-            color:
-                '#6b7280',
-            textAlign:
-                'center',
-            marginTop: 15,
-            fontSize: 10,
-        },
-
-        acceptedRecyclerBox: {
-            marginTop: 14,
-            padding: 12,
-            backgroundColor:
-                '#dcfce7',
-            borderRadius: 10,
-            alignItems:
-                'center',
-        },
-
-        acceptedRecyclerTitle: {
-            color:
-                '#15803d',
-            fontSize: 11,
-            fontWeight:
-                '800',
-        },
-
-        acceptedRecyclerRate: {
-            color:
-                '#15803d',
-            fontSize: 17,
-            fontWeight:
-                '900',
-            marginTop: 3,
-        },
-
-        acceptedRecyclerPayout: {
-            color:
-                '#166534',
-            fontSize: 9,
-            marginTop: 3,
-        },
-
-        nextPartBox: {
-            marginTop: 8,
-            padding: 9,
-            borderRadius: 8,
-            backgroundColor:
-                '#f8fafc',
-            alignItems:
-                'center',
-        },
-
-        nextPartText: {
-            color:
-                '#64748b',
-            fontSize: 9,
-        },
-
-        handoverButton: {
-            marginTop: 10,
-            minHeight: 44,
-            borderRadius: 9,
-            backgroundColor:
-                '#16a34a',
-            alignItems:
-                'center',
-            justifyContent:
-                'center',
-            paddingHorizontal: 14,
-        },
-
-        handoverButtonText: {
-            color:
-                '#ffffff',
-            fontSize: 11,
-            fontWeight:
-                '800',
-        },
-
-        handoverSuccessBox: {
-            marginTop: 9,
-            padding: 12,
-            borderRadius: 10,
-            backgroundColor:
-                '#ecfdf5',
-            borderWidth: 1,
-            borderColor:
-                '#86efac',
-        },
-
-        handoverSuccessTitle: {
-            color:
-                '#15803d',
-            fontSize: 12,
-            fontWeight:
-                '900',
-        },
-
-        handoverSuccessText: {
-            color:
-                '#166534',
-            fontSize: 10,
-            marginTop: 4,
-        },
-
-        dashboardButton: {
-            marginTop: 10,
-            minHeight: 40,
-            borderRadius: 8,
-            backgroundColor:
-                '#166534',
-            alignItems:
-                'center',
-            justifyContent:
-                'center',
-        },
-
-        dashboardButtonText: {
-            color:
-                '#ffffff',
-            fontSize: 10,
-            fontWeight:
-                '800',
-        },
-
-        /* OFFER SECTION */
-
-        offerCard: {
-            borderTopWidth: 1,
-            borderTopColor:
-                '#e5e7eb',
-            paddingVertical: 13,
-        },
-
-        offerRecyclerName: {
-            fontWeight:
-                '800',
-            color:
-                '#111827',
-            fontSize: 13,
-        },
-
-        awaitingText: {
-            color:
-                '#6b7280',
-            fontSize: 10,
-            marginTop: 4,
-        },
-
-        offerCardPrice: {
-            color:
-                '#16a34a',
-            fontSize: 17,
-            fontWeight:
-                '900',
-            marginTop: 5,
-        },
-
-        offerCardPayout: {
-            color:
-                '#6b7280',
-            fontSize: 9,
-            marginTop: 2,
-        },
-
-        acceptedBanner: {
-            backgroundColor:
-                '#dcfce7',
-            padding: 12,
-            borderRadius: 10,
-            marginBottom: 10,
-        },
-
-        acceptedBannerText: {
-            color:
-                '#15803d',
-            fontSize: 11,
-            fontWeight:
-                '800',
-        },
-
-        acceptedPayout: {
-            color:
-                '#166534',
-            fontSize: 9,
-            marginTop: 4,
-        },
-
-        contactCard: {
-            backgroundColor:
-                '#f8fafc',
-            borderWidth: 1,
-            borderColor:
-                '#86efac',
-            borderRadius: 10,
-            padding: 13,
-        },
-
-        contactHeader: {
-            flexDirection:
-                'row',
-            justifyContent:
-                'space-between',
-            alignItems:
-                'center',
-            gap: 8,
-            marginBottom: 10,
-        },
-
-        contactTitle: {
-            color:
-                '#15803d',
-            fontWeight:
-                '800',
-            fontSize: 12,
-        },
-
-        unlockedBadge: {
-            backgroundColor:
-                '#dcfce7',
-            paddingHorizontal:
-                7,
-            paddingVertical:
-                4,
-            borderRadius: 12,
-        },
-
-        unlockedText: {
-            color:
-                '#15803d',
-            fontSize: 8,
-            fontWeight:
-                '700',
-        },
-
-        contactRow: {
-            paddingVertical: 7,
-            borderTopWidth: 1,
-            borderTopColor:
-                '#e5e7eb',
-        },
-
-        contactLabel: {
-            color:
-                '#9ca3af',
-            fontSize: 8,
-            fontWeight:
-                '600',
-        },
-
-        contactValue: {
-            color:
-                '#111827',
-            fontSize: 10,
-            fontWeight:
-                '600',
-            marginTop: 2,
-        },
-
-        outlineButton: {
-            borderWidth: 1,
-            borderColor:
-                '#d1d5db',
-            borderRadius: 9,
-            paddingHorizontal:
-                15,
-            paddingVertical:
-                10,
-            marginTop: 10,
-        },
-
-        outlineButtonText: {
-            color:
-                '#374151',
-            fontWeight:
-                '700',
-            fontSize: 11,
-        },
-    });
+const P = '#7c3aed', PL = '#ede9fe', PBG = '#f5f3ff';
+const T = '#0f172a', M = '#64748b', B = '#e2e8f0', BG = '#f8fafc';
+
+const S = StyleSheet.create({
+    screen: { flex: 1, backgroundColor: BG },
+    container: { paddingHorizontal: 18, paddingTop: 24, paddingBottom: 40 },
+
+    /* sync btn */
+    syncBtn: { backgroundColor: P, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, alignItems: 'center', justifyContent: 'center' },
+    syncBtnTxt: { color: '#fff', fontSize: 12, fontWeight: '700' },
+    disabled: { opacity: 0.55 },
+
+    /* toasts */
+    toastGreen: { backgroundColor: '#f0fdf4', borderWidth: 1, borderColor: '#86efac', borderRadius: 10, padding: 12, marginBottom: 10 },
+    toastGreenTxt: { color: '#15803d', fontSize: 13, fontWeight: '600' },
+    toastWarn: { backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fcd34d', borderRadius: 10, padding: 12, marginBottom: 10 },
+    toastWarnTxt: { color: '#b45309', fontSize: 13, fontWeight: '500' },
+
+    /* pulse banner */
+    pulse: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, backgroundColor: PBG, borderWidth: 1, borderColor: '#c4b5fd', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 16 },
+    pulseL: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10b981' },
+    liveTxt: { fontSize: 10, fontWeight: '700', color: '#10b981', letterSpacing: 0.5, textTransform: 'uppercase' },
+    pulseM: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+    pulseCat: { fontSize: 13, fontWeight: '600', color: T },
+    pulsePrice: { fontSize: 15, fontWeight: '800', color: P },
+    pulseR: { flexDirection: 'row', gap: 6, marginLeft: 'auto', flexWrap: 'wrap' },
+    demandBadge: { backgroundColor: '#dcfce7', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
+    demandTxt: { fontSize: 10, fontWeight: '600', color: '#15803d' },
+    hubBadge: { backgroundColor: PL, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
+    hubTxt: { fontSize: 10, fontWeight: '600', color: P },
+
+    /* controls */
+    block: { marginBottom: 12 },
+    controlRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+    ctrlLabel: { fontSize: 12, fontWeight: '700', color: M, textTransform: 'uppercase', letterSpacing: 0.4 },
+    gpsBtn: { backgroundColor: PL, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+    gpsTxt: { color: P, fontSize: 12, fontWeight: '600' },
+    gpsNote: { fontSize: 10, color: M, marginTop: 4, fontStyle: 'italic' },
+    gpsErr: { fontSize: 11, color: '#dc2626', marginTop: 4 },
+    chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: B, backgroundColor: '#fff', marginRight: 8 },
+    chipOn: { backgroundColor: P, borderColor: P },
+    chipTxt: { fontSize: 12, fontWeight: '500', color: M },
+    chipTxtOn: { color: '#fff', fontWeight: '700' },
+
+    /* days */
+    daysRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
+    dayTabs: { flexDirection: 'row', gap: 6 },
+    dayTab: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, borderWidth: 1, borderColor: B, backgroundColor: '#fff' },
+    dayTabOn: { backgroundColor: P, borderColor: P },
+    dayTabTxt: { fontSize: 12, fontWeight: '600', color: M },
+    dayTabTxtOn: { color: '#fff' },
+
+    /* section headers */
+    secRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10, marginTop: 4 },
+    secTitle: { fontSize: 16, fontWeight: '700', color: T },
+    secSub: { fontSize: 11, color: M },
+    secSub2: { fontSize: 13, color: M, marginBottom: 8, marginTop: 2 },
+
+    /* material rate cards */
+    cardScroll: { flexGrow: 0, marginBottom: 18 },
+    matCard: { width: 155, marginRight: 10, backgroundColor: '#fff', borderRadius: 14, borderWidth: 1.5, borderColor: B, padding: 12, gap: 4, position: 'relative', overflow: 'hidden' },
+    matCardOn: { borderColor: P, backgroundColor: PBG },
+    matIcon: { fontSize: 22, marginBottom: 2 },
+    matName: { fontSize: 11, fontWeight: '700', color: M, textTransform: 'uppercase', letterSpacing: 0.3 },
+    matNameOn: { color: P },
+    matRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 4 },
+    matRowLbl: { fontSize: 9, color: M, flex: 1 },
+    matPrice: { fontSize: 12, fontWeight: '700', color: T },
+    matPriceOn: { color: P },
+    matRange: { fontSize: 10, fontWeight: '600', color: M },
+    matActiveLine: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, backgroundColor: P },
+
+    /* category tabs (smaller, inline) */
+    tabsScroll: { flexGrow: 0, marginBottom: 12 },
+    catTab: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: B, backgroundColor: '#fff', marginRight: 8, flexDirection: 'row', alignItems: 'center', gap: 5 },
+    catTabOn: { backgroundColor: P, borderColor: P },
+    catTabIcon: { fontSize: 13 },
+    catTabTxt: { fontSize: 12, fontWeight: '600', color: M },
+    catTabTxtOn: { color: '#fff' },
+
+    /* hero */
+    hero: { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1.5, borderColor: '#c4b5fd', padding: 18, marginBottom: 20, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, shadowColor: P, shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+    heroKicker: { fontSize: 10, fontWeight: '700', color: M, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+    heroCatLoc: { fontSize: 13, fontWeight: '600', color: M, marginBottom: 4 },
+    heroPriceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 2, marginBottom: 4 },
+    heroPrice: { fontSize: 34, fontWeight: '800', color: P },
+    heroUnit: { fontSize: 16, fontWeight: '600', color: M },
+    heroDesc: { fontSize: 10, color: M, marginBottom: 6 },
+    chg: { fontSize: 13, fontWeight: '700' },
+    chgUp: { color: '#16a34a' },
+    chgDown: { color: '#dc2626' },
+    speakBtn: { backgroundColor: PBG, borderRadius: 12, padding: 12, alignItems: 'center', minWidth: 72, borderWidth: 1.5, borderColor: '#c4b5fd', gap: 4 },
+    speakBtnOn: { backgroundColor: P, borderColor: P },
+    speakIcon: { fontSize: 22 },
+    speakTxt: { fontSize: 10, fontWeight: '700', color: P, textAlign: 'center' },
+    speakTxtOn: { color: '#fff' },
+
+    /* card wrapper */
+    card: { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: B, padding: 16, marginBottom: 20 },
+    chartHdr: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 },
+
+    /* analytics */
+    analyticsBox: { backgroundColor: PBG, borderRadius: 10, borderWidth: 1, borderColor: '#c4b5fd', borderStyle: 'dashed', padding: 10, marginBottom: 12 },
+    analyticsTitle: { fontSize: 10, fontWeight: '700', color: M, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 },
+    chipsRow: { flexDirection: 'row', gap: 8 },
+    chip2: { backgroundColor: BG, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: B, minWidth: 110, alignItems: 'center' },
+    chip2Accent: { backgroundColor: PL, borderColor: '#c4b5fd' },
+    chip2Up: { backgroundColor: '#f0fdf4', borderColor: '#86efac' },
+    chipLabel: { fontSize: 9, fontWeight: '600', color: M, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 2, textAlign: 'center' },
+    chipValue: { fontSize: 13, fontWeight: '700', color: T, textAlign: 'center' },
+    chipValueAccent: { color: P },
+    chipValueUp: { color: '#16a34a' },
+
+    /* mini stats */
+    statsRow: { flexDirection: 'row', gap: 6, marginBottom: 14, flexWrap: 'wrap' },
+    mini: { flex: 1, minWidth: 56, backgroundColor: BG, borderRadius: 8, padding: 8, alignItems: 'center', borderWidth: 1, borderColor: B },
+    miniLabel: { fontSize: 8, fontWeight: '700', color: M, textTransform: 'uppercase', letterSpacing: 0.2, marginBottom: 2 },
+    miniValue: { fontSize: 12, fontWeight: '700', color: T },
+
+    /* chart */
+    chartWrap: { position: 'relative', overflow: 'hidden', marginBottom: 4 },
+
+    /* progression */
+    progressBox: { backgroundColor: BG, borderRadius: 10, borderWidth: 1, borderColor: B, padding: 12, marginTop: 8, marginBottom: 10 },
+    progressTitle: { fontSize: 10, fontWeight: '700', color: M, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 8 },
+    progressRow: { flexDirection: 'row', alignItems: 'center' },
+    progressItem: { flexDirection: 'row', alignItems: 'center' },
+    progressPrice: { fontSize: 15, fontWeight: '700', color: P },
+    progressArrow: { fontSize: 12, color: M, fontWeight: '500' },
+
+    /* toggle */
+    toggleBtn: { paddingVertical: 10, alignItems: 'center', borderTopWidth: 1, borderTopColor: B, marginTop: 8 },
+    toggleTxt: { fontSize: 12, color: P, fontWeight: '600' },
+
+    /* table */
+    tr: { flexDirection: 'row', paddingVertical: 9, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: B, alignItems: 'center' },
+    trAlt: { backgroundColor: '#fafafa' },
+    tHdr: { backgroundColor: '#f1f5f9' },
+    td: { fontSize: 12, color: T, paddingHorizontal: 6 },
+    tHdrTxt: { fontSize: 10, fontWeight: '700', color: M, textTransform: 'uppercase', letterSpacing: 0.2 },
+
+    /* recycler rates */
+    rateAsOf: { fontSize: 11, color: M, marginBottom: 8, fontStyle: 'italic' },
+    rateCount: { fontSize: 11, color: M, marginBottom: 8 },
+    searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: BG, borderWidth: 1, borderColor: B, borderRadius: 10, marginBottom: 10, paddingHorizontal: 10 },
+    searchIcon: { fontSize: 14, marginRight: 6 },
+    searchInput: { flex: 1, paddingVertical: 10, fontSize: 13, color: T },
+    clearX: { padding: 6 },
+    clearXTxt: { color: M, fontSize: 16 },
+    nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    rName: { fontSize: 12, fontWeight: '700', color: T, flex: 1 },
+    muted: { color: M },
+    bestBadge: { backgroundColor: '#fef3c7', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
+    bestTxt: { fontSize: 9, color: '#b45309', fontWeight: '700' },
+    vsBadge: { borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+    vsUp: { backgroundColor: '#dcfce7' },
+    vsDn: { backgroundColor: '#fee2e2' },
+    vsTxt: { fontSize: 11, fontWeight: '700' },
+    vsTxtUp: { color: '#15803d' },
+    vsTxtDn: { color: '#b91c1c' },
+    clearFilterBtn: { marginTop: 10, backgroundColor: PL, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7, alignSelf: 'center' },
+    clearFilterTxt: { color: P, fontSize: 13, fontWeight: '600' },
+
+    /* misc */
+    loader: { alignItems: 'center', paddingVertical: 30, gap: 10 },
+    loaderTxt: { color: M, fontSize: 13 },
+    empty: { alignItems: 'center', paddingVertical: 30 },
+    emptyTxt: { color: M, fontSize: 13, textAlign: 'center' },
+});

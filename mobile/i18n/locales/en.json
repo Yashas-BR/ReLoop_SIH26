@@ -110,7 +110,9 @@
     "signOut": "Sign Out",
     "all": "All",
     "search": "Search",
-    "ok": "OK"
+    "ok": "OK",
+    "of": "of",
+    "status": "Status"
   },
   "status": {
     "quoted": "Quoted",
@@ -541,7 +543,8 @@
     "cancelledBanner": "This lot was cancelled on {{date}}. Reason: {{reason}}",
     "lotLocked": "Handover or payment in progress — lot cannot be cancelled.",
     "lotDeletedSuccess": "Draft lot was deleted successfully.",
-    "lotCancelledSuccess": "Lot cancelled successfully."
+    "lotCancelledSuccess": "Lot cancelled successfully.",
+    "handoverStatus": "Handover Status"
   },
   "traceability": {
     "title": "Traceability",

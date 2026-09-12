@@ -16,6 +16,7 @@ import {
 } from '../../../api/client';
 
 import { currentCollectorId } from '../../../services/auth';
+import { useTranslation } from '../../../i18n/config';
 
 type Lot = {
     lot_id: string | number;
@@ -65,6 +66,7 @@ function statusColors(status?: string) {
 }
 
 export default function FindRecyclersScreen() {
+    const { t } = useTranslation();
     const [lots, setLots] = useState<Lot[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -83,7 +85,7 @@ export default function FindRecyclersScreen() {
             setLots(Array.isArray(data) ? data : []);
         } catch (err: any) {
             console.log('Find recyclers lots error:', err);
-            setError(err?.message || 'Could not load your lots.');
+            setError(err?.message || t('dashboard.findRecyclersDesc'));
         }
     }, []);
 
@@ -158,19 +160,18 @@ export default function FindRecyclersScreen() {
             }
         >
             <Pressable onPress={() => router.back()}>
-                <Text style={styles.back}>‹ Back</Text>
+                <Text style={styles.back}>‹ {t('common.back')}</Text>
             </Pressable>
 
-            <Text style={styles.title}>Find Recyclers</Text>
+            <Text style={styles.title}>{t('dashboard.findRecyclers')}</Text>
             <Text style={styles.subtitle}>
-                Select one of your active lots to find matching authorized recyclers.
+                {t('dashboard.findRecyclersDesc')}
             </Text>
 
             <View style={styles.infoCard}>
                 <Text style={styles.infoIcon}>♻️</Text>
                 <Text style={styles.infoText}>
-                    Recycler matching depends on the lot's material category and location,
-                    so choose a lot first.
+                    {t('recyclers.subtitle')}
                 </Text>
             </View>
 
@@ -178,7 +179,7 @@ export default function FindRecyclersScreen() {
                 <View style={styles.errorCard}>
                     <Text style={styles.errorText}>⚠️ {error}</Text>
                     <Pressable onPress={loadLots}>
-                        <Text style={styles.retryText}>Retry</Text>
+                        <Text style={styles.retryText}>{t('common.retry')}</Text>
                     </Pressable>
                 </View>
             ) : null}
@@ -186,21 +187,21 @@ export default function FindRecyclersScreen() {
             {loading ? (
                 <View style={styles.loadingBox}>
                     <ActivityIndicator size="large" color="#16a34a" />
-                    <Text style={styles.loadingText}>Loading your lots...</Text>
+                    <Text style={styles.loadingText}>{t('common.loading')}</Text>
                 </View>
             ) : selectableLots.length === 0 ? (
                 <View style={styles.emptyCard}>
                     <Text style={styles.emptyIcon}>📦</Text>
-                    <Text style={styles.emptyTitle}>No active lots found</Text>
+                    <Text style={styles.emptyTitle}>{t('dashboard.noLots')}</Text>
                     <Text style={styles.emptyText}>
-                        Create a new e-waste lot first, then we'll match it with recyclers.
+                        {t('dashboard.noLotsDesc')}
                     </Text>
 
                     <Pressable
                         style={styles.createButton}
                         onPress={() => router.push('/collector/create-lot')}
                     >
-                        <Text style={styles.createButtonText}>+ Create New Lot</Text>
+                        <Text style={styles.createButtonText}>+ {t('dashboard.createNewLot')}</Text>
                     </Pressable>
                 </View>
             ) : (
@@ -262,7 +263,7 @@ export default function FindRecyclersScreen() {
 
                                     <View style={styles.selectRow}>
                                         <Text style={styles.selectText}>
-                                            Find matched recyclers
+                                            {t('dashboard.findRecyclers')}
                                         </Text>
                                         <Text style={styles.chevron}>›</Text>
                                     </View>
