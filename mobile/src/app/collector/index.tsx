@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 
 import {
   ActivityIndicator,
@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 
 import {
-  DEMO_COLLECTOR_ID,
   getEarningsSummary,
   getLotsByCollector,
 } from '../../../api/client';
@@ -160,8 +159,11 @@ export default function CollectorDashboard() {
       const storedCollectorId =
         await currentCollectorId();
 
-      const collectorId =
-        storedCollectorId ?? DEMO_COLLECTOR_ID;
+      const collectorId = storedCollectorId;
+      if (!collectorId) {
+        router.replace('/login/collector');
+        return;
+      }
 
       const results =
         await Promise.allSettled([
@@ -205,9 +207,11 @@ export default function CollectorDashboard() {
     }
   }
 
-  useEffect(() => {
-    loadDashboard();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadDashboard();
+    }, [])
+  );
 
   return (
     <ScrollView

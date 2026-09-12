@@ -5,7 +5,7 @@ import {
     RefreshControl, ScrollView, StyleSheet, Text, TextInput, View
 } from 'react-native';
 
-import { DEMO_COLLECTOR_ID, acceptOffer, cancelLot, deleteLot,
+import { acceptOffer, cancelLot, deleteLot,
     getHandoversByLot, getLotEvents, getLotImages, getLotsByCollector,
     getOffersByLot, rejectOffer
 } from '../../../../api/client';
@@ -53,7 +53,11 @@ export default function CollectorLotDetail() {
     const load = useCallback(async () => {
         setError('');
         try {
-            const cid = (await currentCollectorId()) ?? DEMO_COLLECTOR_ID;
+            const cid = await currentCollectorId();
+            if (!cid) {
+                router.replace('/login/collector');
+                return;
+            }
             const [lr, hr, or, er, ir] = await Promise.all([
                 getLotsByCollector(cid),
                 getHandoversByLot(lotId),
@@ -109,7 +113,12 @@ export default function CollectorLotDetail() {
 
     async function doDelete() {
         try {
-            setBusy('delete'); const cid = (await currentCollectorId()) ?? DEMO_COLLECTOR_ID;
+            setBusy('delete');
+            const cid = await currentCollectorId();
+            if (!cid) {
+                router.replace('/login/collector');
+                return;
+            }
             await deleteLot(lotId, { collector_id: cid }); router.replace('/collector');
         } catch (e: any) { Alert.alert('Delete failed', e?.message || 'Please try again.'); }
         finally { setBusy(null) }
@@ -118,7 +127,12 @@ export default function CollectorLotDetail() {
     async function doCancel() {
         if (!cancelReason.trim()) { Alert.alert('Reason required', 'Enter a cancellation reason.'); return }
         try {
-            setBusy('cancel'); const cid = (await currentCollectorId()) ?? DEMO_COLLECTOR_ID;
+            setBusy('cancel');
+            const cid = await currentCollectorId();
+            if (!cid) {
+                router.replace('/login/collector');
+                return;
+            }
             await cancelLot(lotId, { collector_id: cid, reason: cancelReason.trim() });
             setCancelOpen(false); setCancelReason(''); await load();
         } catch (e: any) { Alert.alert('Cancel failed', e?.message || 'Please try again.') }
@@ -149,6 +163,14 @@ export default function CollectorLotDetail() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}>
         <BrandedHeader showBack title={t('lotDetail.title')} subtitle={lotId} rightElement={<Badge value={lot.transaction_status} />} />
 
+        {['matched', 'accepted', 'confirmed'].includes(lot.transaction_status) && (
+            <Pressable 
+                style={[styles.primary, { marginBottom: 15 }]} 
+                onPress={() => router.push(`/collector/qr/${lotId}` as any)}
+            >
+                <Text style={styles.primaryText}>📱 {t('collectorQr.showQrCode') || 'Show QR Code'}</Text>
+            </Pressable>
+        )}
 
         {locked ? <Text style={styles.lock}>🔒 {t('lotDetail.lotLocked')}</Text> :
             canCancel ? <Pressable style={styles.dangerOutline} onPress={() => setCancelOpen(true)}><Text style={styles.dangerText}>⚠️ {t('lotDetail.cancelLot')}</Text></Pressable> :

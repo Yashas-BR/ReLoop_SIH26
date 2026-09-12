@@ -9,9 +9,7 @@ import {
     Text,
     View,
 } from 'react-native';
-
 import {
-    DEMO_COLLECTOR_ID,
     getEarningsSummary,
     getPaymentHistory,
 } from '../../../api/client';
@@ -74,9 +72,11 @@ export default function CollectorEarnings() {
         setError('');
 
         try {
-            const sessionCollectorId = await currentCollectorId();
-            const collectorId =
-                sessionCollectorId ?? Number(DEMO_COLLECTOR_ID);
+            const collectorId = await currentCollectorId();
+            if (!collectorId) {
+                router.replace('/login/collector');
+                return;
+            }
 
             const [sumRes, histRes] = await Promise.all([
                 getEarningsSummary(collectorId),

@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 
 import {
-    DEMO_COLLECTOR_ID,
     getLotsByCollector,
 } from '../../../api/client';
 
@@ -76,8 +75,11 @@ export default function FindRecyclersScreen() {
         setError('');
 
         try {
-            const storedCollectorId = await currentCollectorId();
-            const collectorId = storedCollectorId ?? DEMO_COLLECTOR_ID;
+            const collectorId = await currentCollectorId();
+            if (!collectorId) {
+                router.replace('/login/collector');
+                return;
+            }
 
             const response = await getLotsByCollector(collectorId);
             const data = response?.data;

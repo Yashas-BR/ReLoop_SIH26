@@ -21,10 +21,6 @@ import * as ImageManipulator from 'expo-image-manipulator';
 
 import {
     createLot,
-    DEFAULT_LAT,
-    DEFAULT_LNG,
-    DEFAULT_LOCATION,
-    DEMO_COLLECTOR_ID,
     getInstantValuation,
     MATERIAL_CATEGORIES,
     submitAiFeedback,
@@ -1133,29 +1129,19 @@ export default function CreateLotScreen() {
         location,
         setLocation,
     ] =
-        useState(
-            DEFAULT_LOCATION
-        );
+        useState('');
 
     const [
         collectionLat,
         setCollectionLat,
     ] =
-        useState(
-            Number(
-                DEFAULT_LAT
-            )
-        );
+        useState<number | null>(null);
 
     const [
         collectionLng,
         setCollectionLng,
     ] =
-        useState(
-            Number(
-                DEFAULT_LNG
-            )
-        );
+        useState<number | null>(null);
 
     const [
         gpsHint,
@@ -1804,7 +1790,7 @@ export default function CreateLotScreen() {
         );
 
         setGpsHint(
-            'Acquiring precise GPS coordinates...'
+            t('createLot.acquiringGps') || 'Acquiring precise GPS coordinates...'
         );
 
         try {
@@ -1816,7 +1802,7 @@ export default function CreateLotScreen() {
                 'granted'
             ) {
                 setGpsHint(
-                    'Location permission denied.'
+                    t('createLot.permissionDenied') || 'Location permission denied.'
                 );
 
                 return;
@@ -2095,6 +2081,13 @@ export default function CreateLotScreen() {
             return;
         }
 
+        if (!location.trim()) {
+            setError(
+                t('createLot.errors.validLocation') || 'Please select a location.'
+            );
+            return;
+        }
+
         setError('');
 
         if (!valuation) {
@@ -2159,41 +2152,37 @@ export default function CreateLotScreen() {
                     );
 
             const response =
-                await createLot(
-                    {
-                        collector_id:
-                            collectorId ??
-                            DEMO_COLLECTOR_ID,
+                await createLot({
+                    collector_id: collectorId,
 
-                        category,
+                    category,
 
-                        approx_weight_kg:
-                            Number(
-                                weight
-                            ),
+                    approx_weight_kg:
+                        Number(
+                            weight
+                        ),
 
-                        location,
+                    location,
 
-                        collection_lat:
-                            collectionLat,
+                    collection_lat:
+                        collectionLat,
 
-                        collection_lng:
-                            collectionLng,
+                    collection_lng:
+                        collectionLng,
 
-                        description:
-                            descriptionParts.join(
-                                ' | '
-                            ) ||
-                            undefined,
+                    description:
+                        descriptionParts.join(
+                            ' | '
+                        ) ||
+                        undefined,
 
-                        image_refs:
-                            imageRefs,
+                    image_refs:
+                        imageRefs,
 
-                        ai_feedback_id:
-                            aiFeedbackId ||
-                            undefined,
-                    }
-                );
+                    ai_feedback_id:
+                        aiFeedbackId ||
+                        undefined,
+                });
 
             const lotId =
                 response?.data?.lot?.lot_id ??
@@ -2232,8 +2221,8 @@ export default function CreateLotScreen() {
             }
 
             Alert.alert(
-                'Lot Created',
-                'Your e-waste lot was created successfully.',
+                t('createLot.successTitle') || 'Lot Created',
+                t('createLot.successDesc') || 'Your e-waste lot was created successfully.',
                 [
                     {
                         text:
@@ -2246,19 +2235,21 @@ export default function CreateLotScreen() {
                                 );
                                 return;
                             }
-
+                            
+                            const createdLot = response?.data?.lot ?? {};
+                            
                             router.replace({
                                 pathname:
                                     '/collector/matched-recyclers',
 
                                 params: {
                                     lotId: String(lotId),
-                                    category: response?.data?.lot?.category || response?.data?.category || category,
-                                    location: response?.data?.lot?.location || response?.data?.location || location,
-                                    lat: String(response?.data?.lot?.latitude || response?.data?.latitude || collectionLat),
-                                    lng: String(response?.data?.lot?.longitude || response?.data?.longitude || collectionLng),
-                                    weight: String(response?.data?.lot?.approx_weight_kg || response?.data?.approx_weight_kg || weight),
-                                    estimatedValue: response?.data?.lot?.estimated_value != null ? String(response?.data?.lot?.estimated_value) : (response?.data?.estimated_value != null ? String(response?.data?.estimated_value) : (valuation?.estimated_value != null ? String(valuation.estimated_value) : '')),
+                                    category: createdLot.category ?? response?.data?.category ?? category,
+                                    location: createdLot.location ?? response?.data?.location ?? location,
+                                    lat: String(createdLot.collection_lat ?? collectionLat),
+                                    lng: String(createdLot.collection_lng ?? collectionLng),
+                                    weight: String(createdLot.approx_weight_kg ?? response?.data?.approx_weight_kg ?? weight),
+                                    estimatedValue: createdLot.estimated_value != null ? String(createdLot.estimated_value) : (response?.data?.estimated_value != null ? String(response?.data?.estimated_value) : (valuation?.estimated_value != null ? String(valuation.estimated_value) : '')),
                                 },
                             });
                         },
@@ -3251,8 +3242,8 @@ export default function CreateLotScreen() {
                                             }
                                         >
                                             {detectingGps
-                                                ? 'Locating...'
-                                                : '📍 Detect GPS'}
+                                                ? t('createLot.locating') || 'Locating...'
+                                                : t('createLot.detectGps') || '📍 Detect GPS'}
                                         </Text>
                                     </Pressable>
                                 </View>
@@ -3326,7 +3317,7 @@ export default function CreateLotScreen() {
                                     )}
                                 </ScrollView>
 
-                                {!LOCATIONS.includes(
+                                {location && !LOCATIONS.includes(
                                     location
                                 ) ? (
                                     <View
