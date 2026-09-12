@@ -136,8 +136,8 @@ export default function LandingScreen() {
         </View>
 
         <View style={styles.heroText}>
-          <Text style={styles.heroTitleMain}>Kabadiwala</Text>
-          <Text style={styles.heroTitleSub}>Connect</Text>
+          <Text style={styles.heroTitleMain}>E-Setu</Text>
+          <Text style={styles.heroTitleSub}>{t('landing.taglineShort')}</Text>
 
           <Text style={styles.tagline}>
             {t('landing.tagline')}
@@ -242,7 +242,7 @@ export default function LandingScreen() {
       {/* FOOTER */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          © 2026 Kabadiwala Connect. {t('landing.footer')}
+          © 2026 E-Setu. {t('landing.footer')}
         </Text>
       </View>
     </ScrollView>
