@@ -1,19 +1,6 @@
 /**
  * Price Discovery Screen — Mobile
  * Full feature parity with frontend/src/collector/PriceDiscovery.jsx
- *
- * Features:
- *   - SVG line chart with gradient fill + market range band
- *   - Statistics row (min/avg/max/latest/change%)
- *   - Market intelligence analytics chips
- *   - Historical progression ticker
- *   - Expandable price-history data table
- *   - Speak prices  (expo-speech)
- *   - Live market pulse banner
- *   - Material rate cards (all categories)
- *   - GPS location detect
- *   - Sync Live Market
- *   - Recycler rates table with vs-market badge
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -51,7 +38,6 @@ import {
 import { BrandedHeader } from '../../components/branding/BrandedHeader';
 import { useTranslation } from '../../../i18n/config';
 
-<<<<<<< HEAD
 /* =========================================================
    CONSTANTS
 ========================================================= */
@@ -76,11 +62,11 @@ const BENCHMARK_HUBS = [
 
 const SCREEN_W = Dimensions.get('window').width;
 const CHART_H = 210;
-const CHART_PAD_L = 8;   // left padding inside SVG (y-labels are outside in RN View)
+const CHART_PAD_L = 8;
 const CHART_PAD_R = 10;
 const CHART_PAD_T = 12;
 const CHART_PAD_B = 28;
-const Y_LABEL_W = 46;     // RN view width for y-axis text
+const Y_LABEL_W = 46;
 
 /* =========================================================
    TYPES
@@ -134,27 +120,10 @@ type PulseItem = {
    HELPERS
 ========================================================= */
 
-<<<<<<< HEAD
 function fmt(v?: number | string | null): string {
-    if (v == null || v === '') return '—';
-    return `₹${Number(v).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+    if (v == null || v === '') return '\u2014';
+    return `\u20B9${Number(v).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 }
-=======
-export default function MatchedRecyclersScreen() {
-    const { t } = useTranslation();
-    /*
-     * These values come from Create Lot.
-     */
-    const params = useLocalSearchParams<{
-        lotId?: string;
-        category?: string;
-        location?: string;
-        lat?: string;
-        lng?: string;
-        weight?: string;
-        estimatedValue?: string;
-    }>();
->>>>>>> 5c04669e98eb8c2e91a89207ea1238af5024490c
 
 function distKm(lat1: number, lon1: number, lat2: number, lon2: number): number | null {
     if (!isFinite(lat1 + lon1 + lat2 + lon2)) return null;
@@ -182,30 +151,14 @@ function trendStats(arr: PriceTrend[]) {
 
 /* =========================================================
    SVG LINE CHART
-   Renders:  market-range band (light purple fill)
-             area gradient under buying-price line
-             smooth bezier buying-price line (purple)
-             last-point glow dot
-             grid lines  (horizontal, faint)
-             x-axis date labels
-   Y-axis labels rendered in a sibling RN View (easier text control)
 ========================================================= */
 
-type ChartProps = {
-    trends: PriceTrend[];
-    width: number;   // full SVG width
-    height: number;  // full SVG height
-};
-
-function PriceLineChart({ trends, width, height }: ChartProps) {
-    const pl = CHART_PAD_L;
-    const pr = CHART_PAD_R;
-    const pt = CHART_PAD_T;
-    const pb = CHART_PAD_B;
-    const cw = width - pl - pr;   // chart inner width
-    const ch = height - pt - pb;  // chart inner height
-
+function PriceLineChart({ trends, width, height }: { trends: PriceTrend[]; width: number; height: number }) {
+    const pl = CHART_PAD_L, pr = CHART_PAD_R, pt = CHART_PAD_T, pb = CHART_PAD_B;
+    const cw = width - pl - pr;
+    const ch = height - pt - pb;
     const n = trends.length;
+
     const buyPrices = trends.map(t => Number(t.buying_price));
     const rangeLows  = trends.map(t => t.market_range_low  != null ? Number(t.market_range_low)  : null);
     const rangeHighs = trends.map(t => t.market_range_high != null ? Number(t.market_range_high) : null);
@@ -226,7 +179,6 @@ function PriceLineChart({ trends, width, height }: ChartProps) {
     const xOf = (i: number) => pl + (i / Math.max(n - 1, 1)) * cw;
     const yOf = (v: number) => pt + ch - ((v - minV) / span) * ch;
 
-    /* ---- buying price bezier path ---- */
     const pts = buyPrices.map((p, i) => ({ x: xOf(i), y: yOf(p) }));
     let linePath = '';
     pts.forEach((p, i) => {
@@ -237,12 +189,12 @@ function PriceLineChart({ trends, width, height }: ChartProps) {
             linePath += ` C${cpx},${pts[i-1].y.toFixed(1)} ${cpx},${p.y.toFixed(1)} ${p.x.toFixed(1)},${p.y.toFixed(1)}`;
         }
     });
+
     const bottom = (pt + ch).toFixed(1);
     const areaPath = linePath
         + ` L${pts[pts.length-1].x.toFixed(1)},${bottom}`
         + ` L${pts[0].x.toFixed(1)},${bottom} Z`;
 
-    /* ---- market-range band path ---- */
     let bandPath = '';
     if (hasRange) {
         const topPts: {x:number;y:number}[] = [];
@@ -261,24 +213,9 @@ function PriceLineChart({ trends, width, height }: ChartProps) {
         }
     }
 
-    /* ---- horizontal grid lines ---- */
     const TICKS = 4;
     const gridYs: number[] = [];
     for (let i = 0; i <= TICKS; i++) gridYs.push(yOf(minV + (span * i) / TICKS));
-
-    /* ---- x-axis date labels ---- */
-    const MAX_X = Math.min(6, n);
-    const xLabels: { x: number; label: string }[] = [];
-    for (let i = 0; i < MAX_X; i++) {
-        const idx = Math.round((i / Math.max(MAX_X - 1, 1)) * (n - 1));
-        const d = trends[idx];
-        if (d) {
-            xLabels.push({
-                x: xOf(idx),
-                label: new Date(d.price_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
-            });
-        }
-    }
 
     const lastPt = pts[pts.length - 1];
     const rightEdge = (width - pr).toFixed(1);
@@ -296,7 +233,6 @@ function PriceLineChart({ trends, width, height }: ChartProps) {
                 </LinearGradient>
             </Defs>
 
-            {/* Horizontal grid */}
             {gridYs.map((y, i) => (
                 <SVGLine
                     key={i}
@@ -305,41 +241,16 @@ function PriceLineChart({ trends, width, height }: ChartProps) {
                     stroke="rgba(124,58,237,0.07)"
                     strokeWidth={1}
                 />
-<<<<<<< HEAD
             ))}
 
-            {/* Market range band */}
             {bandPath !== '' && <Path d={bandPath} fill="url(#pdBandGrad)" />}
-
-            {/* Area fill */}
             <Path d={areaPath} fill="url(#pdAreaGrad)" />
+            <Path d={linePath} stroke="#7c3aed" strokeWidth={2.5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
 
-            {/* Buying-price line */}
-            <Path
-                d={linePath}
-                stroke="#7c3aed"
-                strokeWidth={2.5}
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-=======
-            }
-            showsVerticalScrollIndicator={
-                false
-            }
-        >
-            <BrandedHeader
-                showBack
-                title={t('recyclers.title')}
-                subtitle={t('recyclers.subtitle')}
->>>>>>> 5c04669e98eb8c2e91a89207ea1238af5024490c
-            />
-
-            {/* Last-point glow dot */}
             {lastPt && (
                 <>
-                    <Circle cx={lastPt.x.toFixed(1)} cy={lastPt.y.toFixed(1)} r={9}  fill="rgba(124,58,237,0.15)" />
-                    <Circle cx={lastPt.x.toFixed(1)} cy={lastPt.y.toFixed(1)} r={5}  fill="#7c3aed" />
+                    <Circle cx={lastPt.x.toFixed(1)} cy={lastPt.y.toFixed(1)} r={9}   fill="rgba(124,58,237,0.15)" />
+                    <Circle cx={lastPt.x.toFixed(1)} cy={lastPt.y.toFixed(1)} r={5}   fill="#7c3aed" />
                     <Circle cx={lastPt.x.toFixed(1)} cy={lastPt.y.toFixed(1)} r={2.5} fill="#fff" />
                 </>
             )}
@@ -347,8 +258,6 @@ function PriceLineChart({ trends, width, height }: ChartProps) {
     );
 }
 
-<<<<<<< HEAD
-/* Y-axis labels — rendered in a sibling RN View */
 function YLabels({ trends, height }: { trends: PriceTrend[]; height: number }) {
     const prices = trends.map(t => Number(t.buying_price)).filter(p => isFinite(p) && p > 0);
     if (!prices.length) return null;
@@ -364,57 +273,58 @@ function YLabels({ trends, height }: { trends: PriceTrend[]; height: number }) {
     return (
         <View style={{ position: 'absolute', left: 0, top: 0, width: Y_LABEL_W, height }}>
             {labels.map((l, i) => (
-                <Text
-                    key={i}
-                    style={{
-                        position: 'absolute',
-                        top: l.y - 7,
-                        right: 4,
-                        fontSize: 9,
-                        color: '#64748b',
-                        fontWeight: '500',
-                    }}
-                >
-                    ₹{Math.round(l.val)}
+                <Text key={i} style={{ position: 'absolute', top: l.y - 7, right: 4, fontSize: 9, color: '#64748b', fontWeight: '500' }}>
+                    {`\u20B9${Math.round(l.val)}`}
                 </Text>
             ))}
         </View>
     );
 }
 
-/* X-axis date labels — rendered in a RN View below the SVG */
 function XLabels({ trends, svgWidth }: { trends: PriceTrend[]; svgWidth: number }) {
     const n = trends.length;
-    const pl = CHART_PAD_L;
-    const cw = svgWidth - pl - CHART_PAD_R;
+    const cw = svgWidth - CHART_PAD_L - CHART_PAD_R;
     const MAX_X = Math.min(6, n);
     const labels = Array.from({ length: MAX_X }, (_, i) => {
         const idx = Math.round((i / Math.max(MAX_X - 1, 1)) * (n - 1));
         const d = trends[idx];
         if (!d) return null;
         return {
-            x: pl + (idx / Math.max(n - 1, 1)) * cw,
+            x: CHART_PAD_L + (idx / Math.max(n - 1, 1)) * cw,
             label: new Date(d.price_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
         };
     }).filter(Boolean) as { x: number; label: string }[];
-
     return (
         <View style={{ position: 'relative', height: 20, marginTop: 2 }}>
             {labels.map((l, i) => (
-                <Text
-                    key={i}
-                    style={{
-                        position: 'absolute',
-                        left: Y_LABEL_W + l.x - 16,
-                        fontSize: 9,
-                        color: '#64748b',
-                        width: 32,
-                        textAlign: 'center',
-                    }}
-                >
+                <Text key={i} style={{ position: 'absolute', left: Y_LABEL_W + l.x - 16, fontSize: 9, color: '#64748b', width: 32, textAlign: 'center' }}>
                     {l.label}
                 </Text>
             ))}
+        </View>
+    );
+}
+
+/* =========================================================
+   SUB-COMPONENTS
+========================================================= */
+
+function Chip({ label, value, accent, up }: { label: string; value: string; accent?: boolean; up?: boolean }) {
+    return (
+        <View style={[S.chip2, accent && S.chip2Accent, up === true && S.chip2Up]}>
+            <Text style={S.chipLabel}>{label}</Text>
+            <Text style={[S.chipValue, accent === true && S.chipValueAccent, up === true && S.chipValueUp]}>{value}</Text>
+        </View>
+    );
+}
+
+function Mini({ label, value, accent, up, down }: { label: string; value: string; accent?: boolean; up?: boolean; down?: boolean }) {
+    return (
+        <View style={S.mini}>
+            <Text style={S.miniLabel}>{label}</Text>
+            <Text style={[S.miniValue, accent === true && { color: '#7c3aed' }, up === true && { color: '#16a34a' }, down === true && { color: '#dc2626' }]}>
+                {value}
+            </Text>
         </View>
     );
 }
@@ -426,12 +336,10 @@ function XLabels({ trends, svgWidth }: { trends: PriceTrend[]; svgWidth: number 
 export default function PriceDiscoveryScreen() {
     const { t, lang } = useTranslation();
 
-    /* ---- filter state ---- */
-    const [category, setCategory] = useState(MATERIAL_CATEGORIES[2].id); // PCB
+    const [category, setCategory] = useState(MATERIAL_CATEGORIES[2].id);
     const [location, setLocation] = useState(DEFAULT_LOCATION);
     const [days, setDays] = useState(90);
 
-    /* ---- data ---- */
     const [trends,     setTrends]     = useState<PriceTrend[]>([]);
     const [analytics,  setAnalytics]  = useState<Analytics | null>(null);
     const [rateRows,   setRateRows]   = useState<RecyclerRow[]>([]);
@@ -440,7 +348,6 @@ export default function PriceDiscoveryScreen() {
     const [search,     setSearch]     = useState('');
     const [showTable,  setShowTable]  = useState(false);
 
-    /* ---- loading / error ---- */
     const [loadingTrend, setLoadingTrend] = useState(true);
     const [loadingRec,   setLoadingRec]   = useState(true);
     const [loadingCards, setLoadingCards] = useState(true);
@@ -452,14 +359,9 @@ export default function PriceDiscoveryScreen() {
     const [syncToast,    setSyncToast]    = useState('');
     const [speaking,     setSpeaking]     = useState(false);
 
-    /* ---- GPS coords ---- */
     const [userCoords, setUserCoords] = useState<{
         lat: number; lng: number; closestHub: string; distanceToHub: number;
     } | null>(null);
-
-    /* =========================================================
-       COMPUTED
-    ========================================================= */
 
     const stats     = useMemo(() => trendStats(trends), [trends]);
     const rawCat    = MATERIAL_CATEGORIES.find(c => c.id === category);
@@ -467,9 +369,7 @@ export default function PriceDiscoveryScreen() {
     const card      = priceCards[category];
     const benchmark = card?.market_benchmark ?? analytics?.benchmark_rate ?? stats?.latest;
     const pulseItem = pulse?.find(p => p.material_category === category) ?? null;
-
-    // Chart width = screen minus paddings minus y-label column
-    const chartSvgW = SCREEN_W - 36 - Y_LABEL_W;  // 18*2 horizontal padding, minus y-label view
+    const chartSvgW = SCREEN_W - 36 - Y_LABEL_W;
 
     const filtered = useMemo(() => {
         const catMatch = (mats: string[]) => {
@@ -504,10 +404,6 @@ export default function PriceDiscoveryScreen() {
         (best, r) => r.rate_date && (!best || r.rate_date > best) ? r.rate_date : best, null,
     );
 
-    /* =========================================================
-       DATA FETCHERS
-    ========================================================= */
-
     const loadCards = useCallback(() => {
         setLoadingCards(true);
         Promise.allSettled(
@@ -531,8 +427,7 @@ export default function PriceDiscoveryScreen() {
         (getPriceTrends as any)({ category, location, days })
             .then((r: any) => {
                 setTrends(Array.isArray(r?.data) ? r.data : []);
-                if (r?.analytics) setAnalytics(r.analytics);
-                else setAnalytics(null);
+                setAnalytics(r?.analytics ?? null);
             })
             .catch(() => { setTrends([]); setError(t('prices.loadError')); })
             .finally(() => setLoadingTrend(false));
@@ -552,14 +447,10 @@ export default function PriceDiscoveryScreen() {
             .catch(() => {});
     }, [location]);
 
-    useEffect(() => { loadCards();    }, [loadCards]);
-    useEffect(() => { fetchTrends();  }, [fetchTrends]);
-    useEffect(() => { fetchRates();   }, [fetchRates]);
-    useEffect(() => { fetchPulse();   }, [fetchPulse]);
-
-    /* =========================================================
-       ACTIONS
-    ========================================================= */
+    useEffect(() => { loadCards();   }, [loadCards]);
+    useEffect(() => { fetchTrends(); }, [fetchTrends]);
+    useEffect(() => { fetchRates();  }, [fetchRates]);
+    useEffect(() => { fetchPulse();  }, [fetchPulse]);
 
     async function onRefresh() {
         setRefreshing(true);
@@ -599,8 +490,11 @@ export default function PriceDiscoveryScreen() {
             }
             setUserCoords({ lat, lng, closestHub: best, distanceToHub: minD });
             setLocation(best);
-        } catch { setGpsError('Failed to get location. Pick a city manually.'); }
-        finally  { setGpsLoading(false); }
+        } catch {
+            setGpsError('Failed to get location. Pick a city manually.');
+        } finally {
+            setGpsLoading(false);
+        }
     }
 
     function onSpeak() {
@@ -615,9 +509,9 @@ export default function PriceDiscoveryScreen() {
                 ? ` Price has increased by ${ch} percent over the last ${days} days.`
                 : ` Price has decreased by ${ch} percent over the last ${days} days.`;
         }
-        const langMap: Record<string,string> = {
-            en:'en-IN', hi:'hi-IN', kn:'kn-IN', mr:'mr-IN',
-            ta:'ta-IN', te:'te-IN', ml:'ml-IN', bn:'bn-IN',
+        const langMap: Record<string, string> = {
+            en: 'en-IN', hi: 'hi-IN', kn: 'kn-IN', mr: 'mr-IN',
+            ta: 'ta-IN', te: 'te-IN', ml: 'ml-IN', bn: 'bn-IN',
         };
         setSpeaking(true);
         Speech.speak(txt, {
@@ -629,9 +523,6 @@ export default function PriceDiscoveryScreen() {
         });
     }
 
-    /* =========================================================
-       RENDER
-    ========================================================= */
     return (
         <ScrollView
             style={S.screen}
@@ -639,7 +530,7 @@ export default function PriceDiscoveryScreen() {
             showsVerticalScrollIndicator={false}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" />}
         >
-            {/* ── Header ── */}
+            {/* Header */}
             <BrandedHeader
                 title={t('priceDiscovery.title')}
                 subtitle={t('priceDiscovery.subtitle')}
@@ -647,58 +538,41 @@ export default function PriceDiscoveryScreen() {
                     <Pressable style={[S.syncBtn, syncing && S.disabled]} onPress={onSync} disabled={syncing}>
                         {syncing
                             ? <ActivityIndicator size="small" color="#fff" />
-                            : <Text style={S.syncBtnTxt}>🔄 {t('priceDiscovery.syncLiveMarket')}</Text>
-=======
-                        <Text
-                            style={
-                                styles.locationText
-                            }
-                        >
-                            {t('priceDiscovery.locating')}
-                        </Text>
-                    </>
-                ) : (
-                    <Text
-                        style={
-                            styles.locationText
->>>>>>> 5c04669e98eb8c2e91a89207ea1238af5024490c
+                            : <Text style={S.syncBtnTxt}>{'🔄 '}{t('priceDiscovery.syncLiveMarket')}</Text>
                         }
                     </Pressable>
                 }
             />
 
-            {/* ── Toast ── */}
             {!!syncToast && (
                 <View style={S.toastGreen}>
-                    <Text style={S.toastGreenTxt}>✅  {syncToast}</Text>
+                    <Text style={S.toastGreenTxt}>{'✅  '}{syncToast}</Text>
                 </View>
             )}
             {!!error && (
                 <View style={S.toastWarn}>
-                    <Text style={S.toastWarnTxt}>⚠️  {error}</Text>
+                    <Text style={S.toastWarnTxt}>{'⚠️  '}{error}</Text>
                 </View>
             )}
 
-            {/* ── Live Pulse Banner ── */}
-            {pulseItem && (
+            {/* Live Pulse Banner */}
+            {pulseItem != null && (
                 <View style={S.pulse}>
                     <View style={S.pulseL}>
                         <View style={S.liveDot} />
                         <Text style={S.liveTxt}>{t('priceDiscovery.liveCommodityIndex')}</Text>
                     </View>
                     <View style={S.pulseM}>
-                        <Text style={S.pulseCat}>{catLabel} {t('priceDiscovery.benchmark')}:</Text>
+                        <Text style={S.pulseCat}>{catLabel}{' '}{t('priceDiscovery.benchmark')}:</Text>
                         <Text style={S.pulsePrice}>{fmt(benchmark)}/kg</Text>
                     </View>
                     <View style={S.pulseR}>
-                        {pulseItem.regional_demand && (
+                        {pulseItem.regional_demand != null && (
                             <View style={S.demandBadge}>
-                                <Text style={S.demandTxt}>
-                                    {t('priceDiscovery.demand')}: {pulseItem.regional_demand}
-                                </Text>
+                                <Text style={S.demandTxt}>{t('priceDiscovery.demand')}: {pulseItem.regional_demand}</Text>
                             </View>
                         )}
-                        {pulseItem.hub && (
+                        {pulseItem.hub != null && (
                             <View style={S.hubBadge}>
                                 <Text style={S.hubTxt}>{pulseItem.hub}</Text>
                             </View>
@@ -707,7 +581,7 @@ export default function PriceDiscoveryScreen() {
                 </View>
             )}
 
-            {/* ── Controls: Location ── */}
+            {/* Location Controls */}
             <View style={S.block}>
                 <View style={S.controlRow}>
                     <Text style={S.ctrlLabel}>{t('prices.location')}</Text>
@@ -726,16 +600,16 @@ export default function PriceDiscoveryScreen() {
                         </Pressable>
                     ))}
                 </ScrollView>
-                {userCoords && (
+                {userCoords != null && (
                     <Text style={S.gpsNote}>
-                        📍 GPS {userCoords.lat.toFixed(4)}, {userCoords.lng.toFixed(4)}
-                        {'  '}({userCoords.distanceToHub.toFixed(1)} km to {userCoords.closestHub} hub)
+                        {'📍 GPS '}{userCoords.lat.toFixed(4)}{', '}{userCoords.lng.toFixed(4)}
+                        {'  ('}{userCoords.distanceToHub.toFixed(1)}{' km to '}{userCoords.closestHub}{' hub)'}
                     </Text>
                 )}
-                {!!gpsError && <Text style={S.gpsErr}>⚠️  {gpsError}</Text>}
+                {!!gpsError && <Text style={S.gpsErr}>{'⚠️  '}{gpsError}</Text>}
             </View>
 
-            {/* ── Controls: Days ── */}
+            {/* Days Controls */}
             <View style={S.daysRow}>
                 <Text style={S.ctrlLabel}>{t('prices.days')}</Text>
                 <View style={S.dayTabs}>
@@ -749,12 +623,10 @@ export default function PriceDiscoveryScreen() {
                 </View>
             </View>
 
-            {/* ══════════════════════════════════════════
-                SECTION 1 — Current Market Rates (cards)
-            ══════════════════════════════════════════ */}
+            {/* Section 1: Current Market Rates */}
             <View style={S.secRow}>
                 <Text style={S.secTitle}>{t('priceDiscovery.regionalPrices')}</Text>
-                <Text style={S.secSub}>{location} · {t('prices.buyingPrice').toLowerCase()}</Text>
+                <Text style={S.secSub}>{location}{' · '}{t('prices.buyingPrice').toLowerCase()}</Text>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={S.cardScroll}>
                 {MATERIAL_CATEGORIES.map(cat => {
@@ -768,20 +640,22 @@ export default function PriceDiscoveryScreen() {
                             </Text>
                             {loadingCards
                                 ? <ActivityIndicator size="small" color="#7c3aed" style={{ marginTop: 4 }} />
-                                : <>
-                                    <View style={S.matRow}>
-                                        <Text style={S.matRowLbl} numberOfLines={1}>{t('priceDiscovery.currentMarketBenchmark')}</Text>
-                                        <Text style={[S.matPrice, on && S.matPriceOn]}>
-                                            {c ? fmt(c.market_benchmark ?? c.unit_price) : '—'}/kg
-                                        </Text>
-                                    </View>
-                                    {c?.market_range_low != null && c?.market_range_high != null && (
+                                : (
+                                    <>
                                         <View style={S.matRow}>
-                                            <Text style={S.matRowLbl}>{t('priceDiscovery.marketRange')}</Text>
-                                            <Text style={S.matRange}>{fmt(c.market_range_low)}–{fmt(c.market_range_high)}</Text>
+                                            <Text style={S.matRowLbl} numberOfLines={1}>{t('priceDiscovery.currentMarketBenchmark')}</Text>
+                                            <Text style={[S.matPrice, on && S.matPriceOn]}>
+                                                {c != null ? fmt(c.market_benchmark ?? c.unit_price) : '\u2014'}/kg
+                                            </Text>
                                         </View>
-                                    )}
-                                </>
+                                        {c?.market_range_low != null && c?.market_range_high != null && (
+                                            <View style={S.matRow}>
+                                                <Text style={S.matRowLbl}>{t('priceDiscovery.marketRange')}</Text>
+                                                <Text style={S.matRange}>{fmt(c.market_range_low)}{'\u2013'}{fmt(c.market_range_high)}</Text>
+                                            </View>
+                                        )}
+                                    </>
+                                )
                             }
                             {on && <View style={S.matActiveLine} />}
                         </Pressable>
@@ -789,16 +663,10 @@ export default function PriceDiscoveryScreen() {
                 })}
             </ScrollView>
 
-            {/* ══════════════════════════════════════════
-                SECTION 2 — Hero price + category tabs + Speak
-            ══════════════════════════════════════════ */}
+            {/* Section 2: Hero + Category tabs + Speak */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={S.tabsScroll}>
                 {MATERIAL_CATEGORIES.map(cat => (
-                    <Pressable
-                        key={cat.id}
-                        style={[S.catTab, category === cat.id && S.catTabOn]}
-                        onPress={() => setCategory(cat.id)}
-                    >
+                    <Pressable key={cat.id} style={[S.catTab, category === cat.id && S.catTabOn]} onPress={() => setCategory(cat.id)}>
                         <Text style={S.catTabIcon}>{cat.icon}</Text>
                         <Text style={[S.catTabTxt, category === cat.id && S.catTabTxtOn]}>
                             {t(`materials.${cat.id}`) || cat.label}
@@ -810,68 +678,66 @@ export default function PriceDiscoveryScreen() {
             <View style={S.hero}>
                 <View style={{ flex: 1 }}>
                     <Text style={S.heroKicker}>{t('priceDiscovery.currentMarketBenchmark')}</Text>
-                    <Text style={S.heroCatLoc}>{catLabel} · {location}</Text>
+                    <Text style={S.heroCatLoc}>{catLabel}{' · '}{location}</Text>
                     <View style={S.heroPriceRow}>
                         {loadingTrend
                             ? <ActivityIndicator color="#7c3aed" />
-                            : <>
-                                <Text style={S.heroPrice}>{benchmark ? fmt(benchmark) : '—'}</Text>
-                                {benchmark != null && <Text style={S.heroUnit}> / kg</Text>}
-                            </>
+                            : (
+                                <>
+                                    <Text style={S.heroPrice}>{benchmark != null ? fmt(benchmark) : '\u2014'}</Text>
+                                    {benchmark != null && <Text style={S.heroUnit}>{' / kg'}</Text>}
+                                </>
+                            )
                         }
                     </View>
                     <Text style={S.heroDesc}>{t('priceDiscovery.heroDesc')}</Text>
                     {stats?.change != null && (
                         <Text style={[S.chg, stats.change >= 0 ? S.chgUp : S.chgDown]}>
-                            {stats.change >= 0 ? '▲' : '▼'} {Math.abs(stats.change).toFixed(1)}% vs {days}d ago
+                            {stats.change >= 0 ? '\u25B2' : '\u25BC'}{' '}{Math.abs(stats.change).toFixed(1)}{'% vs '}{days}{'d ago'}
                         </Text>
                     )}
                 </View>
                 <Pressable style={[S.speakBtn, speaking && S.speakBtnOn]} onPress={onSpeak}>
-                    <Text style={S.speakIcon}>{speaking ? '🔊' : '🔉'}</Text>
+                    <Text style={S.speakIcon}>{speaking ? '\uD83D\uDD0A' : '\uD83D\uDD09'}</Text>
                     <Text style={[S.speakTxt, speaking && S.speakTxtOn]}>
                         {speaking ? t('priceDiscovery.stopAudio') : t('priceDiscovery.speakPrice')}
                     </Text>
                 </Pressable>
             </View>
 
-            {/* ══════════════════════════════════════════
-                SECTION 3 — Trend Chart
-            ══════════════════════════════════════════ */}
+            {/* Section 3: Trend Chart */}
             <View style={S.card}>
                 <View style={S.chartHdr}>
-                    <Text style={S.secTitle}>{t('prices.trendChart')} — {catLabel}</Text>
-                    <Text style={S.secSub}>{days} {t('prices.days')} · {location}</Text>
+                    <Text style={S.secTitle}>{t('prices.trendChart')}{' \u2014 '}{catLabel}</Text>
+                    <Text style={S.secSub}>{days}{' '}{t('prices.days')}{' · '}{location}</Text>
                 </View>
 
-                {/* Market intelligence analytics */}
-                {analytics && !loadingTrend && (
+                {analytics != null && !loadingTrend && (
                     <View style={S.analyticsBox}>
                         <Text style={S.analyticsTitle}>
-                            📊 {t('priceDiscovery.marketIntelligence', { location })}
+                            {'📊 '}{t('priceDiscovery.marketIntelligence', { location })}
                         </Text>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                             <View style={S.chipsRow}>
-                                <Chip label={t('priceDiscovery.marketBenchmark')}  value={`${fmt(benchmark)}/kg`} accent />
+                                <Chip label={t('priceDiscovery.marketBenchmark')} value={`${fmt(benchmark)}/kg`} accent />
                                 {analytics.recycler_quote_avg != null && (
-                                    <Chip label={t('priceDiscovery.quotedMarketAvg')}  value={`${fmt(analytics.recycler_quote_avg)}/kg`} />
+                                    <Chip label={t('priceDiscovery.quotedMarketAvg')} value={`${fmt(analytics.recycler_quote_avg)}/kg`} />
                                 )}
                                 {analytics.recycler_quote_median != null && (
-                                    <Chip label={t('priceDiscovery.medianQuote')}       value={`${fmt(analytics.recycler_quote_median)}/kg`} />
+                                    <Chip label={t('priceDiscovery.medianQuote')} value={`${fmt(analytics.recycler_quote_median)}/kg`} />
                                 )}
                                 {analytics.quote_observations_count != null && (
                                     <Chip label={t('priceDiscovery.quoteObservations')} value={String(analytics.quote_observations_count)} />
                                 )}
                                 {analytics.completed_transaction_avg != null && (
-                                    <Chip label={t('priceDiscovery.realizedSaleAvg')}   value={`${fmt(analytics.completed_transaction_avg)}/kg`} up />
+                                    <Chip label={t('priceDiscovery.realizedSaleAvg')} value={`${fmt(analytics.completed_transaction_avg)}/kg`} up />
                                 )}
                             </View>
                         </ScrollView>
                     </View>
                 )}
 
-                {/* Stats row */}
-                {stats && !loadingTrend && (
+                {stats != null && !loadingTrend && (
                     <View style={S.statsRow}>
                         <Mini label={t('prices.min')}    value={fmt(stats.min)} />
                         <Mini label={t('prices.avg')}    value={fmt(stats.avg)} accent />
@@ -888,11 +754,15 @@ export default function PriceDiscoveryScreen() {
                     </View>
                 )}
 
-                {/* SVG chart */}
                 {loadingTrend ? (
-                    <View style={S.loader}><ActivityIndicator size="large" color="#7c3aed" /><Text style={S.loaderTxt}>Loading chart…</Text></View>
+                    <View style={S.loader}>
+                        <ActivityIndicator size="large" color="#7c3aed" />
+                        <Text style={S.loaderTxt}>Loading chart...</Text>
+                    </View>
                 ) : trends.length === 0 ? (
-                    <View style={S.empty}><Text style={S.emptyTxt}>{t('prices.noTrendData')}</Text></View>
+                    <View style={S.empty}>
+                        <Text style={S.emptyTxt}>{t('prices.noTrendData')}</Text>
+                    </View>
                 ) : (
                     <>
                         <View style={[S.chartWrap, { height: CHART_H }]}>
@@ -905,18 +775,17 @@ export default function PriceDiscoveryScreen() {
                     </>
                 )}
 
-                {/* Historical progression ticker */}
                 {trends.length > 0 && !loadingTrend && (
                     <View style={S.progressBox}>
                         <Text style={S.progressTitle}>
-                            📈 {t('priceDiscovery.historicalProgression', { days: String(days) })}
+                            {'📈 '}{t('priceDiscovery.historicalProgression', { days: String(days) })}
                         </Text>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                             <View style={S.progressRow}>
                                 {trends.slice(-6).map((item, i, arr) => (
                                     <View key={item.price_date || i} style={S.progressItem}>
-                                        <Text style={S.progressPrice}>₹{Math.round(Number(item.buying_price))}</Text>
-                                        {i < arr.length - 1 && <Text style={S.progressArrow}> → </Text>}
+                                        <Text style={S.progressPrice}>{`\u20B9${Math.round(Number(item.buying_price))}`}</Text>
+                                        {i < arr.length - 1 && <Text style={S.progressArrow}>{' \u2192 '}</Text>}
                                     </View>
                                 ))}
                             </View>
@@ -924,21 +793,22 @@ export default function PriceDiscoveryScreen() {
                     </View>
                 )}
 
-                {/* Expandable data table */}
                 {trends.length > 0 && !loadingTrend && (
                     <>
                         <Pressable style={S.toggleBtn} onPress={() => setShowTable(v => !v)}>
                             <Text style={S.toggleTxt}>
-                                {showTable ? '▲ Hide' : '▼ Show'} {t('prices.trendChartDesc')} ({trends.length} {t('prices.dataPoints')})
+                                {showTable ? '\u25B2 Hide' : '\u25BC Show'}{' '}{t('prices.trendChartDesc')}{' ('}{trends.length}{' '}{t('prices.dataPoints')}{')'}
                             </Text>
                         </Pressable>
                         {showTable && (
                             <ScrollView horizontal showsHorizontalScrollIndicator>
                                 <View>
                                     <View style={[S.tr, S.tHdr]}>
-                                        {['Date','Location','Buying Price','Min','Max'].map(h => (
-                                            <Text key={h} style={[S.td, S.tHdrTxt, { width: h === 'Date' ? 80 : h === 'Location' ? 80 : 90 }]}>{h}</Text>
-                                        ))}
+                                        <Text style={[S.td, S.tHdrTxt, { width: 80 }]}>{t('dashboard.date')}</Text>
+                                        <Text style={[S.td, S.tHdrTxt, { width: 80 }]}>{t('prices.location')}</Text>
+                                        <Text style={[S.td, S.tHdrTxt, { width: 90 }]}>{t('prices.buyingPrice')}</Text>
+                                        <Text style={[S.td, S.tHdrTxt, { width: 90 }]}>{t('prices.min')}</Text>
+                                        <Text style={[S.td, S.tHdrTxt, { width: 90 }]}>{t('prices.max')}</Text>
                                     </View>
                                     {[...trends].reverse().slice(0, 30).map((item, i) => (
                                         <View key={i} style={[S.tr, i % 2 === 0 && S.trAlt]}>
@@ -956,18 +826,14 @@ export default function PriceDiscoveryScreen() {
                 )}
             </View>
 
-            {/* ══════════════════════════════════════════
-                SECTION 4 — Recycler Rates Table
-            ══════════════════════════════════════════ */}
+            {/* Section 4: Recycler Rates */}
             <View style={S.card}>
-                <Text style={S.secTitle}>{t('prices.recyclerRates')} — {catLabel}</Text>
+                <Text style={S.secTitle}>{t('prices.recyclerRates')}{' \u2014 '}{catLabel}</Text>
                 <Text style={S.secSub2}>{t('prices.currentRatesDesc')}</Text>
-                {rateAsOf && <Text style={S.rateAsOf}>{t('prices.rateAsOf', { date: rateAsOf })}</Text>}
+                {rateAsOf != null && <Text style={S.rateAsOf}>{t('prices.rateAsOf', { date: rateAsOf })}</Text>}
 
-<<<<<<< HEAD
-                {/* Search */}
                 <View style={S.searchBox}>
-                    <Text style={S.searchIcon}>🔍</Text>
+                    <Text style={S.searchIcon}>{'🔍'}</Text>
                     <TextInput
                         style={S.searchInput}
                         value={search}
@@ -977,231 +843,8 @@ export default function PriceDiscoveryScreen() {
                     />
                     {!!search && (
                         <Pressable onPress={() => setSearch('')} style={S.clearX}>
-                            <Text style={S.clearXTxt}>✕</Text>
+                            <Text style={S.clearXTxt}>{'\u2715'}</Text>
                         </Pressable>
-=======
-            {lotId ? (
-                <View
-                    style={
-                        styles.lotSummary
-                    }
-                >
-                    <View>
-                        <Text
-                            style={
-                                styles.lotId
-                            }
-                        >
-                            {lotId}
-                        </Text>
-
-                        <Text
-                            style={
-                                styles.lotCategory
-                            }
-                        >
-                            {category}
-                            {lotWeight
-                                ? ` · ${lotWeight} kg`
-                                : ''}
-                        </Text>
-                    </View>
-
-                    {estimatedValue !=
-                        null ? (
-                        <View
-                            style={
-                                styles.estimateBlock
-                            }
-                        >
-                            <Text
-                                style={
-                                    styles.estimateLabel
-                                }
-                            >
-                                {t('priceDiscovery.currentMarketBenchmark').toUpperCase()}
-                            </Text>
-
-                            <Text
-                                style={
-                                    styles.estimateValue
-                                }
-                            >
-                                ₹
-                                {estimatedValue.toLocaleString(
-                                    'en-IN'
-                                )}
-                            </Text>
-                        </View>
-                    ) : null}
-                </View>
-            ) : null}
-
-            {/* SUCCESS */}
-
-            {successMessage ? (
-                <View
-                    style={
-                        styles.successBanner
-                    }
-                >
-                    <Text
-                        style={
-                            styles.successText
-                        }
-                    >
-                        ✓{' '}
-                        {
-                            successMessage
-                        }
-                    </Text>
-                </View>
-            ) : null}
-
-            {/* ERROR */}
-
-            {error ? (
-                <View
-                    style={
-                        styles.errorBanner
-                    }
-                >
-                    <Text
-                        style={
-                            styles.errorText
-                        }
-                    >
-                        ⚠️ {error}
-                    </Text>
-                </View>
-            ) : null}
-
-            {offersError ? (
-                <View
-                    style={
-                        styles.warningBanner
-                    }
-                >
-                    <Text
-                        style={
-                            styles.warningText
-                        }
-                    >
-                        ⚠️{' '}
-                        {offersError}
-                    </Text>
-                </View>
-            ) : null}
-
-            {/* =================================================
-          QUOTES RECEIVED
-      ================================================= */}
-
-            {lotId &&
-                (openOffers.length >
-                    0 ||
-                    acceptedOffer) ? (
-                <View
-                    style={
-                        styles.card
-                    }
-                >
-                    <View
-                        style={
-                            styles.sectionHeader
-                        }
-                    >
-                        <Text
-                            style={
-                                styles.sectionTitle
-                            }
-                        >
-                            {t('quotes.receivedTitle')}
-                        </Text>
-
-                        {acceptedOffer ? (
-                            <View
-                                style={
-                                    styles.acceptedBadge
-                                }
-                            >
-                                <Text
-                                    style={
-                                        styles.acceptedBadgeText
-                                    }
-                                >
-                                    ✓ {t('quotes.accepted')}
-                                </Text>
-                            </View>
-                        ) : null}
-                    </View>
-
-                    {acceptedOffer ? (
-                        <AcceptedOfferCard
-                            offer={
-                                acceptedOffer
-                            }
-                            lotWeight={
-                                lotWeight
-                            }
-                        />
-                    ) : (
-                        <>
-                            <View
-                                style={
-                                    styles.privacyNotice
-                                }
-                            >
-                                <Text
-                                    style={
-                                        styles.privacyText
-                                    }
-                                >
-                                    🔐 Recycler
-                                    contact details
-                                    remain protected
-                                    until you accept
-                                    a quote.
-                                </Text>
-                            </View>
-
-                            {openOffers.map(
-                                (offer) => (
-                                    <OfferCard
-                                        key={
-                                            offer.id
-                                        }
-                                        offer={
-                                            offer
-                                        }
-                                        lotWeight={
-                                            lotWeight
-                                        }
-                                        busy={
-                                            offerBusy ===
-                                            offer.id
-                                        }
-                                        disableActions={
-                                            offerBusy !=
-                                            null
-                                        }
-                                        onAccept={() =>
-                                            handleOfferAction(
-                                                offer.id,
-                                                'accept'
-                                            )
-                                        }
-                                        onReject={() =>
-                                            handleOfferAction(
-                                                offer.id,
-                                                'reject'
-                                            )
-                                        }
-                                    />
-                                )
-                            )}
-                        </>
->>>>>>> 5c04669e98eb8c2e91a89207ea1238af5024490c
                     )}
                 </View>
                 {!!search.trim() && (
@@ -1211,883 +854,13 @@ export default function PriceDiscoveryScreen() {
                             total: String(rateRows.filter(r => (r.materials_accepted || []).includes(category)).length),
                         })}
                     </Text>
-<<<<<<< HEAD
-=======
-
-                    <TextInput
-                        value={
-                            searchTerm
-                        }
-                        onChangeText={
-                            setSearchTerm
-                        }
-                        placeholder={t('recyclers.searchPlaceholder')}
-                        placeholderTextColor="#9ca3af"
-                        style={
-                            styles.searchInput
-                        }
-                    />
-
-                    {searchTerm ? (
-                        <Pressable
-                            onPress={() =>
-                                setSearchTerm(
-                                    ''
-                                )
-                            }
-                        >
-                            <Text
-                                style={
-                                    styles.clearSearch
-                                }
-                            >
-                                ✕
-                            </Text>
-                        </Pressable>
-                    ) : null}
-                </View>
-            ) : null}
-
-            {searchTerm ? (
-                <Text
-                    style={
-                        styles.searchCount
-                    }
-                >
-                    {t('priceDiscovery.showingRecyclers', { count: String(filteredRecyclers.length), total: String(recyclers.length) })}
-                </Text>
-            ) : null}
-
-            {/* =================================================
-          LOADING
-      ================================================= */}
-
-            {loading ? (
-                <View
-                    style={
-                        styles.loadingBox
-                    }
-                >
-                    <ActivityIndicator
-                        size="large"
-                        color="#16a34a"
-                    />
-
-                    <Text
-                        style={
-                            styles.loadingText
-                        }
-                    >
-                        {t('common.loading')}
-                    </Text>
-                </View>
-            ) : null}
-
-            {/* =================================================
-          NO RECYCLERS
-      ================================================= */}
-
-            {!loading &&
-                recyclers.length ===
-                0 ? (
-                <View
-                    style={
-                        styles.emptyCard
-                    }
-                >
-                    <Text
-                        style={
-                            styles.emptyIcon
-                        }
-                    >
-                        ♻️
-                    </Text>
-
-                    <Text
-                        style={
-                            styles.emptyTitle
-                        }
-                    >
-                        {t('recyclers.noMatch')}
-                    </Text>
-
-                    <Text
-                        style={
-                            styles.emptyText
-                        }
-                    >
-                        {t('recyclers.noMatchDesc')}
-                    </Text>
-
-                    <Pressable
-                        style={
-                            styles.outlineButton
-                        }
-                        onPress={
-                            refresh
-                        }
-                    >
-                        <Text
-                            style={
-                                styles.outlineButtonText
-                            }
-                        >
-                            {t('common.retry')}
-                        </Text>
-                    </Pressable>
-                </View>
-            ) : null}
-
-            {/* =================================================
-          SEARCH EMPTY
-      ================================================= */}
-
-            {!loading &&
-                recyclers.length >
-                0 &&
-                filteredRecyclers.length ===
-                0 ? (
-                <View
-                    style={
-                        styles.emptyCard
-                    }
-                >
-                    <Text
-                        style={
-                            styles.emptyTitle
-                        }
-                    >
-                        {t('recyclers.noSearchMatch')}
-                    </Text>
-
-                    <Pressable
-                        style={
-                            styles.outlineButton
-                        }
-                        onPress={() =>
-                            setSearchTerm('')
-                        }
-                    >
-                        <Text
-                            style={
-                                styles.outlineButtonText
-                            }
-                        >
-                            {t('priceDiscovery.clearFilter')}
-                        </Text>
-                    </Pressable>
-                </View>
-            ) : null}
-
-            {/* =================================================
-          RECYCLER CARDS
-      ================================================= */}
-
-            {!loading &&
-                filteredRecyclers.map(
-                    (recycler) => {
-                        const recyclerId =
-                            recyclerIdOf(
-                                recycler
-                            );
-
-                        if (!recyclerId) {
-                            return null;
-                        }
-
-                        const suitability =
-                            suitabilityOf(
-                                recycler
-                            );
-
-                        const myOffer =
-                            offerForRecycler(
-                                recyclerId
-                            );
-
-                        const isSelected =
-                            selectedId ===
-                            recyclerId;
-
-                        const isRequesting =
-                            requesting ===
-                            recyclerId;
-
-                        const isAcceptedRecycler =
-                            acceptedOffer &&
-                            Number(
-                                acceptedOffer.recycler_id
-                            ) ===
-                            Number(
-                                recyclerId
-                            );
-
-                        return (
-                            <Pressable
-                                key={
-                                    recyclerId
-                                }
-                                onPress={() =>
-                                    setSelectedId(
-                                        recyclerId
-                                    )
-                                }
-                                style={[
-                                    styles.recyclerCard,
-
-                                    isSelected &&
-                                    styles.recyclerCardSelected,
-
-                                    isAcceptedRecycler &&
-                                    styles.recyclerCardAccepted,
-                                ]}
-                            >
-                                {/* HEADER */}
-
-                                <View
-                                    style={
-                                        styles.recyclerHeader
-                                    }
-                                >
-                                    <View
-                                        style={
-                                            styles.recyclerNameWrap
-                                        }
-                                    >
-                                        <View
-                                            style={
-                                                styles.recyclerAvatar
-                                            }
-                                        >
-                                            <Text
-                                                style={
-                                                    styles.recyclerAvatarText
-                                                }
-                                            >
-                                                ♻
-                                            </Text>
-                                        </View>
-
-                                        <View
-                                            style={{
-                                                flex: 1,
-                                            }}
-                                        >
-                                            <Text
-                                                style={
-                                                    styles.recyclerName
-                                                }
-                                            >
-                                                {recycler.name ||
-                                                    'Authorized Recycler'}
-                                            </Text>
-
-                                            <Text
-                                                style={
-                                                    styles.recyclerLocation
-                                                }
-                                            >
-                                                {recycler.service_area ||
-                                                    recycler.facility_location ||
-                                                    'Location unavailable'}
-                                            </Text>
-                                        </View>
-                                    </View>
-
-                                    <View
-                                        style={
-                                            styles.authorizedBadge
-                                        }
-                                    >
-                                        <Text
-                                            style={
-                                                styles.authorizedText
-                                            }
-                                        >
-                                            ✓ Authorized
-                                        </Text>
-                                    </View>
-                                </View>
-
-                                {/* SUITABILITY */}
-
-                                <View
-                                    style={
-                                        styles.scoreSection
-                                    }
-                                >
-                                    <View
-                                        style={
-                                            styles.scoreHeader
-                                        }
-                                    >
-                                        <Text
-                                            style={
-                                                styles.scoreLabel
-                                            }
-                                        >
-                                            Suitability
-                                        </Text>
-
-                                        <Text
-                                            style={
-                                                styles.scoreValue
-                                            }
-                                        >
-                                            {
-                                                suitability
-                                            }
-                                            %
-                                        </Text>
-                                    </View>
-
-                                    <View
-                                        style={
-                                            styles.scoreTrack
-                                        }
-                                    >
-                                        <View
-                                            style={[
-                                                styles.scoreFill,
-
-                                                {
-                                                    width:
-                                                        `${suitability}%`,
-                                                },
-                                            ]}
-                                        />
-                                    </View>
-                                </View>
-
-                                {/* SCORE BREAKDOWN */}
-
-                                {recycler.score_price !=
-                                    null ||
-                                    recycler.score_reliability !=
-                                    null ? (
-                                    <View
-                                        style={
-                                            styles.scoreChips
-                                        }
-                                    >
-                                        <ScoreChip
-                                            text={`Price ${pctScore(
-                                                recycler.score_price
-                                            )}%`}
-                                        />
-
-                                        <ScoreChip
-                                            text={`Distance ${pctScore(
-                                                recycler.score_distance
-                                            )}%`}
-                                        />
-
-                                        <ScoreChip
-                                            text={`Pickup ${pctScore(
-                                                recycler.score_pickup
-                                            )}%`}
-                                        />
-
-                                        <ScoreChip
-                                            text={`Reliability ${pctScore(
-                                                recycler.score_reliability
-                                            )}%`}
-                                        />
-                                    </View>
-                                ) : null}
-
-                                {/* STATS */}
-
-                                <View
-                                    style={
-                                        styles.stats
-                                    }
-                                >
-                                    <Stat
-                                        icon="📍"
-                                        label="Distance"
-                                        value={
-                                            recycler.distance_km !=
-                                                null
-                                                ? `${Number(
-                                                    recycler.distance_km
-                                                ).toFixed(
-                                                    1
-                                                )} km`
-                                                : '—'
-                                        }
-                                    />
-
-                                    <Stat
-                                        icon="₹"
-                                        label="Recycler Rate"
-                                        value={
-                                            recycler.offered_rate
-                                                ? `₹${recycler.offered_rate}/kg`
-                                                : '—'
-                                        }
-                                        subValue={
-                                            lotWeight &&
-                                                recycler.offered_rate
-                                                ? `Est. ₹${Math.round(
-                                                    Number(
-                                                        lotWeight
-                                                    ) *
-                                                    Number(
-                                                        recycler.offered_rate
-                                                    )
-                                                ).toLocaleString(
-                                                    'en-IN'
-                                                )}`
-                                                : undefined
-                                        }
-                                    />
-
-                                    <Stat
-                                        icon="🚚"
-                                        label="Pickup"
-                                        value={
-                                            recycler.pickup_availability ===
-                                                'daily'
-                                                ? 'Available'
-                                                : recycler.pickup_availability ||
-                                                'On request'
-                                        }
-                                    />
-                                </View>
-
-                                {/* MATERIALS */}
-
-                                {Array.isArray(
-                                    recycler.materials_accepted
-                                ) &&
-                                    recycler
-                                        .materials_accepted
-                                        .length >
-                                    0 ? (
-                                    <View
-                                        style={
-                                            styles.materials
-                                        }
-                                    >
-                                        {recycler.materials_accepted.map(
-                                            (
-                                                material
-                                            ) => (
-                                                <View
-                                                    key={
-                                                        material
-                                                    }
-                                                    style={
-                                                        styles.materialChip
-                                                    }
-                                                >
-                                                    <Text
-                                                        style={
-                                                            styles.materialText
-                                                        }
-                                                    >
-                                                        {
-                                                            material
-                                                        }
-                                                    </Text>
-                                                </View>
-                                            )
-                                        )}
-                                    </View>
-                                ) : null}
-
-                                {/* =================================================
-                    ACTION STATE
-                ================================================= */}
-
-                                {acceptedOffer ? (
-                                    isAcceptedRecycler ? (
-                                        <View>
-                                            <View
-                                                style={
-                                                    styles.acceptedRecyclerBox
-                                                }
-                                            >
-                                                <Text
-                                                    style={
-                                                        styles.acceptedRecyclerTitle
-                                                    }
-                                                >
-                                                    ✓ Accepted
-                                                    Recycler
-                                                </Text>
-
-                                                <Text
-                                                    style={
-                                                        styles.acceptedRecyclerRate
-                                                    }
-                                                >
-                                                    ₹
-                                                    {
-                                                        acceptedOffer.offered_price
-                                                    }{' '}
-                                                    / kg
-                                                </Text>
-
-                                                {lotWeight &&
-                                                    acceptedOffer.offered_price ? (
-                                                    <Text
-                                                        style={
-                                                            styles.acceptedRecyclerPayout
-                                                        }
-                                                    >
-                                                        Agreed
-                                                        payout:{' '}
-                                                        ₹
-                                                        {Math.round(
-                                                            Number(
-                                                                lotWeight
-                                                            ) *
-                                                            Number(
-                                                                acceptedOffer.offered_price
-                                                            )
-                                                        ).toLocaleString(
-                                                            'en-IN'
-                                                        )}
-                                                    </Text>
-                                                ) : null}
-                                            </View>
-
-                                            {/* HANDOVER */}
-
-                                            {handoverReference ? (
-                                                <View
-                                                    style={
-                                                        styles.handoverSuccessBox
-                                                    }
-                                                >
-                                                    <Text
-                                                        style={
-                                                            styles.handoverSuccessTitle
-                                                        }
-                                                    >
-                                                        ✓ Handover Initiated
-                                                    </Text>
-
-                                                    <Text
-                                                        style={
-                                                            styles.handoverSuccessText
-                                                        }
-                                                    >
-                                                        Reference:{' '}
-                                                        {handoverReference}
-                                                    </Text>
-
-                                                    <Pressable
-                                                        style={
-                                                            styles.dashboardButton
-                                                        }
-                                                        onPress={() =>
-                                                            router.replace(
-                                                                '/collector'
-                                                            )
-                                                        }
-                                                    >
-                                                        <Text
-                                                            style={
-                                                                styles.dashboardButtonText
-                                                            }
-                                                        >
-                                                            Back to Dashboard
-                                                        </Text>
-                                                    </Pressable>
-                                                </View>
-                                            ) : (
-                                                <View
-                                                    style={
-                                                        styles.nextPartBox
-                                                    }
-                                                >
-                                                    <Text
-                                                        style={
-                                                            styles.nextPartText
-                                                        }
-                                                    >
-                                                        The recycler is confirmed.
-                                                        Start the physical handover
-                                                        when you are ready.
-                                                    </Text>
-
-                                                    <Pressable
-                                                        style={[
-                                                            styles.handoverButton,
-
-                                                            handingOver &&
-                                                            styles.disabledButton,
-                                                        ]}
-                                                        disabled={
-                                                            handingOver
-                                                        }
-                                                        onPress={
-                                                            handleInitiateHandover
-                                                        }
-                                                    >
-                                                        {handingOver ? (
-                                                            <View
-                                                                style={
-                                                                    styles.buttonLoading
-                                                                }
-                                                            >
-                                                                <ActivityIndicator
-                                                                    size="small"
-                                                                    color="#ffffff"
-                                                                />
-
-                                                                <Text
-                                                                    style={
-                                                                        styles.handoverButtonText
-                                                                    }
-                                                                >
-                                                                    Initiating...
-                                                                </Text>
-                                                            </View>
-                                                        ) : (
-                                                            <Text
-                                                                style={
-                                                                    styles.handoverButtonText
-                                                                }
-                                                            >
-                                                                Proceed to Handover
-                                                            </Text>
-                                                        )}
-                                                    </Pressable>
-                                                </View>
-                                            )}
-                                        </View>
-                                    ) : (
-                                        <Text
-                                            style={
-                                                styles.unavailableText
-                                            }
-                                        >
-                                            Another
-                                            recycler's
-                                            quote has been
-                                            accepted.
-                                        </Text>
-                                    )
-                                ) : !myOffer ? (
-                                    <Pressable
-                                        style={[
-                                            styles.primaryButton,
-
-                                            requesting !=
-                                            null &&
-                                            styles.disabledButton,
-                                        ]}
-                                        disabled={
-                                            requesting !=
-                                            null
-                                        }
-                                        onPress={() =>
-                                            handleRequestQuote(
-                                                recycler
-                                            )
-                                        }
-                                    >
-                                        {isRequesting ? (
-                                            <View
-                                                style={
-                                                    styles.buttonLoading
-                                                }
-                                            >
-                                                <ActivityIndicator
-                                                    size="small"
-                                                    color="#ffffff"
-                                                />
-
-                                                <Text
-                                                    style={
-                                                        styles.primaryButtonText
-                                                    }
-                                                >
-                                                    Requesting...
-                                                </Text>
-                                            </View>
-                                        ) : (
-                                            <Text
-                                                style={
-                                                    styles.primaryButtonText
-                                                }
-                                            >
-                                                Request Quote
-                                            </Text>
-                                        )}
-                                    </Pressable>
-                                ) : myOffer.offer_status ===
-                                    'requested' ? (
-                                    <View
-                                        style={
-                                            styles.waitingBox
-                                        }
-                                    >
-                                        <Text
-                                            style={
-                                                styles.waitingText
-                                            }
-                                        >
-                                            ⏳ Quote
-                                            requested —
-                                            awaiting
-                                            recycler
-                                        </Text>
-                                    </View>
-                                ) : myOffer.offer_status ===
-                                    'offered' ? (
-                                    <View
-                                        style={
-                                            styles.offerActionBox
-                                        }
-                                    >
-                                        <Text
-                                            style={
-                                                styles.offerSmallLabel
-                                            }
-                                        >
-                                            RECYCLER'S
-                                            OFFER
-                                        </Text>
-
-                                        <Text
-                                            style={
-                                                styles.offerPrice
-                                            }
-                                        >
-                                            ₹
-                                            {Number(
-                                                myOffer.offered_price
-                                            ).toLocaleString(
-                                                'en-IN'
-                                            )}{' '}
-                                            / kg
-                                        </Text>
-
-                                        {lotWeight &&
-                                            myOffer.offered_price ? (
-                                            <Text
-                                                style={
-                                                    styles.offerPayout
-                                                }
-                                            >
-                                                Estimated
-                                                payout: ₹
-                                                {Math.round(
-                                                    Number(
-                                                        lotWeight
-                                                    ) *
-                                                    Number(
-                                                        myOffer.offered_price
-                                                    )
-                                                ).toLocaleString(
-                                                    'en-IN'
-                                                )}
-                                            </Text>
-                                        ) : null}
-
-                                        <View
-                                            style={
-                                                styles.offerButtons
-                                            }
-                                        >
-                                            <Pressable
-                                                style={[
-                                                    styles.acceptButton,
-
-                                                    offerBusy !=
-                                                    null &&
-                                                    styles.disabledButton,
-                                                ]}
-                                                disabled={
-                                                    offerBusy !=
-                                                    null
-                                                }
-                                                onPress={() =>
-                                                    handleOfferAction(
-                                                        myOffer.id,
-                                                        'accept'
-                                                    )
-                                                }
-                                            >
-                                                {offerBusy ===
-                                                    myOffer.id ? (
-                                                    <ActivityIndicator
-                                                        size="small"
-                                                        color="#ffffff"
-                                                    />
-                                                ) : (
-                                                    <Text
-                                                        style={
-                                                            styles.acceptButtonText
-                                                        }
-                                                    >
-                                                        ✓ Accept
-                                                    </Text>
-                                                )}
-                                            </Pressable>
-
-                                            <Pressable
-                                                style={[
-                                                    styles.rejectButton,
-
-                                                    offerBusy !=
-                                                    null &&
-                                                    styles.disabledButton,
-                                                ]}
-                                                disabled={
-                                                    offerBusy !=
-                                                    null
-                                                }
-                                                onPress={() =>
-                                                    handleOfferAction(
-                                                        myOffer.id,
-                                                        'reject'
-                                                    )
-                                                }
-                                            >
-                                                <Text
-                                                    style={
-                                                        styles.rejectButtonText
-                                                    }
-                                                >
-                                                    Reject
-                                                </Text>
-                                            </Pressable>
-                                        </View>
-                                    </View>
-                                ) : (
-                                    <Pressable
-                                        style={
-                                            styles.primaryButton
-                                        }
-                                        onPress={() =>
-                                            handleRequestQuote(
-                                                recycler
-                                            )
-                                        }
-                                    >
-                                        <Text
-                                            style={
-                                                styles.primaryButtonText
-                                            }
-                                        >
-                                            Request Quote
-                                        </Text>
-                                    </Pressable>
-                                )}
-                            </Pressable>
-                        );
-                    }
->>>>>>> 5c04669e98eb8c2e91a89207ea1238af5024490c
                 )}
 
                 {loadingRec ? (
-                    <View style={S.loader}><ActivityIndicator size="large" color="#7c3aed" /><Text style={S.loaderTxt}>Loading rates…</Text></View>
+                    <View style={S.loader}>
+                        <ActivityIndicator size="large" color="#7c3aed" />
+                        <Text style={S.loaderTxt}>Loading rates...</Text>
+                    </View>
                 ) : filtered.length === 0 ? (
                     <View style={S.empty}>
                         <Text style={S.emptyTxt}>
@@ -2102,56 +875,58 @@ export default function PriceDiscoveryScreen() {
                 ) : (
                     <ScrollView horizontal showsHorizontalScrollIndicator>
                         <View>
-                            {/* Header */}
                             <View style={[S.tr, S.tHdr]}>
                                 <Text style={[S.td, S.tHdrTxt, { width: 150 }]}>{t('prices.recyclerName')}</Text>
                                 <Text style={[S.td, S.tHdrTxt, { width: 120 }]}>{t('prices.location')}</Text>
-                                {userCoords && <Text style={[S.td, S.tHdrTxt, { width: 80 }]}>{t('priceDiscovery.distance')}</Text>}
+                                {userCoords != null && <Text style={[S.td, S.tHdrTxt, { width: 80 }]}>{t('priceDiscovery.distance')}</Text>}
                                 <Text style={[S.td, S.tHdrTxt, { width: 100 }]}>{t('prices.offered')}</Text>
                                 <Text style={[S.td, S.tHdrTxt, { width: 70 }]}>{t('prices.pickup')}</Text>
-                                <Text style={[S.td, S.tHdrTxt, { width: 90 }]}>vs {t('prices.buyingPrice')}</Text>
+                                <Text style={[S.td, S.tHdrTxt, { width: 90 }]}>{'vs '}{t('prices.buyingPrice')}</Text>
                             </View>
                             {filtered.map((r, i) => {
                                 const mktPrice = priceCards[category]?.unit_price;
-                                const vsMkt = mktPrice && r.offered_rate
+                                const vsMkt = mktPrice != null && r.offered_rate != null
                                     ? ((Number(r.offered_rate) - mktPrice) / mktPrice * 100).toFixed(1)
                                     : null;
                                 const isDaily = r.pickup_availability === 'daily';
                                 return (
-                                    <View key={String(r.recycler_id || i)} style={[S.tr, i % 2 === 0 && S.trAlt]}>
-                                        {/* Name */}
+                                    <View key={String(r.recycler_id ?? i)} style={[S.tr, i % 2 === 0 && S.trAlt]}>
                                         <View style={[S.td, { width: 150 }]}>
                                             <View style={S.nameRow}>
-                                                {i === 0 && r.offered_rate && (
-                                                    <View style={S.bestBadge}><Text style={S.bestTxt}>★</Text></View>
+                                                {i === 0 && r.offered_rate != null && (
+                                                    <View style={S.bestBadge}>
+                                                        <Text style={S.bestTxt}>{'\u2605'}</Text>
+                                                    </View>
                                                 )}
                                                 <Text style={S.rName} numberOfLines={1}>
-                                                    {r.name || `Recycler ${i + 1}`}
+                                                    {r.name ?? `Recycler ${i + 1}`}
                                                 </Text>
                                             </View>
                                         </View>
                                         <Text style={[S.td, S.muted, { width: 120 }]} numberOfLines={1}>
-                                            {r.facility_location || r.service_area || '—'}
+                                            {r.facility_location ?? r.service_area ?? '\u2014'}
                                         </Text>
-                                        {userCoords && (
+                                        {userCoords != null && (
                                             <Text style={[S.td, { width: 80, color: '#7c3aed', fontWeight: '500' }]}>
-                                                {r.distance != null ? `📍 ${r.distance} km` : '—'}
+                                                {r.distance != null ? `📍 ${r.distance} km` : '\u2014'}
                                             </Text>
                                         )}
                                         <Text style={[S.td, { width: 100, color: '#d97706', fontWeight: '700' }]}>
-                                            {r.offered_rate ? `${fmt(r.offered_rate)}/kg` : '—'}
+                                            {r.offered_rate != null ? `${fmt(r.offered_rate)}/kg` : '\u2014'}
                                         </Text>
                                         <Text style={[S.td, { width: 70, color: isDaily ? '#16a34a' : '#9ca3af' }]}>
-                                            {isDaily ? `✓ ${t('prices.yes')}` : `✗ ${t('prices.no')}`}
+                                            {isDaily ? `\u2713 ${t('prices.yes')}` : `\u2717 ${t('prices.no')}`}
                                         </Text>
                                         <View style={[S.td, { width: 90 }]}>
                                             {vsMkt != null ? (
                                                 <View style={[S.vsBadge, Number(vsMkt) >= 0 ? S.vsUp : S.vsDn]}>
                                                     <Text style={[S.vsTxt, Number(vsMkt) >= 0 ? S.vsTxtUp : S.vsTxtDn]}>
-                                                        {Number(vsMkt) >= 0 ? '+' : ''}{vsMkt}%
+                                                        {Number(vsMkt) >= 0 ? '+' : ''}{vsMkt}{'%'}
                                                     </Text>
                                                 </View>
-                                            ) : <Text style={S.muted}>—</Text>}
+                                            ) : (
+                                                <Text style={S.muted}>{'\u2014'}</Text>
+                                            )}
                                         </View>
                                     </View>
                                 );
@@ -2167,37 +942,6 @@ export default function PriceDiscoveryScreen() {
 }
 
 /* =========================================================
-   SUB-COMPONENTS
-========================================================= */
-
-function Chip({ label, value, accent, up }: { label: string; value: string; accent?: boolean; up?: boolean }) {
-    return (
-        <View style={[S.chip2, accent && S.chip2Accent, up && S.chip2Up]}>
-            <Text style={S.chipLabel}>{label}</Text>
-            <Text style={[S.chipValue, accent && S.chipValueAccent, up && S.chipValueUp]}>{value}</Text>
-        </View>
-    );
-}
-
-function Mini({ label, value, accent, up, down }: {
-    label: string; value: string; accent?: boolean; up?: boolean; down?: boolean;
-}) {
-    return (
-        <View style={S.mini}>
-            <Text style={S.miniLabel}>{label}</Text>
-            <Text style={[
-                S.miniValue,
-                accent && { color: '#7c3aed' },
-                up   && { color: '#16a34a' },
-                down && { color: '#dc2626' },
-            ]}>
-                {value}
-            </Text>
-        </View>
-    );
-}
-
-/* =========================================================
    STYLES
 ========================================================= */
 
@@ -2207,19 +951,13 @@ const T = '#0f172a', M = '#64748b', B = '#e2e8f0', BG = '#f8fafc';
 const S = StyleSheet.create({
     screen: { flex: 1, backgroundColor: BG },
     container: { paddingHorizontal: 18, paddingTop: 24, paddingBottom: 40 },
-
-    /* sync btn */
     syncBtn: { backgroundColor: P, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, alignItems: 'center', justifyContent: 'center' },
     syncBtnTxt: { color: '#fff', fontSize: 12, fontWeight: '700' },
     disabled: { opacity: 0.55 },
-
-    /* toasts */
     toastGreen: { backgroundColor: '#f0fdf4', borderWidth: 1, borderColor: '#86efac', borderRadius: 10, padding: 12, marginBottom: 10 },
     toastGreenTxt: { color: '#15803d', fontSize: 13, fontWeight: '600' },
     toastWarn: { backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fcd34d', borderRadius: 10, padding: 12, marginBottom: 10 },
     toastWarnTxt: { color: '#b45309', fontSize: 13, fontWeight: '500' },
-
-    /* pulse banner */
     pulse: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, backgroundColor: PBG, borderWidth: 1, borderColor: '#c4b5fd', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 16 },
     pulseL: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10b981' },
@@ -2232,8 +970,6 @@ const S = StyleSheet.create({
     demandTxt: { fontSize: 10, fontWeight: '600', color: '#15803d' },
     hubBadge: { backgroundColor: PL, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
     hubTxt: { fontSize: 10, fontWeight: '600', color: P },
-
-    /* controls */
     block: { marginBottom: 12 },
     controlRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
     ctrlLabel: { fontSize: 12, fontWeight: '700', color: M, textTransform: 'uppercase', letterSpacing: 0.4 },
@@ -2245,22 +981,16 @@ const S = StyleSheet.create({
     chipOn: { backgroundColor: P, borderColor: P },
     chipTxt: { fontSize: 12, fontWeight: '500', color: M },
     chipTxtOn: { color: '#fff', fontWeight: '700' },
-
-    /* days */
     daysRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
     dayTabs: { flexDirection: 'row', gap: 6 },
     dayTab: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, borderWidth: 1, borderColor: B, backgroundColor: '#fff' },
     dayTabOn: { backgroundColor: P, borderColor: P },
     dayTabTxt: { fontSize: 12, fontWeight: '600', color: M },
     dayTabTxtOn: { color: '#fff' },
-
-    /* section headers */
     secRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10, marginTop: 4 },
     secTitle: { fontSize: 16, fontWeight: '700', color: T },
     secSub: { fontSize: 11, color: M },
     secSub2: { fontSize: 13, color: M, marginBottom: 8, marginTop: 2 },
-
-    /* material rate cards */
     cardScroll: { flexGrow: 0, marginBottom: 18 },
     matCard: { width: 155, marginRight: 10, backgroundColor: '#fff', borderRadius: 14, borderWidth: 1.5, borderColor: B, padding: 12, gap: 4, position: 'relative', overflow: 'hidden' },
     matCardOn: { borderColor: P, backgroundColor: PBG },
@@ -2273,16 +1003,12 @@ const S = StyleSheet.create({
     matPriceOn: { color: P },
     matRange: { fontSize: 10, fontWeight: '600', color: M },
     matActiveLine: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, backgroundColor: P },
-
-    /* category tabs (smaller, inline) */
     tabsScroll: { flexGrow: 0, marginBottom: 12 },
     catTab: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: B, backgroundColor: '#fff', marginRight: 8, flexDirection: 'row', alignItems: 'center', gap: 5 },
     catTabOn: { backgroundColor: P, borderColor: P },
     catTabIcon: { fontSize: 13 },
     catTabTxt: { fontSize: 12, fontWeight: '600', color: M },
     catTabTxtOn: { color: '#fff' },
-
-    /* hero */
     hero: { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1.5, borderColor: '#c4b5fd', padding: 18, marginBottom: 20, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, shadowColor: P, shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
     heroKicker: { fontSize: 10, fontWeight: '700', color: M, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
     heroCatLoc: { fontSize: 13, fontWeight: '600', color: M, marginBottom: 4 },
@@ -2298,12 +1024,8 @@ const S = StyleSheet.create({
     speakIcon: { fontSize: 22 },
     speakTxt: { fontSize: 10, fontWeight: '700', color: P, textAlign: 'center' },
     speakTxtOn: { color: '#fff' },
-
-    /* card wrapper */
     card: { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: B, padding: 16, marginBottom: 20 },
     chartHdr: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 },
-
-    /* analytics */
     analyticsBox: { backgroundColor: PBG, borderRadius: 10, borderWidth: 1, borderColor: '#c4b5fd', borderStyle: 'dashed', padding: 10, marginBottom: 12 },
     analyticsTitle: { fontSize: 10, fontWeight: '700', color: M, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 },
     chipsRow: { flexDirection: 'row', gap: 8 },
@@ -2314,36 +1036,24 @@ const S = StyleSheet.create({
     chipValue: { fontSize: 13, fontWeight: '700', color: T, textAlign: 'center' },
     chipValueAccent: { color: P },
     chipValueUp: { color: '#16a34a' },
-
-    /* mini stats */
     statsRow: { flexDirection: 'row', gap: 6, marginBottom: 14, flexWrap: 'wrap' },
     mini: { flex: 1, minWidth: 56, backgroundColor: BG, borderRadius: 8, padding: 8, alignItems: 'center', borderWidth: 1, borderColor: B },
     miniLabel: { fontSize: 8, fontWeight: '700', color: M, textTransform: 'uppercase', letterSpacing: 0.2, marginBottom: 2 },
     miniValue: { fontSize: 12, fontWeight: '700', color: T },
-
-    /* chart */
     chartWrap: { position: 'relative', overflow: 'hidden', marginBottom: 4 },
-
-    /* progression */
     progressBox: { backgroundColor: BG, borderRadius: 10, borderWidth: 1, borderColor: B, padding: 12, marginTop: 8, marginBottom: 10 },
     progressTitle: { fontSize: 10, fontWeight: '700', color: M, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 8 },
     progressRow: { flexDirection: 'row', alignItems: 'center' },
     progressItem: { flexDirection: 'row', alignItems: 'center' },
     progressPrice: { fontSize: 15, fontWeight: '700', color: P },
     progressArrow: { fontSize: 12, color: M, fontWeight: '500' },
-
-    /* toggle */
     toggleBtn: { paddingVertical: 10, alignItems: 'center', borderTopWidth: 1, borderTopColor: B, marginTop: 8 },
     toggleTxt: { fontSize: 12, color: P, fontWeight: '600' },
-
-    /* table */
     tr: { flexDirection: 'row', paddingVertical: 9, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: B, alignItems: 'center' },
     trAlt: { backgroundColor: '#fafafa' },
     tHdr: { backgroundColor: '#f1f5f9' },
     td: { fontSize: 12, color: T, paddingHorizontal: 6 },
     tHdrTxt: { fontSize: 10, fontWeight: '700', color: M, textTransform: 'uppercase', letterSpacing: 0.2 },
-
-    /* recycler rates */
     rateAsOf: { fontSize: 11, color: M, marginBottom: 8, fontStyle: 'italic' },
     rateCount: { fontSize: 11, color: M, marginBottom: 8 },
     searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: BG, borderWidth: 1, borderColor: B, borderRadius: 10, marginBottom: 10, paddingHorizontal: 10 },
@@ -2364,8 +1074,6 @@ const S = StyleSheet.create({
     vsTxtDn: { color: '#b91c1c' },
     clearFilterBtn: { marginTop: 10, backgroundColor: PL, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7, alignSelf: 'center' },
     clearFilterTxt: { color: P, fontSize: 13, fontWeight: '600' },
-
-    /* misc */
     loader: { alignItems: 'center', paddingVertical: 30, gap: 10 },
     loaderTxt: { color: M, fontSize: 13 },
     empty: { alignItems: 'center', paddingVertical: 30 },
