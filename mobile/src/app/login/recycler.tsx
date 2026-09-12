@@ -339,6 +339,9 @@ export default function RecyclerLoginScreen() {
     const payload: RecyclerApplication = {
       name: form.name.trim(),
 
+      latitude: null,
+      longitude: null,
+
       // facility_location is required by the backend – always include it.
       facility_location: form.facilityLocation.trim(),
 

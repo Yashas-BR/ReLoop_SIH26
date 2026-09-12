@@ -82,6 +82,10 @@ export interface RecyclerLoginResponse {
 export interface RecyclerApplication {
   name: string;
 
+  latitude?: number | null;
+  
+  longitude?: number | null;
+
   facility_location?: string;
 
   contact_details?: string;

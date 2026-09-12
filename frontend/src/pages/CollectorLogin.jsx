@@ -1,383 +1,102 @@
-import { router } from 'expo-router';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { loginCollector } from '../api/client';
+import { saveSession } from '../services/auth';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { useTranslation } from '../i18n/config.js';
+import './Login.css';
 
 export default function CollectorLogin() {
+  const { t, setLang } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
+  const from = location?.state?.from || '/collector';
+
   async function handleLogin() {
-    const phoneValue = phone.trim();
-
-    if (!phoneValue) {
-      setError('Phone number is required');
-      return;
-    }
-
-    if (phoneValue.length !== 10) {
-      setError('Enter a valid 10-digit phone number');
-      return;
-    }
-
-    setError('');
-    setBusy(true);
-
+    const phoneStr = String(phone).trim();
+    if (!phoneStr) { setError(t('login.phoneRequired') || 'Phone is required'); return; }
+    setError(''); setBusy(true);
     try {
-      const response = await fetch(
-        `${process.env.EXPO_PUBLIC_API_BASE_URL}/collectors/login`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            phone: phoneValue,
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          result?.message ||
-          result?.error ||
-          'Login failed'
-        );
-      }
-
-      console.log('Collector login response:', result);
-
-      /*
-       * We'll add secure session storage next.
-       *
-       * Original web version:
-       * saveSession(...)
-       * navigate('/collector')
-       */
-
-      router.replace('/collector');
-    } catch (err: any) {
-      setError(err?.message || 'Login failed');
+      const res = await loginCollector(phoneStr);
+      const { collector, token } = res.data;
+      saveSession({
+        role: 'collector',
+        userId: collector.id,
+        name: collector.name,
+        phone: collector.phone,
+        preferred_language: collector.preferred_language,
+        operating_location: collector.operating_location,
+        token,
+      });
+      setLang(collector.preferred_language);
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError(err.message || t('login.loginFailed') || 'Login failed');
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.screen}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.card}>
-          {/* HEADER */}
-          <View style={styles.header}>
-            <View style={styles.logo}>
-              <Text style={styles.logoIcon}>📦</Text>
-            </View>
+    <div className="container login-page">
+      <div className="login-card card animate-scale-in">
+        <div className="login-card__head">
+          <div className="login-card__logo" aria-hidden="true"></div>
+          <h1 className="section-title">{t('login.kabadiwala') || 'Collector Login'}</h1>
+          <p className="section-subtitle">{t('login.subtitle') || 'Sign in to continue'}</p>
+        </div>
 
-            <Text style={styles.title}>
-              Collector Login
-            </Text>
+        {error && (
+          <div className="alert-banner alert-banner--error animate-fade-in" role="alert">
+            {error}
+          </div>
+        )}
 
-            <Text style={styles.subtitle}>
-              Sign in to continue as a collector
-            </Text>
-          </View>
+        <section className="login-panel" aria-labelledby="coll-heading">
+          <label className="form-label" htmlFor="login-phone">{t('login.phoneLabel') || 'Phone Number'}</label>
+          <input
+            id="login-phone"
+            className="form-input"
+            type="tel"
+            inputMode="numeric"
+            maxLength={10}
+            placeholder={t('login.phonePlaceholder') || 'Enter 10-digit phone number'}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleLogin(); }}
+          />
 
-          {/* ERROR */}
-          {error ? (
-            <View style={styles.errorBanner}>
-              <Text style={styles.errorText}>
-                {error}
-              </Text>
-            </View>
-          ) : null}
-
-          {/* LOGIN PANEL */}
-          <View style={styles.loginPanel}>
-            <Text style={styles.label}>
-              Phone Number
-            </Text>
-
-            <TextInput
-              style={styles.input}
-              keyboardType="number-pad"
-              maxLength={10}
-              placeholder="Enter 10-digit phone number"
-              placeholderTextColor="#9ca3af"
-              value={phone}
-              editable={!busy}
-              onChangeText={(value) => {
-                const numbersOnly = value
-                  .replace(/\D/g, '')
-                  .slice(0, 10);
-
-                setPhone(numbersOnly);
-
-                if (error) {
-                  setError('');
-                }
-              }}
-              onSubmitEditing={handleLogin}
-              returnKeyType="done"
-            />
-
-            <Pressable
-              style={[
-                styles.loginButton,
-                busy && styles.loginButtonDisabled,
-              ]}
-              onPress={handleLogin}
-              disabled={busy}
-            >
-              {busy ? (
-                <View style={styles.loadingRow}>
-                  <ActivityIndicator
-                    size="small"
-                    color="#ffffff"
-                  />
-
-                  <Text style={styles.loginButtonText}>
-                    Signing in...
-                  </Text>
-                </View>
-              ) : (
-                <Text style={styles.loginButtonText}>
-                  Sign In
-                </Text>
-              )}
-            </Pressable>
-
-            <Text style={styles.hint}>
-              Enter the phone number registered with your collector account.
-            </Text>
-
-            <View style={styles.registerRow}>
-              <Text style={styles.hint}>
-                Don't have an account?{' '}
-              </Text>
-
-              <Pressable
-                onPress={() =>
-                  router.push('/collector/register')
-                }
-              >
-                <Text style={styles.link}>
-                  Create Account
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-
-          {/* ROLE SWITCH */}
-          <View style={styles.roleSwitch}>
-            <Text style={styles.roleSwitchText}>
-              Not a collector?
-            </Text>
-
-            <Pressable
-              onPress={() =>
-                router.push('/login/recycler')
-              }
-            >
-              <Text style={styles.link}>
-                Login as Recycler
-              </Text>
-            </Pressable>
-          </View>
-
-          {/* BACK HOME */}
-          <Pressable
-            style={styles.backHome}
-            onPress={() => router.replace('/')}
+          <button
+            className="btn btn-primary btn-full"
+            onClick={handleLogin}
+            disabled={busy}
+            aria-busy={busy}
+            style={{ marginTop: '1rem' }}
           >
-            <Text style={styles.link}>
-              Back to Home
-            </Text>
-          </Pressable>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            {busy ? <><LoadingSpinner size="sm" /> {t('login.signingIn') || 'Signing in'}…</> : <> {t('login.signIn') || 'Sign In'}</>}
+          </button>
+
+          <p className="login-hint">{t('login.phoneHint') || 'Enter the phone number registered with your account.'}</p>
+          <p className="login-hint login-register-link">
+            {t('login.noAccount') || 'Don\'t have an account?'}{' '}
+            <Link to="/collector/register">{t('login.createAccount') || 'Create Account'}</Link>
+          </p>
+        </section>
+
+        <div className="login-role-switch" style={{ marginTop: 'var(--space-4)', textAlign: 'center' }}>
+          <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>Not a collector? </span>
+          <Link to="/login/recycler" style={{ fontSize: 'var(--text-sm)', color: 'var(--color-primary)', fontWeight: 600 }}>Login as Recycler</Link>
+        </div>
+
+        <p className="login-foot">
+          <Link to="/">{t('landing.getStarted') || '← Back to Home'}</Link>
+        </p>
+      </div>
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
-
-  container: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 45,
-    paddingBottom: 30,
-  },
-
-  card: {
-    width: '100%',
-    maxWidth: 460,
-    backgroundColor: '#ffffff',
-    borderRadius: 18,
-    padding: 24,
-    gap: 20,
-
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 15,
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
-
-    elevation: 3,
-  },
-
-  header: {
-    alignItems: 'center',
-  },
-
-  logo: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    backgroundColor: '#f59e0b',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 14,
-  },
-
-  logoIcon: {
-    fontSize: 30,
-  },
-
-  title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#111827',
-    textAlign: 'center',
-  },
-
-  subtitle: {
-    fontSize: 15,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginTop: 6,
-  },
-
-  errorBanner: {
-    backgroundColor: '#fef2f2',
-    borderWidth: 1,
-    borderColor: '#fecaca',
-    padding: 12,
-    borderRadius: 10,
-  },
-
-  errorText: {
-    color: '#b91c1c',
-    fontSize: 14,
-  },
-
-  loginPanel: {
-    borderWidth: 1.5,
-    borderColor: '#e5e7eb',
-    borderRadius: 16,
-    padding: 20,
-    gap: 12,
-  },
-
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
-
-  input: {
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    fontSize: 16,
-    color: '#111827',
-    backgroundColor: '#ffffff',
-  },
-
-  loginButton: {
-    width: '100%',
-    backgroundColor: '#22c55e',
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  loginButtonDisabled: {
-    opacity: 0.65,
-  },
-
-  loginButtonText: {
-    color: '#ffffff',
-    fontWeight: '700',
-    fontSize: 16,
-  },
-
-  loadingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-
-  hint: {
-    fontSize: 12,
-    color: '#6b7280',
-    lineHeight: 18,
-  },
-
-  registerRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-  },
-
-  roleSwitch: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 6,
-  },
-
-  roleSwitchText: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-
-  link: {
-    color: '#22c55e',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
-  backHome: {
-    alignItems: 'center',
-  },
-});
