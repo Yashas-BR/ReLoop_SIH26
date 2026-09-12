@@ -10,9 +10,10 @@ import {
 } from 'react-native';
 
 import { router } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 
-import { getAvailableLots } from '../../api/client';
+import { getAvailableLots, getLotsByRecycler } from '../../api/client';
 import { useAuth } from '../../services/auth';
 import { useTranslation } from '../../../i18n/config';
 import { LanguageSelector } from '../../components/LanguageSelector';
@@ -31,7 +32,8 @@ export default function IncomingLotsScreen() {
   const { recyclerId } = useAuth();
   const { t } = useTranslation();
 
-  const [lots, setLots] = useState<RecyclerIncomingLot[]>([]);
+  const [availableLots, setAvailableLots] = useState<RecyclerIncomingLot[]>([]);
+  const [assignedLots, setAssignedLots] = useState<RecyclerIncomingLot[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -42,8 +44,12 @@ export default function IncomingLotsScreen() {
   const fetchLots = useCallback(async () => {
     if (!recyclerId) return;
     try {
-      const response = await getAvailableLots(recyclerId);
-      setLots(response.data || []);
+      const [availableRes, assignedRes] = await Promise.all([
+        getAvailableLots(recyclerId),
+        getLotsByRecycler(recyclerId)
+      ]);
+      setAvailableLots(availableRes.data || []);
+      setAssignedLots(assignedRes.data || []);
       setError('');
     } catch (err) {
       console.error('[IncomingLots] Error loading lots:', err);
@@ -57,22 +63,34 @@ export default function IncomingLotsScreen() {
     setRefreshing(false);
   }, [fetchLots]);
 
-  useEffect(() => {
-    setLoading(true);
-    fetchLots().finally(() => setLoading(false));
-  }, [fetchLots]);
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      fetchLots().finally(() => setLoading(false));
+    }, [fetchLots])
+  );
+
+  const deduplicatedAssigned = useMemo(() => {
+    const availableIds = new Set(availableLots.map(getLotId).filter(Boolean));
+    return assignedLots.filter(lot => {
+      const id = getLotId(lot);
+      return id ? !availableIds.has(id) : true;
+    });
+  }, [availableLots, assignedLots]);
+
+  const allLots = useMemo(() => [...availableLots, ...deduplicatedAssigned], [availableLots, deduplicatedAssigned]);
 
   const availableCategories = useMemo(() => {
     const cats = new Set<string>();
-    lots.forEach(lot => {
+    allLots.forEach(lot => {
       const c = getNormalizedMaterialId(getLotMaterialId(lot));
       if (c) cats.add(c);
     });
     return Array.from(cats).sort();
-  }, [lots]);
+  }, [allLots]);
 
-  const filteredLots = useMemo(() => {
-    return lots.filter((lot) => {
+  const filterLotList = useCallback((lotsList: RecyclerIncomingLot[]) => {
+    return lotsList.filter((lot) => {
       const rawCat = getLotMaterialId(lot);
       const categoryId = getNormalizedMaterialId(rawCat) ?? '';
       
@@ -97,7 +115,29 @@ export default function IncomingLotsScreen() {
       }
       return true;
     });
-  }, [lots, selectedCategory, searchQuery, t]);
+  }, [selectedCategory, searchQuery, t]);
+
+  const filteredAvailable = useMemo(() => filterLotList(availableLots), [availableLots, filterLotList]);
+  const filteredAssigned = useMemo(() => filterLotList(deduplicatedAssigned), [deduplicatedAssigned, filterLotList]);
+
+  const renderLot = (lot: RecyclerIncomingLot) => {
+    const safeLotId = getLotId(lot);
+    
+    if (!safeLotId) {
+      return null;
+    }
+
+    return (
+      <IncomingLotCard 
+        key={safeLotId} 
+        lot={lot} 
+        kgLabel={t('common.kg') || 'kg'} 
+        onPress={() => {
+          router.push(`/recycler/lot/${safeLotId}`);
+        }}
+      />
+    );
+  };
 
   return (
     <View style={styles.screen}>
@@ -158,7 +198,7 @@ export default function IncomingLotsScreen() {
           contentContainerStyle={styles.listContent}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
-          {filteredLots.length === 0 ? (
+          {filteredAvailable.length === 0 && filteredAssigned.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyTitle}>{t('recyclerLot.noLots') || 'No Lots Found'}</Text>
               <Text style={styles.emptyDesc}>
@@ -166,26 +206,21 @@ export default function IncomingLotsScreen() {
               </Text>
             </View>
           ) : (
-            filteredLots.map(lot => {
-              const safeLotId = getLotId(lot);
-              return (
-                <IncomingLotCard 
-                  key={safeLotId || Math.random().toString()} 
-                  lot={lot} 
-                  kgLabel={t('common.kg') || 'kg'} 
-                  onPress={() => {
-                    if (!safeLotId) {
-                      Alert.alert(
-                        t('common.error') || 'Error',
-                        t('recyclerLot.invalidId') || 'Unable to open this lot.'
-                      );
-                      return;
-                    }
-                    router.push(`/recycler/lot/${safeLotId}`);
-                  }}
-                />
-              );
-            })
+            <>
+              {filteredAvailable.length > 0 && (
+                <>
+                  <Text style={styles.sectionTitle}>{t('recyclerLot.availableToQuote') || 'Available to Quote'}</Text>
+                  {filteredAvailable.map(renderLot)}
+                </>
+              )}
+              
+              {filteredAssigned.length > 0 && (
+                <>
+                  <Text style={styles.sectionTitle}>{t('recyclerLot.myRequests') || 'My Requests / Assigned Lots'}</Text>
+                  {filteredAssigned.map(renderLot)}
+                </>
+              )}
+            </>
           )}
         </ScrollView>
       )}
@@ -298,6 +333,13 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 10,
     paddingBottom: 40,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#173D2D',
+    marginBottom: 16,
+    marginTop: 8,
   },
   emptyState: {
     alignItems: 'center',

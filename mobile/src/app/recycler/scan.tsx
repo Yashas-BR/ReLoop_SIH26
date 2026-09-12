@@ -79,49 +79,24 @@ export default function RecyclerScanScreen() {
           );
 
         if (
-          parsed.type ===
-            'lot' &&
+          parsed.type === 'lot' &&
           parsed.lotId
         ) {
           router.push({
-            pathname:
-              '/recycler/lot/[id]',
-
-            params: {
-              id:
-                parsed.lotId,
-            },
+            pathname: '/recycler/handover/[lotId]' as any,
+            params: { lotId: parsed.lotId },
           });
-
           return;
         }
 
         if (
-          parsed.type ===
-          'handover'
+          parsed.type === 'handover' &&
+          parsed.reference
         ) {
-          Alert.alert(
-            t(
-              'recyclerScan.handoverTitle',
-            ),
-
-            parsed.reference ??
-              parsed.raw,
-
-            [
-              {
-                text: t(
-                  'common.ok',
-                ),
-
-                onPress: () =>
-                  setScanned(
-                    false,
-                  ),
-              },
-            ],
-          );
-
+          router.push({
+            pathname: '/recycler/handover/[lotId]' as any,
+            params: { lotId: parsed.reference, isRef: 'true' },
+          });
           return;
         }
 
