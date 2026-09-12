@@ -20,6 +20,8 @@ import type {
   RecyclerLoginResponse,
 } from '../types/auth';
 
+import { unwrapLotArray } from '../utils/lot-helpers';
+
 import type {
   ApiDataResponse,
   RecyclerLot,
@@ -1135,16 +1137,12 @@ export const deleteLot =
     );
 
 export function getLotsByCollector(
-  collectorId:
-    | number
-    | string,
+  collectorId: number | string,
 ) {
   return request(
-    `/handover/collector/${encodeURIComponent(
-      String(
-        collectorId,
-      ),
-    )}/lots`,
+    `/handover/lots/collector/${encodeURIComponent(
+      String(collectorId),
+    )}`,
   );
 }
 
@@ -1153,32 +1151,37 @@ export function getLotsByCollector(
  *
  * Keep this route aligned with the existing web API client.
  */
-export function getLotsByRecycler(
+export async function getLotsByRecycler(
   recyclerId: number | string,
 ): Promise<ApiDataResponse<RecyclerLot[]>> {
-  return request<ApiDataResponse<RecyclerLot[]>>(
+  const response = await request<ApiDataResponse<RecyclerLot[]>>(
     `/handover/lots/recycler/${encodeURIComponent(
       String(recyclerId),
     )}`,
   );
+  
+  return {
+    ...response,
+    data: unwrapLotArray(response) as any[],
+  };
 }
 
 export const updatePayment =
   (
-    handoverId:
+    lotId:
       | number
       | string,
 
     data: unknown,
   ) =>
     request(
-      `/handover/${encodeURIComponent(
+      `/payments/${encodeURIComponent(
         String(
-          handoverId,
+          lotId,
         ),
-      )}/payment`,
+      )}`,
       {
-        method: 'PUT',
+        method: 'PATCH',
 
         body:
           JSON.stringify(
@@ -1563,70 +1566,22 @@ export const getOffersByLot =
  * Phase 2 Recycler dashboard:
  * lots currently available to this Recycler.
  */
-export function getAvailableLots(
+export async function getAvailableLots(
   recyclerId: number,
 ): Promise<ApiResponse<RecyclerIncomingLot[]>> {
-  return request<ApiResponse<RecyclerIncomingLot[]>>(
+  const response = await request<ApiResponse<RecyclerIncomingLot[]>>(
     `/quotes/available?recycler_id=${encodeURIComponent(
       String(recyclerId),
     )}`,
   );
+
+  return {
+    ...response,
+    data: unwrapLotArray(response),
+  };
 }
 
-// Use the exact endpoint/payload from the existing ReLoop web application.
-export async function submitRecyclerQuote(
-  input: RecyclerQuoteInput,
-): Promise<ApiResponse<RecyclerQuote>> {
-  // 1. requestQuote
-  const created = await request<ApiResponse<{ id: string | number }>>(
-    '/quotes/request',
-    {
-      method: 'POST',
-      body: JSON.stringify({
-        lot_id: input.lot_id,
-        recycler_id: input.recycler_id,
-      }) as any,
-    },
-  );
 
-  // 2. respondToOffer
-  return request<ApiResponse<RecyclerQuote>>(
-    `/quotes/${encodeURIComponent(String(created.data.id))}/respond`,
-    {
-      method: 'POST',
-      body: JSON.stringify({
-        offered_price: input.amount,
-        notes: input.notes,
-      }) as any,
-    },
-  );
-}
-
-export async function acceptRecyclerLot(
-  recyclerId: number,
-  lotId: string,
-): Promise<ApiResponse<unknown>> {
-  // Replace with exact endpoint used by the website.
-  return request<ApiResponse<unknown>>(
-    `/quotes/${lotId}/accept`,
-    {
-      method: 'POST',
-    },
-  );
-}
-
-export async function rejectRecyclerLot(
-  recyclerId: number,
-  lotId: string,
-): Promise<ApiResponse<unknown>> {
-  // Replace with exact endpoint used by the website.
-  return request<ApiResponse<unknown>>(
-    `/quotes/${lotId}/reject`,
-    {
-      method: 'POST',
-    },
-  );
-}
 
 export interface QuoteLotParams {
   lotId:
