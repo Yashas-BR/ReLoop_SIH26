@@ -149,6 +149,11 @@ export async function getSession():
   return stored?.session ?? null;
 }
 
+export async function currentRecyclerId(): Promise<number | null> {
+  const session = await getSession();
+  return session?.userId ?? null;
+}
+
 export function AuthProvider({
   children,
 }: PropsWithChildren) {
