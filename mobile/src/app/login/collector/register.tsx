@@ -14,6 +14,7 @@ import { router } from 'expo-router';
 
 import { registerCollector } from '../../../../api/client';
 import { saveSession } from '../../../../services/auth';
+import { AppLogo } from '../../../components/branding/AppLogo';
 
 const LANG_OPTIONS = [
     { code: 'en', label: 'English' },
@@ -99,6 +100,9 @@ export default function CollectorRegister() {
             >
                 <View style={styles.card}>
                     <View style={styles.header}>
+                        <View style={{ alignItems: 'center', marginBottom: 16 }}>
+                            <AppLogo size="large" />
+                        </View>
                         <View style={styles.logo}>
                             <Text style={styles.logoText}>📦</Text>
                         </View>
@@ -106,7 +110,7 @@ export default function CollectorRegister() {
                         <Text style={styles.title}>Create Collector Account</Text>
 
                         <Text style={styles.subtitle}>
-                            Join Kabadiwala Connect
+                            Join E-Setu
                         </Text>
                     </View>
 
@@ -117,7 +121,6 @@ export default function CollectorRegister() {
                     ) : null}
 
                     <View style={styles.panel}>
-                        <Text style={styles.panelTitle}>Kabadiwala</Text>
 
                         <Text style={styles.label}>Name</Text>
 

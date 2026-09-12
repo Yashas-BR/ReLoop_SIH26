@@ -20,6 +20,8 @@ import {
 
 import { getLotsByRecycler } from '../../api/client';
 
+import { BrandedHeader } from '../../components/branding/BrandedHeader';
+
 import { LanguageSelector } from '../../components/LanguageSelector';
 
 import { RecyclerActivityCard } from '../../components/recycler/RecyclerActivityCard';
@@ -207,29 +209,12 @@ export default function RecyclerActivityScreen() {
         />
       }
     >
-      <LanguageSelector />
-
-      <Pressable
-        onPress={() =>
-          router.back()
-        }
-      >
-        <Text style={styles.back}>
-          ← {t('common.back')}
-        </Text>
-      </Pressable>
-
-      <Text style={styles.title}>
-        {t(
-          'recyclerActivity.title',
-        )}
-      </Text>
-
-      <Text style={styles.subtitle}>
-        {t(
-          'recyclerActivity.subtitle',
-        )}
-      </Text>
+      <BrandedHeader
+        showBack
+        title={t('recyclerActivity.title')}
+        subtitle={t('recyclerActivity.subtitle')}
+        rightElement={<LanguageSelector />}
+      />
 
       <TextInput
         value={search}

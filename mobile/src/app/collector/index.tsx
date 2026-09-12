@@ -18,6 +18,7 @@ import {
 } from '../../../api/client';
 
 import { currentCollectorId } from '../../../services/auth';
+import { BrandedHeader } from '../../components/branding/BrandedHeader';
 
 type Earnings = {
   total_earned?: number;
@@ -174,28 +175,22 @@ export default function CollectorDashboard() {
     >
       {/* Header */}
 
-      <View style={styles.header}>
-        <View style={styles.headerText}>
-          <Text style={styles.title}>
-            Collector Dashboard
-          </Text>
-
-          <Text style={styles.subtitle}>
-            Manage your e-waste lots and earnings
-          </Text>
-        </View>
-
-        <Pressable
-          style={styles.createButton}
-          onPress={() =>
-            router.push('/collector/create-lot')
-          }
-        >
-          <Text style={styles.createButtonText}>
-            + Create New Lot
-          </Text>
-        </Pressable>
-      </View>
+      <BrandedHeader
+        title="Collector Dashboard"
+        subtitle="Manage your e-waste lots and earnings"
+        rightElement={
+          <Pressable
+            style={styles.createButton}
+            onPress={() =>
+              router.push('/collector/create-lot')
+            }
+          >
+            <Text style={styles.createButtonText}>
+              + Create New Lot
+            </Text>
+          </Pressable>
+        }
+      />
 
       {/* Error */}
 

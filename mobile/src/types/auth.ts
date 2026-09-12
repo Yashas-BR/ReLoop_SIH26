@@ -47,6 +47,9 @@ export interface Recycler {
   authorization_document_url?: string | null;
 
   authorization_details?: string | null;
+
+  /** Account status returned by some API endpoints (e.g., 'active', 'suspended') */
+  account_status?: string | null;
 }
 
 export interface RecyclerSession {

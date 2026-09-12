@@ -15,6 +15,7 @@ import {
     getEarningsSummary,
     getPaymentHistory,
 } from '../../../api/client';
+import { BrandedHeader } from '../../components/branding/BrandedHeader';
 import { currentCollectorId } from '../../../services/auth';
 
 type Filter = 'all' | 'paid' | 'pending';
@@ -151,21 +152,11 @@ export default function CollectorEarnings() {
             }
             showsVerticalScrollIndicator={false}
         >
-            <View style={styles.header}>
-                <View style={{ flex: 1 }}>
-                    <Text style={styles.title}>Earnings Ledger</Text>
-                    <Text style={styles.subtitle}>
-                        Track your payments and completed transactions.
-                    </Text>
-                </View>
-
-                <Pressable
-                    style={styles.backButton}
-                    onPress={() => router.back()}
-                >
-                    <Text style={styles.backText}>‹ Back</Text>
-                </Pressable>
-            </View>
+            <BrandedHeader
+                showBack
+                title="Earnings Ledger"
+                subtitle="Track your payments and completed transactions."
+            />
 
             {error ? (
                 <View style={styles.errorBanner}>

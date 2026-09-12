@@ -19,6 +19,8 @@ import {
   useTranslation,
 } from '../../i18n/config';
 
+import { AppLogo } from '../components/branding/AppLogo';
+
 export default function LandingScreen() {
   const { t, lang, setLang } = useTranslation();
 
@@ -136,6 +138,9 @@ export default function LandingScreen() {
         </View>
 
         <View style={styles.heroText}>
+          <View style={{ alignItems: 'center', marginBottom: 16 }}>
+            <AppLogo size="large" />
+          </View>
           <Text style={styles.heroTitleMain}>E-Setu</Text>
           <Text style={styles.heroTitleSub}>{t('landing.taglineShort')}</Text>
 

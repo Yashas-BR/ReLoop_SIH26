@@ -23,6 +23,7 @@ import {
   getRecycler,
   updateRecycler,
 } from '../../api/client';
+import { BrandedHeader } from '../../components/branding/BrandedHeader';
 
 import type {
   UpdateRecyclerPayload,
@@ -200,33 +201,25 @@ export default function RecyclerProfileScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
     >
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.headerBack}
-        >
-          <Text style={styles.headerBackText}>
-            ← {t('common.back')}
-          </Text>
-        </Pressable>
-
-        <LanguageSelector />
-
-        {!isEditing && (
-          <Pressable
-            onPress={() => setIsEditing(true)}
-            style={styles.editButton}
-          >
-            <Text style={styles.editButtonText}>
-              {t('common.edit')}
-            </Text>
-          </Pressable>
-        )}
-      </View>
-
-      <Text style={styles.pageTitle}>
-        {t('recyclerProfile.title')}
-      </Text>
+      <BrandedHeader
+        showBack
+        title={t('recyclerProfile.title')}
+        rightElement={
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <LanguageSelector />
+            {!isEditing && (
+              <Pressable
+                onPress={() => setIsEditing(true)}
+                style={styles.editButton}
+              >
+                <Text style={styles.editButtonText}>
+                  {t('common.edit')}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        }
+      />
 
       <View style={styles.card}>
         <View style={styles.avatarRow}>

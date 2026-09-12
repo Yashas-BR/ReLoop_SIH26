@@ -15,6 +15,7 @@ import {
 
 import { loginCollector } from '../../../api/client';
 import { saveSession } from '../../../services/auth';
+import { AppLogo } from '../../components/branding/AppLogo';
 
 export default function CollectorLogin() {
     const [phone, setPhone] = useState('');
@@ -77,6 +78,9 @@ export default function CollectorLogin() {
                 <View style={styles.card}>
 
                     <View style={styles.header}>
+                        <View style={{ alignItems: 'center', marginBottom: 16 }}>
+                            <AppLogo size="large" />
+                        </View>
                         <View style={styles.logo}>
                             <Text style={styles.logoText}>📦</Text>
                         </View>

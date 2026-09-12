@@ -18,6 +18,7 @@ import {
     getLotImages,
     getLotsByCollector,
 } from '../../../../../api/client';
+import { BrandedHeader } from '../../../../components/branding/BrandedHeader';
 import { currentCollectorId } from '../../../../../services/auth';
 
 type AnyRecord = Record<string, any>;
@@ -359,35 +360,25 @@ export default function LotTraceabilityScreen() {
                 />
             }
         >
-            <Pressable onPress={() => router.back()}>
-                <Text style={styles.back}>‹ Back to Lot</Text>
-            </Pressable>
-
-            <View style={styles.header}>
-                <Text style={styles.eyebrow}>
-                    DIGITAL TRACEABILITY
-                </Text>
-                <Text style={styles.title}>
-                    Lot Journey
-                </Text>
-                <Text style={styles.lotId}>
-                    {lotId}
-                </Text>
-
-                <View style={styles.headerBadges}>
-                    <View style={styles.statusBadge}>
-                        <Text style={styles.statusText}>
-                            {status}
-                        </Text>
+            <BrandedHeader
+                showBack
+                title="Lot Journey"
+                subtitle={`Lot: ${lotId}`}
+                rightElement={
+                    <View style={styles.headerBadges}>
+                        <View style={styles.statusBadge}>
+                            <Text style={styles.statusText}>
+                                {status}
+                            </Text>
+                        </View>
+                        <View style={styles.progressBadge}>
+                            <Text style={styles.progressText}>
+                                {progress}% complete
+                            </Text>
+                        </View>
                     </View>
-
-                    <View style={styles.progressBadge}>
-                        <Text style={styles.progressText}>
-                            {progress}% complete
-                        </Text>
-                    </View>
-                </View>
-            </View>
+                }
+            />
 
             {!!error && (
                 <View style={styles.warning}>

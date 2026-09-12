@@ -11,6 +11,7 @@ import {
     getOffersByLot, rejectOffer
 } from '../../../../api/client';
 import { currentCollectorId } from '../../../../services/auth';
+import { BrandedHeader } from '../../../components/branding/BrandedHeader';
 
 const money = (v: any) => v == null ? '—' : `₹${Number(v).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 const date = (v: any) => !v ? '—' : new Date(v).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -145,8 +146,8 @@ export default function CollectorLotDetail() {
 
     return <ScrollView style={styles.screen} contentContainerStyle={styles.container}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}>
-        <Pressable onPress={() => router.back()}><Text style={styles.back}>‹ Back</Text></Pressable>
-        <View style={styles.headingRow}><View style={{ flex: 1 }}><Text style={styles.title}>Lot Details</Text><Text style={styles.id}>{lotId}</Text></View><Badge value={lot.transaction_status} /></View>
+        <BrandedHeader showBack title="Lot Details" subtitle={lotId} rightElement={<Badge value={lot.transaction_status} />} />
+
 
         {locked ? <Text style={styles.lock}>🔒 Lot locked — handover/payment activity exists.</Text> :
             canCancel ? <Pressable style={styles.dangerOutline} onPress={() => setCancelOpen(true)}><Text style={styles.dangerText}>⚠️ Cancel Lot</Text></Pressable> :

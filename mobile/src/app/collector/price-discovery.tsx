@@ -15,7 +15,6 @@ import {
 import * as Location from 'expo-location';
 
 import {
-    acceptOffer,
     DEFAULT_LAT,
     DEFAULT_LNG,
     getMatchedRecyclers,
@@ -23,7 +22,9 @@ import {
     initiateHandover,
     rejectOffer,
     requestQuote,
+    acceptOffer,
 } from '../../../api/client';
+import { BrandedHeader } from '../../components/branding/BrandedHeader';
 
 import { getSession } from '../../../services/auth';
 
@@ -1032,39 +1033,11 @@ export default function MatchedRecyclersScreen() {
                 false
             }
         >
-            {/* HEADER */}
-
-            <Pressable
-                onPress={() =>
-                    router.back()
-                }
-            >
-                <Text
-                    style={
-                        styles.back
-                    }
-                >
-                    ‹ Back
-                </Text>
-            </Pressable>
-
-            <Text
-                style={
-                    styles.title
-                }
-            >
-                Matched Recyclers
-            </Text>
-
-            <Text
-                style={
-                    styles.subtitle
-                }
-            >
-                Authorized recyclers
-                matched for your{' '}
-                {category} lot.
-            </Text>
+            <BrandedHeader
+                showBack
+                title="Matched Recyclers"
+                subtitle={`Authorized recyclers matched for your ${category} lot.`}
+            />
 
             <View
                 style={

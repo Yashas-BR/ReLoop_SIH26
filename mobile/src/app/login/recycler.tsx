@@ -41,6 +41,8 @@ import {
   useTranslation,
 } from '../../../i18n/config';
 
+import { AppLogo } from '../../components/branding/AppLogo';
+
 import type {
   MaterialCategory,
   PickupAvailability,
@@ -560,13 +562,19 @@ export default function RecyclerLoginScreen() {
             styles.header
           }
         >
-          <Text
-            style={
-              styles.brand
-            }
-          >
-            ReLoop
-          </Text>
+          <View style={{ alignItems: 'center', marginBottom: 16 }}>
+            <AppLogo size="large" />
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+            <Text style={{ fontSize: 24, marginRight: 8 }}>♻️</Text>
+            <Text
+              style={
+                styles.brand
+              }
+            >
+              E-Setu
+            </Text>
+          </View>
 
           <Text
             style={

@@ -35,6 +35,7 @@ import {
     currentCollectorId,
     getSession,
 } from '../../../services/auth';
+import { BrandedHeader } from '../../components/branding/BrandedHeader';
 
 /* =========================================================
    THIRD-PARTY JS DECODERS
@@ -2372,43 +2373,11 @@ export default function CreateLotScreen() {
             >
                 {/* HEADER */}
 
-                <View
-                    style={
-                        styles.header
-                    }
-                >
-                    <Pressable
-                        onPress={() =>
-                            router.back()
-                        }
-                    >
-                        <Text
-                            style={
-                                styles.backLink
-                            }
-                        >
-                            ‹ Back
-                        </Text>
-                    </Pressable>
-
-                    <Text
-                        style={
-                            styles.title
-                        }
-                    >
-                        Create New Lot
-                    </Text>
-
-                    <Text
-                        style={
-                            styles.subtitle
-                        }
-                    >
-                        Add your e-waste
-                        and discover its
-                        market value
-                    </Text>
-                </View>
+                <BrandedHeader
+                    showBack
+                    title="Create New Lot"
+                    subtitle="Add your e-waste and discover its market value"
+                />
 
                 <Stepper
                     step={step}

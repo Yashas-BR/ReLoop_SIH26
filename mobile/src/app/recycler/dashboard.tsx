@@ -57,6 +57,8 @@ import {
     useTranslation,
 } from '../../../i18n/config';
 
+import { BrandedHeader } from '../../components/branding/BrandedHeader';
+
 export default function RecyclerDashboardScreen() {
     const {
         recyclerId,
@@ -331,90 +333,34 @@ export default function RecyclerDashboardScreen() {
         >
             <LanguageSelector />
 
-            <View
-                style={
-                    styles.header
-                }
-            >
-                <View
-                    style={
-                        styles.headerText
-                    }
-                >
-                    <Text
-                        style={
-                            styles.eyebrow
-                        }
-                    >
-                        RELOOP
-                    </Text>
-
-                    <Text
-                        style={
-                            styles.title
-                        }
-                    >
-                        {recycler?.name ??
-                            t(
-                                'recyclerDash.title',
-                            )}
-                    </Text>
-
-                    <Text
-                        style={
-                            styles.subtitle
-                        }
-                    >
-                        {recycler
-                            ?.facility_location ??
-                            t(
-                                'recyclerDash.subtitle',
-                            )}
-                    </Text>
-
-                    <View
-                        style={
-                            styles.badges
-                        }
-                    >
-                        <StatusBadge
-                            status={
-                                (recycler as any)
-                                    ?.account_status ??
-                                'active'
-                            }
-                        />
-
-                        <StatusBadge
-                            status={
-                                recycler
-                                    ?.authorization_status
-                            }
-                        />
+            <BrandedHeader
+                title={recycler?.name ?? t('recyclerDash.title')}
+                subtitle={
+                    <View>
+                        <Text style={styles.subtitle}>
+                            {recycler?.facility_location ?? t('recyclerDash.subtitle')}
+                        </Text>
+                        <View style={styles.badges}>
+                            <StatusBadge status={recycler?.account_status ?? 'active'} />
+                            <StatusBadge status={recycler?.authorization_status} />
+                        </View>
                     </View>
-                </View>
-
-                <Pressable
-                    accessibilityRole="button"
-                    onPress={() =>
-                        router.push('/recycler/profile')
-                    }
-                    style={({ pressed }) => [
-                        styles.profileButton,
-                        pressed && styles.pressed,
-                    ]}
-                >
-                    <Text
-                        style={
-                            styles.profileButtonText
-                        }
+                }
+                rightElement={
+                    <Pressable
+                        accessibilityRole="button"
+                        onPress={() => router.push('/recycler/profile')}
+                        style={({ pressed }) => [
+                            styles.profileButton,
+                            pressed && styles.pressed,
+                        ]}
                     >
-                        {t(
-                            'recyclerProfile.title',
-                        )}
-                    </Text>
-                </Pressable>
-            </View>
+                        <Text style={styles.profileButtonText}>
+                            {t('recyclerProfile.title')}
+                        </Text>
+                    </Pressable>
+                }
+            />
 
             {!!error && (
                 <View

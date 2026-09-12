@@ -25,6 +25,7 @@ import {
     rejectOffer,
     requestQuote,
 } from '../../../api/client';
+import { BrandedHeader } from '../../components/branding/BrandedHeader';
 
 import { getSession } from '../../../services/auth';
 
@@ -944,39 +945,11 @@ export default function MatchedRecyclersScreen() {
             }
             scrollEnabled={viewMode === 'list'}
         >
-            {/* HEADER */}
-
-            <Pressable
-                onPress={() =>
-                    router.back()
-                }
-            >
-                <Text
-                    style={
-                        styles.back
-                    }
-                >
-                    ‹ Back
-                </Text>
-            </Pressable>
-
-            <Text
-                style={
-                    styles.title
-                }
-            >
-                Matched Recyclers
-            </Text>
-
-            <Text
-                style={
-                    styles.subtitle
-                }
-            >
-                Authorized recyclers
-                matched for your{' '}
-                {category} lot.
-            </Text>
+            <BrandedHeader
+                showBack
+                title="Matched Recyclers"
+                subtitle={`Authorized recyclers matched for your ${category} lot.`}
+            />
 
             {/* VIEW TOGGLE */}
             {!loading && recyclers.length > 0 ? (

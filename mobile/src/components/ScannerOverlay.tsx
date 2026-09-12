@@ -3,6 +3,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { AppLogo } from './branding/AppLogo';
 
 interface ScannerOverlayProps {
   title: string;
@@ -21,6 +22,9 @@ export function ScannerOverlay({
         styles.overlay
       }
     >
+      <View style={styles.logoOverlay}>
+        <AppLogo size="small" />
+      </View>
       <View
         style={
           styles.header
@@ -69,6 +73,16 @@ const styles =
 
       justifyContent:
         'center',
+    },
+
+    logoOverlay: {
+      position: 'absolute',
+      top: 16,
+      left: 16,
+      zIndex: 10,
+      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+      padding: 8,
+      borderRadius: 8,
     },
 
     header: {
