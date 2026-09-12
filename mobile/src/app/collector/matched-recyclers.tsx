@@ -1,5 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from '../../../i18n/config';
+import { MatchedRecyclersMap } from '../../components/collector/MatchedRecyclersMap';
 
 import {
     ActivityIndicator,
@@ -30,7 +32,7 @@ import { getSession } from '../../../services/auth';
    TYPES
 ========================================================= */
 
-type Recycler = {
+export type Recycler = {
     id?: number;
     recycler_id?: number;
 
@@ -38,6 +40,9 @@ type Recycler = {
 
     service_area?: string;
     facility_location?: string;
+
+    latitude?: string | number;
+    longitude?: string | number;
 
     suitability?: number;
     match_score?: number;
@@ -132,6 +137,13 @@ export default function MatchedRecyclersScreen() {
     /* =======================================================
        STATE
     ======================================================= */
+
+    const { t } = useTranslation();
+
+    const [
+        viewMode,
+        setViewMode,
+    ] = useState<'list' | 'map'>('list');
 
     const [
         sessionLoaded,
@@ -930,6 +942,7 @@ export default function MatchedRecyclersScreen() {
             showsVerticalScrollIndicator={
                 false
             }
+            scrollEnabled={viewMode === 'list'}
         >
             {/* HEADER */}
 
@@ -964,6 +977,28 @@ export default function MatchedRecyclersScreen() {
                 matched for your{' '}
                 {category} lot.
             </Text>
+
+            {/* VIEW TOGGLE */}
+            {!loading && recyclers.length > 0 ? (
+                <View style={styles.toggleContainer}>
+                    <Pressable
+                        style={[styles.toggleButton, viewMode === 'list' && styles.toggleButtonActive]}
+                        onPress={() => setViewMode('list')}
+                    >
+                        <Text style={[styles.toggleText, viewMode === 'list' && styles.toggleTextActive]}>
+                            {t('matchedRecyclers.list')}
+                        </Text>
+                    </Pressable>
+                    <Pressable
+                        style={[styles.toggleButton, viewMode === 'map' && styles.toggleButtonActive]}
+                        onPress={() => setViewMode('map')}
+                    >
+                        <Text style={[styles.toggleText, viewMode === 'map' && styles.toggleTextActive]}>
+                            {t('matchedRecyclers.map')}
+                        </Text>
+                    </Pressable>
+                </View>
+            ) : null}
 
             <View
                 style={
@@ -1439,7 +1474,17 @@ export default function MatchedRecyclersScreen() {
           RECYCLER CARDS
       ================================================= */}
 
-            {!loading &&
+            {!loading && viewMode === 'map' ? (
+                <MatchedRecyclersMap
+                    recyclers={filteredRecyclers}
+                    selectedRecyclerId={selectedId}
+                    onRecyclerPress={setSelectedId}
+                    currentLat={lat}
+                    currentLng={lng}
+                />
+            ) : null}
+
+            {!loading && viewMode === 'list' &&
                 filteredRecyclers.map(
                     (recycler) => {
                         const recyclerId =
@@ -3366,4 +3411,35 @@ const styles =
                 '700',
             fontSize: 11,
         },
+
+        /* VIEW TOGGLE */
+        toggleContainer: {
+            flexDirection: 'row',
+            backgroundColor: '#e5e7eb',
+            borderRadius: 8,
+            padding: 4,
+            marginBottom: 16,
+        },
+        toggleButton: {
+            flex: 1,
+            paddingVertical: 8,
+            alignItems: 'center',
+            borderRadius: 6,
+        },
+        toggleButtonActive: {
+            backgroundColor: '#FFFFFF',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.1,
+            shadowRadius: 2,
+            elevation: 2,
+        },
+        toggleText: {
+            fontSize: 13,
+            fontWeight: '600',
+            color: '#6b7280',
+        },
+        toggleTextActive: {
+            color: '#111827',
+        }
     });
