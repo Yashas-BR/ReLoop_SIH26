@@ -27,6 +27,7 @@ import {
 import { BrandedHeader } from '../../components/branding/BrandedHeader';
 
 import { getSession } from '../../../services/auth';
+import { useTranslation } from '../../../i18n/config';
 
 /* =========================================================
    TYPES
@@ -88,6 +89,7 @@ type Offer = {
 ========================================================= */
 
 export default function MatchedRecyclersScreen() {
+    const { t } = useTranslation();
     /*
      * These values come from Create Lot.
      */
@@ -1035,8 +1037,8 @@ export default function MatchedRecyclersScreen() {
         >
             <BrandedHeader
                 showBack
-                title="Matched Recyclers"
-                subtitle={`Authorized recyclers matched for your ${category} lot.`}
+                title={t('recyclers.title')}
+                subtitle={t('recyclers.subtitle')}
             />
 
             <View
@@ -1056,8 +1058,7 @@ export default function MatchedRecyclersScreen() {
                                 styles.locationText
                             }
                         >
-                            Detecting your
-                            location...
+                            {t('priceDiscovery.locating')}
                         </Text>
                     </>
                 ) : (
@@ -1126,8 +1127,7 @@ export default function MatchedRecyclersScreen() {
                                     styles.estimateLabel
                                 }
                             >
-                                PLATFORM
-                                ESTIMATE
+                                {t('priceDiscovery.currentMarketBenchmark').toUpperCase()}
                             </Text>
 
                             <Text
@@ -1224,7 +1224,7 @@ export default function MatchedRecyclersScreen() {
                                 styles.sectionTitle
                             }
                         >
-                            Quotes Received
+                            {t('quotes.receivedTitle')}
                         </Text>
 
                         {acceptedOffer ? (
@@ -1238,7 +1238,7 @@ export default function MatchedRecyclersScreen() {
                                         styles.acceptedBadgeText
                                     }
                                 >
-                                    ✓ Accepted
+                                    ✓ {t('quotes.accepted')}
                                 </Text>
                             </View>
                         ) : null}
@@ -1340,7 +1340,7 @@ export default function MatchedRecyclersScreen() {
                         onChangeText={
                             setSearchTerm
                         }
-                        placeholder="Search recyclers by name or location"
+                        placeholder={t('recyclers.searchPlaceholder')}
                         placeholderTextColor="#9ca3af"
                         style={
                             styles.searchInput
@@ -1373,15 +1373,7 @@ export default function MatchedRecyclersScreen() {
                         styles.searchCount
                     }
                 >
-                    Showing{' '}
-                    {
-                        filteredRecyclers.length
-                    }{' '}
-                    of{' '}
-                    {
-                        recyclers.length
-                    }{' '}
-                    matched recyclers
+                    {t('priceDiscovery.showingRecyclers', { count: String(filteredRecyclers.length), total: String(recyclers.length) })}
                 </Text>
             ) : null}
 
@@ -1405,8 +1397,7 @@ export default function MatchedRecyclersScreen() {
                             styles.loadingText
                         }
                     >
-                        Finding the best
-                        recyclers...
+                        {t('common.loading')}
                     </Text>
                 </View>
             ) : null}
@@ -1436,7 +1427,7 @@ export default function MatchedRecyclersScreen() {
                             styles.emptyTitle
                         }
                     >
-                        No recyclers found
+                        {t('recyclers.noMatch')}
                     </Text>
 
                     <Text
@@ -1444,9 +1435,7 @@ export default function MatchedRecyclersScreen() {
                             styles.emptyText
                         }
                     >
-                        We couldn't find a
-                        matching recycler
-                        near this location.
+                        {t('recyclers.noMatchDesc')}
                     </Text>
 
                     <Pressable
@@ -1462,7 +1451,7 @@ export default function MatchedRecyclersScreen() {
                                 styles.outlineButtonText
                             }
                         >
-                            Try Again
+                            {t('common.retry')}
                         </Text>
                     </Pressable>
                 </View>
@@ -1487,7 +1476,7 @@ export default function MatchedRecyclersScreen() {
                             styles.emptyTitle
                         }
                     >
-                        No search matches
+                        {t('recyclers.noSearchMatch')}
                     </Text>
 
                     <Pressable
@@ -1503,7 +1492,7 @@ export default function MatchedRecyclersScreen() {
                                 styles.outlineButtonText
                             }
                         >
-                            Clear Search
+                            {t('priceDiscovery.clearFilter')}
                         </Text>
                     </Pressable>
                 </View>

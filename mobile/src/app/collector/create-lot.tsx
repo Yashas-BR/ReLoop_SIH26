@@ -36,6 +36,7 @@ import {
     getSession,
 } from '../../../services/auth';
 import { BrandedHeader } from '../../components/branding/BrandedHeader';
+import { useTranslation } from '../../../i18n/config';
 
 /* =========================================================
    THIRD-PARTY JS DECODERS
@@ -75,11 +76,11 @@ const CATEGORY_IDS = [
 const SAMPLE_SIZE = 64;
 
 const PIPELINE = [
-    'Reading image',
-    'Sampling pixels',
-    'Extracting features',
-    'Analysing colours',
-    'Classifying material',
+    'capture',
+    'segment',
+    'featExtract',
+    'hueMap',
+    'classify',
 ];
 
 /* =========================================================
@@ -1082,6 +1083,7 @@ async function classifyImage(
 ========================================================= */
 
 export default function CreateLotScreen() {
+    const { t } = useTranslation();
     const [
         step,
         setStep,
@@ -2023,7 +2025,7 @@ export default function CreateLotScreen() {
     function goToStep2() {
         if (!category) {
             setError(
-                'Please select a material category.'
+                t('createLot.errors.selectCategory')
             );
 
             return;
@@ -2087,7 +2089,7 @@ export default function CreateLotScreen() {
             0
         ) {
             setError(
-                'Enter a valid weight.'
+                t('createLot.errors.validWeight')
             );
 
             return;
@@ -2308,7 +2310,7 @@ export default function CreateLotScreen() {
 
             setError(
                 err?.message ||
-                'Could not create lot.'
+                t('createLot.errors.submitFailed')
             );
         } finally {
             setCreating(
@@ -2340,7 +2342,7 @@ export default function CreateLotScreen() {
                         styles.loadingText
                     }
                 >
-                    Loading...
+                    {t('common.loading')}
                 </Text>
             </View>
         );
@@ -2375,8 +2377,8 @@ export default function CreateLotScreen() {
 
                 <BrandedHeader
                     showBack
-                    title="Create New Lot"
-                    subtitle="Add your e-waste and discover its market value"
+                    title={t('createLot.title')}
+                    subtitle={t('createLot.subtitle')}
                 />
 
                 <Stepper
@@ -2417,13 +2419,13 @@ export default function CreateLotScreen() {
                                     styles.cardTitle
                                 }
                             >
-                                Add Photos{' '}
+                                {t('createLot.photo.heading')}{' '}
                                 <Text
                                     style={
                                         styles.optional
                                     }
                                 >
-                                    (Optional)
+                                    {t('createLot.photo.optional')}
                                 </Text>
                             </Text>
 
@@ -2432,9 +2434,7 @@ export default function CreateLotScreen() {
                                     styles.cardSubtitle
                                 }
                             >
-                                Add up to 3
-                                photos of your
-                                e-waste.
+                                {t('createLot.photo.subtitle')}
                             </Text>
 
                             {photoError ? (
@@ -2473,8 +2473,7 @@ export default function CreateLotScreen() {
                                             styles.photoTitle
                                         }
                                     >
-                                        Add e-waste
-                                        photos
+                                        {t('createLot.photos.addPhoto')}
                                     </Text>
 
                                     <Text
@@ -2482,10 +2481,7 @@ export default function CreateLotScreen() {
                                             styles.photoHint
                                         }
                                     >
-                                        Your first
-                                        image will be
-                                        analysed
-                                        automatically.
+                                        {t('createLot.classification.analyzing')}
                                     </Text>
 
                                     <View
@@ -2506,7 +2502,7 @@ export default function CreateLotScreen() {
                                                     styles.primaryButtonText
                                                 }
                                             >
-                                                📸 Camera
+                                                📸 {t('createLot.photos.camera')}
                                             </Text>
                                         </Pressable>
 
@@ -2523,7 +2519,7 @@ export default function CreateLotScreen() {
                                                     styles.outlineButtonText
                                                 }
                                             >
-                                                🖼️ Gallery
+                                                🖼️ {t('createLot.photos.upload')}
                                             </Text>
                                         </Pressable>
                                     </View>
@@ -2569,7 +2565,7 @@ export default function CreateLotScreen() {
                                                                 styles.coverBadgeText
                                                             }
                                                         >
-                                                            Cover
+                                                            {t('createLot.photo.badgeCover')}
                                                         </Text>
                                                     </View>
                                                 ) : null}
@@ -2612,7 +2608,7 @@ export default function CreateLotScreen() {
                                                     }
                                                 >
                                                     <Text>
-                                                        📸 Add
+                                                        📸 {t('createLot.photos.addPhoto')}
                                                     </Text>
                                                 </Pressable>
 
@@ -2625,7 +2621,7 @@ export default function CreateLotScreen() {
                                                     }
                                                 >
                                                     <Text>
-                                                        🖼️ Upload
+                                                        🖼️ {t('createLot.photos.upload')}
                                                     </Text>
                                                 </Pressable>
                                             </View>
@@ -2664,8 +2660,7 @@ export default function CreateLotScreen() {
                                                     styles.aiTitle
                                                 }
                                             >
-                                                Analysing
-                                                image...
+                                                {t('createLot.classification.scanning')}
                                             </Text>
 
                                             <Text
@@ -2673,11 +2668,9 @@ export default function CreateLotScreen() {
                                                     styles.aiMeta
                                                 }
                                             >
-                                                {
-                                                    PIPELINE[
-                                                    scanStep
-                                                    ]
-                                                }{' '}
+                                                {t(
+                                                    `createLot.classification.pipeline.${PIPELINE[scanStep]}`
+                                                )}{' '}
                                                 (
                                                 {Math.round(
                                                     scanProgress
@@ -2747,8 +2740,7 @@ export default function CreateLotScreen() {
                                                         styles.aiDetectedSmall
                                                     }
                                                 >
-                                                    MATERIAL
-                                                    SUGGESTION
+                                                    {t('createLot.classification.suggested').toUpperCase()}
                                                 </Text>
 
                                                 <View
@@ -2767,11 +2759,7 @@ export default function CreateLotScreen() {
                                                             )
                                                                 ?.icon
                                                         }{' '}
-                                                        {catMeta(
-                                                            classify.category
-                                                        )
-                                                            ?.label ||
-                                                            classify.category}
+                                                        {t(`materials.${classify.category}`)}
                                                     </Text>
 
                                                     <ConfidenceBadge
@@ -2791,13 +2779,7 @@ export default function CreateLotScreen() {
                                                 styles.aiReason
                                             }
                                         >
-                                            Based on
-                                            colour,
-                                            brightness,
-                                            saturation
-                                            and edge
-                                            patterns in
-                                            the image.
+                                            {t('createLot.classification.autoSuggest')}
                                         </Text>
 
                                         {/* TOP 3 */}
@@ -2824,11 +2806,7 @@ export default function CreateLotScreen() {
                                                                 styles.candidateName
                                                             }
                                                         >
-                                                            {catMeta(
-                                                                candidate.category
-                                                            )
-                                                                ?.label ||
-                                                                candidate.category}
+                                                            {t(`materials.${candidate.category}`)}
                                                         </Text>
 
                                                         <Text
@@ -2868,11 +2846,7 @@ export default function CreateLotScreen() {
                                                     }
                                                 >
                                                     ✓ Use{' '}
-                                                    {catMeta(
-                                                        classify.category
-                                                    )
-                                                        ?.label ||
-                                                        classify.category}
+                                                    {t(`materials.${classify.category}`)}
                                                 </Text>
                                             </Pressable>
 
@@ -2891,8 +2865,7 @@ export default function CreateLotScreen() {
                                                         styles.chooseOtherText
                                                     }
                                                 >
-                                                    Choose
-                                                    another
+                                                    {t('createLot.classification.chooseOther')}
                                                 </Text>
                                             </Pressable>
                                         </View>
@@ -2912,7 +2885,7 @@ export default function CreateLotScreen() {
                                     styles.cardTitle
                                 }
                             >
-                                Select Material
+                                {t('createLot.category.heading')}
                             </Text>
 
                             <Text
@@ -2920,9 +2893,7 @@ export default function CreateLotScreen() {
                                     styles.cardSubtitle
                                 }
                             >
-                                Choose the type
-                                of e-waste being
-                                collected.
+                                {t('createLot.category.subtitle')}
                             </Text>
 
                             <View
@@ -2970,9 +2941,7 @@ export default function CreateLotScreen() {
                                                         styles.categoryLabelSelected,
                                                     ]}
                                                 >
-                                                    {
-                                                        cat.label
-                                                    }
+                                                    {t(`materials.${cat.id}`)}
                                                 </Text>
 
                                                 {selected ? (
@@ -3009,7 +2978,7 @@ export default function CreateLotScreen() {
                                             styles.inputLabel
                                         }
                                     >
-                                        Sub-type
+                                        {t('createLot.category.subType')}
                                     </Text>
 
                                     <View
@@ -3081,7 +3050,7 @@ export default function CreateLotScreen() {
                                         styles.outlineButtonText
                                     }
                                 >
-                                    Cancel
+                                    {t('common.cancel')}
                                 </Text>
                             </Pressable>
 
@@ -3104,7 +3073,7 @@ export default function CreateLotScreen() {
                                         styles.primaryButtonText
                                     }
                                 >
-                                    Continue →
+                                    {t('createLot.actions.continueWeight')}
                                 </Text>
                             </Pressable>
                         </View>
@@ -3127,7 +3096,7 @@ export default function CreateLotScreen() {
                                     styles.cardTitle
                                 }
                             >
-                                Estimated Weight
+                                {t('createLot.weight.heading')}
                             </Text>
 
                             <Text
@@ -3135,10 +3104,7 @@ export default function CreateLotScreen() {
                                     styles.cardSubtitle
                                 }
                             >
-                                Enter the
-                                approximate
-                                weight of the
-                                material.
+                                {t('createLot.weight.subtitle')}
                             </Text>
 
                             <View
@@ -3190,7 +3156,7 @@ export default function CreateLotScreen() {
                                             styles.weightUnit
                                         }
                                     >
-                                        kg
+                                        {t('common.kg')}
                                     </Text>
                                 </View>
 
@@ -3263,7 +3229,7 @@ export default function CreateLotScreen() {
                                                     {
                                                         preset
                                                     }{' '}
-                                                    kg
+                                                    {t('common.kg')}
                                                 </Text>
                                             </Pressable>
                                         );
@@ -3288,8 +3254,7 @@ export default function CreateLotScreen() {
                                             styles.inputLabel
                                         }
                                     >
-                                        Collection
-                                        Location
+                                        {t('createLot.location.label')}
                                     </Text>
 
                                     <Pressable
@@ -3547,7 +3512,7 @@ export default function CreateLotScreen() {
                                                     styles.breakdownLabel
                                                 }
                                             >
-                                                Market Rate
+                                                {t('createLot.valuation.unitPrice')}
                                             </Text>
 
                                             <Text
@@ -3660,7 +3625,7 @@ export default function CreateLotScreen() {
                                         styles.outlineButtonText
                                     }
                                 >
-                                    Back
+                                    {t('common.back')}
                                 </Text>
                             </Pressable>
 
@@ -3689,7 +3654,7 @@ export default function CreateLotScreen() {
                                         styles.primaryButtonText
                                     }
                                 >
-                                    Review Lot →
+                                    {t('createLot.actions.reviewLot')}
                                 </Text>
                             </Pressable>
                         </View>
@@ -3712,28 +3677,26 @@ export default function CreateLotScreen() {
                                     styles.cardTitle
                                 }
                             >
-                                Review Your Lot
+                                {t('createLot.review.heading')}
                             </Text>
 
                             <ReviewRow
-                                label="Material"
+                                label={t('createLot.review.material')}
                                 value={`${catObj?.icon ||
                                     '♻️'
-                                    } ${catObj?.label ||
-                                    category
-                                    }${subCategory
+                                    } ${t(`materials.${category}`)}${subCategory
                                         ? ` (${subCategory})`
                                         : ''
                                     }`}
                             />
 
                             <ReviewRow
-                                label="Estimated Weight"
+                                label={t('createLot.review.weight')}
                                 value={`${weight} kg`}
                             />
 
                             <ReviewRow
-                                label="Market Benchmark"
+                                label={t('createLot.review.marketRange')}
                                 value={
                                     valuation?.market_benchmark
                                         ? `${fmtRupees(
@@ -3809,13 +3772,13 @@ export default function CreateLotScreen() {
                                     },
                                 ]}
                             >
-                                Notes{' '}
+                                {t('createLot.notes.label')}{' '}
                                 <Text
                                     style={
                                         styles.optional
                                     }
                                 >
-                                    (Optional)
+                                    {t('createLot.photo.optional')}
                                 </Text>
                             </Text>
 
@@ -3826,7 +3789,7 @@ export default function CreateLotScreen() {
                                 onChangeText={
                                     setDescription
                                 }
-                                placeholder="Add condition, quantity or other details..."
+                                placeholder={t('createLot.notes.placeholder')}
                                 placeholderTextColor="#9ca3af"
                                 multiline
                                 style={
@@ -3856,7 +3819,7 @@ export default function CreateLotScreen() {
                                         styles.outlineButtonText
                                     }
                                 >
-                                    Back
+                                    {t('common.back')}
                                 </Text>
                             </Pressable>
 
@@ -3890,7 +3853,7 @@ export default function CreateLotScreen() {
                                                 styles.primaryButtonText
                                             }
                                         >
-                                            Creating...
+                                            {t('createLot.actions.creating')}
                                         </Text>
                                     </View>
                                 ) : (
@@ -3899,7 +3862,7 @@ export default function CreateLotScreen() {
                                             styles.primaryButtonText
                                         }
                                     >
-                                        Create Lot
+                                        {t('createLot.buttons.submitLot')}
                                     </Text>
                                 )}
                             </Pressable>
@@ -3928,6 +3891,7 @@ function ConfidenceBadge({
     confidence: number;
     verdict: string;
 }) {
+    const { t } = useTranslation();
     return (
         <View
             style={[
@@ -3954,7 +3918,7 @@ function ConfidenceBadge({
                 {Math.round(
                     confidence * 100
                 )}
-                % match
+                % {t('createLot.classification.match')}
             </Text>
         </View>
     );
@@ -3969,10 +3933,11 @@ function Stepper({
 }: {
     step: number;
 }) {
+    const { t } = useTranslation();
     const labels = [
-        'Photo',
-        'Weight',
-        'Review',
+        t('createLot.steps.photoCategory'),
+        t('createLot.steps.weightValue'),
+        t('createLot.steps.reviewSubmit'),
     ];
 
     return (

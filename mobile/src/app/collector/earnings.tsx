@@ -17,6 +17,7 @@ import {
 } from '../../../api/client';
 import { BrandedHeader } from '../../components/branding/BrandedHeader';
 import { currentCollectorId } from '../../../services/auth';
+import { useTranslation } from '../../../i18n/config';
 
 type Filter = 'all' | 'paid' | 'pending';
 
@@ -61,6 +62,7 @@ function fmtDate(d?: string) {
 }
 
 export default function CollectorEarnings() {
+    const { t } = useTranslation();
     const [summary, setSummary] = useState<Summary | null>(null);
     const [rows, setRows] = useState<LedgerRow[]>([]);
     const [loading, setLoading] = useState(true);
@@ -91,7 +93,7 @@ export default function CollectorEarnings() {
             console.log('Earnings load error:', err);
             setError(
                 err?.message ||
-                'Could not load your earnings. Please try again.'
+                t('earnings.loadError')
             );
         }
     }, []);
@@ -154,8 +156,8 @@ export default function CollectorEarnings() {
         >
             <BrandedHeader
                 showBack
-                title="Earnings Ledger"
-                subtitle="Track your payments and completed transactions."
+                title={t('earnings.title')}
+                subtitle={t('earnings.subtitle')}
             />
 
             {error ? (
@@ -163,7 +165,7 @@ export default function CollectorEarnings() {
                     <Text style={styles.errorText}>⚠️ {error}</Text>
 
                     <Pressable onPress={load}>
-                        <Text style={styles.retryText}>Retry</Text>
+                        <Text style={styles.retryText}>{t('common.retry')}</Text>
                     </Pressable>
                 </View>
             ) : null}
@@ -175,7 +177,7 @@ export default function CollectorEarnings() {
                         color="#16a34a"
                     />
                     <Text style={styles.loadingText}>
-                        Loading earnings...
+                        {t('common.loading')}
                     </Text>
                 </View>
             ) : (
@@ -183,34 +185,34 @@ export default function CollectorEarnings() {
                     <View style={styles.summaryGrid}>
                         <SummaryCard
                             icon="₹"
-                            label="Total Earned"
+                            label={t('earnings.totalEarned')}
                             value={fmt(summary?.total_earned)}
-                            sub="All time"
+                            sub={t('common.allTime')}
                         />
 
                         <SummaryCard
                             icon="✓"
-                            label="Paid Out"
+                            label={t('earnings.paidOut')}
                             value={fmt(summary?.total_paid)}
-                            sub={`${summary?.paid_transactions ?? 0} transactions`}
+                            sub={`${summary?.paid_transactions ?? 0} ${t('earnings.table.lot')}`}
                             tone="green"
                         />
 
                         <SummaryCard
                             icon="⏳"
-                            label="Pending"
+                            label={t('earnings.pending')}
                             value={fmt(summary?.total_pending)}
-                            sub={`${summary?.pending_transactions ?? 0} pending payments`}
+                            sub={`${summary?.pending_transactions ?? 0} ${t('common.pendingPayment')}`}
                             tone="amber"
                         />
 
                         <SummaryCard
                             icon="▤"
-                            label="Total Transactions"
+                            label={t('earnings.totalTransactions')}
                             value={String(
                                 summary?.total_transactions ?? rows.length
                             )}
-                            sub="Completed payments"
+                            sub={t('common.completed')}
                             tone="purple"
                         />
                     </View>
@@ -218,29 +220,29 @@ export default function CollectorEarnings() {
                     <View style={styles.ledgerHeader}>
                         <View>
                             <Text style={styles.ledgerTitle}>
-                                Earnings Ledger
+                                {t('earnings.title')}
                             </Text>
                             <Text style={styles.ledgerSubtitle}>
-                                Completed transactions with a final price
+                                {t('earnings.subtitle')}
                             </Text>
                         </View>
                     </View>
 
                     <View style={styles.filters}>
                         <FilterButton
-                            label="All"
+                            label={t('earnings.filterAll')}
                             active={filter === 'all'}
                             onPress={() => setFilter('all')}
                         />
 
                         <FilterButton
-                            label={`Paid ${paidCount}`}
+                            label={`${t('earnings.filterPaid')} ${paidCount}`}
                             active={filter === 'paid'}
                             onPress={() => setFilter('paid')}
                         />
 
                         <FilterButton
-                            label={`Pending ${pendingCount}`}
+                            label={`${t('earnings.filterPending')} ${pendingCount}`}
                             active={filter === 'pending'}
                             onPress={() => setFilter('pending')}
                         />
@@ -250,11 +252,10 @@ export default function CollectorEarnings() {
                         <View style={styles.emptyCard}>
                             <Text style={styles.emptyIcon}>₹</Text>
                             <Text style={styles.emptyTitle}>
-                                No transactions yet
+                                {t('earnings.noTransactions')}
                             </Text>
                             <Text style={styles.emptyText}>
-                                Completed lots with a final price will appear
-                                here. In-flight lots remain on your dashboard.
+                                {t('earnings.noTransactionsDesc')}
                             </Text>
 
                             <Pressable
@@ -264,14 +265,14 @@ export default function CollectorEarnings() {
                                 }
                             >
                                 <Text style={styles.createButtonText}>
-                                    Create New Lot
+                                    {t('dashboard.createNewLot')}
                                 </Text>
                             </Pressable>
                         </View>
                     ) : filtered.length === 0 ? (
                         <View style={styles.emptyCard}>
                             <Text style={styles.emptyTitle}>
-                                No {filter} transactions
+                                {t('earnings.noFilteredResults')}
                             </Text>
 
                             <Pressable
@@ -279,7 +280,7 @@ export default function CollectorEarnings() {
                                 onPress={() => setFilter('all')}
                             >
                                 <Text style={styles.outlineButtonText}>
-                                    Show All
+                                    {t('earnings.filterAll')}
                                 </Text>
                             </Pressable>
                         </View>
@@ -311,22 +312,22 @@ export default function CollectorEarnings() {
                                     <View style={styles.divider} />
 
                                     <LedgerLine
-                                        label="Weight"
+                                        label={t('earnings.table.weight')}
                                         value={`${row.quantity_weight_kg ?? '—'} kg`}
                                     />
 
                                     <LedgerLine
-                                        label="Recycler"
+                                        label={t('earnings.table.recycler')}
                                         value={row.recycler_name || '—'}
                                     />
 
                                     <LedgerLine
-                                        label="Date"
+                                        label={t('earnings.table.date')}
                                         value={fmtDate(row.txn_datetime)}
                                     />
 
                                     <LedgerLine
-                                        label="Amount"
+                                        label={t('earnings.table.amount')}
                                         value={fmt(row.final_price)}
                                         strong
                                     />
@@ -334,7 +335,7 @@ export default function CollectorEarnings() {
                                     {row.payment_method &&
                                         row.payment_status === 'paid' ? (
                                         <LedgerLine
-                                            label="Payment Method"
+                                            label={t('lotDetail.payMethod')}
                                             value={String(
                                                 row.payment_method
                                             ).toUpperCase()}
@@ -354,7 +355,7 @@ export default function CollectorEarnings() {
                                         }
                                     >
                                         <Text style={styles.viewButtonText}>
-                                            View Lot
+                                            {t('earnings.table.view')}
                                         </Text>
                                     </Pressable>
                                 </View>
@@ -363,12 +364,12 @@ export default function CollectorEarnings() {
                             <View style={styles.footer}>
                                 <Text style={styles.footerCount}>
                                     {filtered.length} / {rows.length}{' '}
-                                    transactions
+                                    {t('earnings.totalTransactions').toLowerCase()}
                                 </Text>
 
                                 <View style={styles.footerTotalWrap}>
                                     <Text style={styles.footerLabel}>
-                                        Filtered Total
+                                        {t('earnings.filteredTotal')}
                                     </Text>
                                     <Text style={styles.footerTotal}>
                                         {fmt(filteredTotal)}
@@ -483,7 +484,7 @@ function StatusBadge({
                         : styles.statusPendingText,
                 ]}
             >
-                {paid ? '✓ Paid' : '⏳ Pending'}
+                {paid ? `✓ ${(paid ? 'Paid' : 'Pending')}` : '⏳ Pending'}
             </Text>
         </View>
     );

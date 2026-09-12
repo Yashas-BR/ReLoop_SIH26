@@ -5,13 +5,13 @@ import {
     RefreshControl, ScrollView, StyleSheet, Text, TextInput, View
 } from 'react-native';
 
-import {
-    DEMO_COLLECTOR_ID, acceptOffer, cancelLot, deleteLot,
+import { DEMO_COLLECTOR_ID, acceptOffer, cancelLot, deleteLot,
     getHandoversByLot, getLotEvents, getLotImages, getLotsByCollector,
     getOffersByLot, rejectOffer
 } from '../../../../api/client';
 import { currentCollectorId } from '../../../../services/auth';
 import { BrandedHeader } from '../../../components/branding/BrandedHeader';
+import { useTranslation } from '../../../../i18n/config';
 
 const money = (v: any) => v == null ? '—' : `₹${Number(v).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 const date = (v: any) => !v ? '—' : new Date(v).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -35,6 +35,7 @@ function Row({ label, value }: any) {
 }
 
 export default function CollectorLotDetail() {
+    const { t } = useTranslation();
     const p = useLocalSearchParams<{ lotId: string }>();
     const lotId = String(p.lotId || '');
     const [lot, setLot] = useState<any>(null);
@@ -87,17 +88,17 @@ export default function CollectorLotDetail() {
         scaleWeight != null && rate != null ? Math.round(scaleWeight * rate * 100) / 100 : null;
 
     const checklist = useMemo(() => [
-        ['Lot collected', events.has('LOT_CREATED') || !!lot?.created_at],
-        ['Collection photo uploaded', events.has('IMAGE_UPLOADED') || !!lot?.image_ref],
-        ['Price estimated', events.has('PRICE_ESTIMATED') || lot?.estimated_value != null],
-        ['Recycler matched', events.has('RECYCLER_MATCHED') || ['matched', 'accepted', 'handed_over', 'confirmed'].includes(lot?.transaction_status)],
-        ['Quote accepted', events.has('QUOTE_ACCEPTED') || !!accepted],
-        ['QR scanned', events.has('QR_SCANNED') || handover?.scan_verified === true],
-        ['Final weight recorded', events.has('FINAL_WEIGHT_RECORDED') || handover?.weight_kg != null],
-        ['Handover recorded', events.has('HANDOVER_CONFIRMED') || !!(handover?.handover_reference_number || handover?.handover_reference)],
-        ['Recycler confirmed', events.has('HANDOVER_CONFIRMED') || handover?.status === 'confirmed'],
-        ['Payment completed', events.has('PAYMENT_COMPLETED') || lot?.payment_status === 'paid'],
-    ], [events, lot, accepted, handover]);
+        [t('traceability.events.created'), events.has('LOT_CREATED') || !!lot?.created_at],
+        [t('traceability.events.imageUploaded'), events.has('IMAGE_UPLOADED') || !!lot?.image_ref],
+        [t('traceability.events.valued'), events.has('PRICE_ESTIMATED') || lot?.estimated_value != null],
+        [t('traceability.events.matched'), events.has('RECYCLER_MATCHED') || ['matched', 'accepted', 'handed_over', 'confirmed'].includes(lot?.transaction_status)],
+        [t('traceability.events.quoteAccepted'), events.has('QUOTE_ACCEPTED') || !!accepted],
+        [t('traceability.events.qrScanned'), events.has('QR_SCANNED') || handover?.scan_verified === true],
+        [t('traceability.details.weight'), events.has('FINAL_WEIGHT_RECORDED') || handover?.weight_kg != null],
+        [t('traceability.events.handoverInit'), events.has('HANDOVER_CONFIRMED') || !!(handover?.handover_reference_number || handover?.handover_reference)],
+        [t('traceability.events.confirmed'), events.has('HANDOVER_CONFIRMED') || handover?.status === 'confirmed'],
+        [t('traceability.events.paymentDone'), events.has('PAYMENT_COMPLETED') || lot?.payment_status === 'paid'],
+    ], [events, lot, accepted, handover, t]);
     const done = checklist.filter(x => x[1]).length;
 
     async function offerAction(id: any, decision: 'accept' | 'reject') {
@@ -124,9 +125,9 @@ export default function CollectorLotDetail() {
         finally { setBusy(null) }
     }
 
-    if (loading) return <View style={styles.center}><ActivityIndicator size="large" /><Text style={styles.muted}>Loading lot...</Text></View>;
+    if (loading) return <View style={styles.center}><ActivityIndicator size="large" /><Text style={styles.muted}>{t('common.loading')}</Text></View>;
 
-    if (!lot) return <View style={styles.center}><Text style={styles.big}>Lot not found</Text><Text style={styles.muted}>{error || lotId}</Text><Pressable style={styles.primary} onPress={() => router.push('/collector/create-lot')}><Text style={styles.primaryText}>Create Lot</Text></Pressable></View>;
+    if (!lot) return <View style={styles.center}><Text style={styles.big}>{t('lotDetail.loadError')}</Text><Text style={styles.muted}>{error || lotId}</Text><Pressable style={styles.primary} onPress={() => router.push('/collector/create-lot')}><Text style={styles.primaryText}>{t('dashboard.createLot')}</Text></Pressable></View>;
 
     const locked = handovers.length > 0 || ['handed_over', 'confirmed'].includes(lot.transaction_status) || lot.payment_status === 'paid';
     const canCancel = !locked && (offers.length > 0 || ['matched', 'accepted'].includes(lot.transaction_status));
@@ -137,89 +138,89 @@ export default function CollectorLotDetail() {
             ['matched', 'accepted'].includes(lot.transaction_status) ? 2 :
                 lot.estimated_value != null ? 1 : 0;
     const timeline = [
-        ['Lot Created', date(lot.created_at)],
-        ['Valuation', lot.estimated_value != null ? `Estimated ${money(lot.estimated_value)}` : 'No data'],
-        ['Recycler Matched', handover?.recycler_name || lot.recycler_name || 'Pending'],
-        ['Handover Initiated', handover?.handover_reference_number || handover?.handover_reference || 'Pending'],
-        ['Handover Confirmed', handover?.confirmation_timestamp ? date(handover.confirmation_timestamp) : 'Pending'],
+        [t('traceability.events.created'), date(lot.created_at)],
+        [t('traceability.details.estimated'), lot.estimated_value != null ? `${t('traceability.details.estimated')} ${money(lot.estimated_value)}` : t('common.noData')],
+        [t('traceability.events.matched'), handover?.recycler_name || lot.recycler_name || t('status.pending')],
+        [t('lotDetail.handover'), handover?.handover_reference_number || handover?.handover_reference || t('status.pending')],
+        [t('lotDetail.handoverStatus'), handover?.confirmation_timestamp ? date(handover.confirmation_timestamp) : t('status.pending')],
     ];
 
     return <ScrollView style={styles.screen} contentContainerStyle={styles.container}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}>
-        <BrandedHeader showBack title="Lot Details" subtitle={lotId} rightElement={<Badge value={lot.transaction_status} />} />
+        <BrandedHeader showBack title={t('lotDetail.title')} subtitle={lotId} rightElement={<Badge value={lot.transaction_status} />} />
 
 
-        {locked ? <Text style={styles.lock}>🔒 Lot locked — handover/payment activity exists.</Text> :
-            canCancel ? <Pressable style={styles.dangerOutline} onPress={() => setCancelOpen(true)}><Text style={styles.dangerText}>⚠️ Cancel Lot</Text></Pressable> :
-                canDelete ? <Pressable style={styles.dangerOutline} onPress={() => Alert.alert('Delete lot?', 'This draft will be permanently deleted.', [{ text: 'Keep', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: doDelete }])}><Text style={styles.dangerText}>🗑️ Delete Lot</Text></Pressable> : null}
+        {locked ? <Text style={styles.lock}>🔒 {t('lotDetail.lotLocked')}</Text> :
+            canCancel ? <Pressable style={styles.dangerOutline} onPress={() => setCancelOpen(true)}><Text style={styles.dangerText}>⚠️ {t('lotDetail.cancelLot')}</Text></Pressable> :
+                canDelete ? <Pressable style={styles.dangerOutline} onPress={() => Alert.alert(t('lotDetail.deleteConfirmTitle'), t('lotDetail.deleteConfirmDesc'), [{ text: t('common.cancel'), style: 'cancel' }, { text: t('lotDetail.deleteLot'), style: 'destructive', onPress: doDelete }])}><Text style={styles.dangerText}>🗑️ {t('lotDetail.deleteLot')}</Text></Pressable> : null}
 
-        {(lot.is_cancelled || lot.transaction_status === 'cancelled') && <View style={styles.cancelled}><Text style={styles.cancelledTitle}>⊘ Lot Cancelled</Text><Text style={styles.cancelledText}>{lot.cancellation_reason || 'Cancelled by collector'}</Text></View>}
+        {(lot.is_cancelled || lot.transaction_status === 'cancelled') && <View style={styles.cancelled}><Text style={styles.cancelledTitle}>⊘ {t('status.cancelled')}</Text><Text style={styles.cancelledText}>{lot.cancellation_reason || t('lotDetail.cancelLot')}</Text></View>}
         {!!error && <View style={styles.warning}><Text>{error}</Text></View>}
 
-        <Card title={`Handover Checklist  ${done}/${checklist.length}`}>
+        <Card title={`${t('lotDetail.handover')} ${t('common.summary')}  ${done}/${checklist.length}`}>
             {checklist.map(([name, ok]: any) => <View style={styles.check} key={name}><View style={[styles.dot, ok && styles.dotDone]}><Text style={styles.dotText}>{ok ? '✓' : ''}</Text></View><Text style={[styles.checkText, ok && styles.checkDone]}>{name}</Text></View>)}
-            {done === checklist.length && <Text style={styles.complete}>✓ Handover lifecycle complete</Text>}
+            {done === checklist.length && <Text style={styles.complete}>✓ {t('lotDetail.handoverConfirmed')}</Text>}
         </Card>
 
-        <Card title="Lot Information">
-            <Row label="Category" value={lot.category} />
-            {lot.sub_category && <Row label="Sub-category" value={lot.sub_category} />}
-            <Row label="Estimated Weight" value={`${lot.approx_weight_kg ?? '—'} kg`} />
-            {scaleWeight != null && <Row label="Final Weight" value={`${scaleWeight} kg`} />}
-            <Row label="Estimated Value" value={money(lot.estimated_value)} />
-            <Row label="Transaction Status" value={<Badge value={lot.transaction_status} />} />
-            <Row label="Payment Status" value={<Badge value={lot.payment_status} />} />
-            {lot.recycler_name && <Row label="Recycler" value={lot.recycler_name} />}
-            <Row label="Created" value={date(lot.created_at)} />
+        <Card title={t('lotDetail.title')}>
+            <Row label={t('lotDetail.category')} value={lot.category} />
+            {lot.sub_category && <Row label={t('lotDetail.subCategory')} value={lot.sub_category} />}
+            <Row label={t('createLot.weight.label')} value={`${lot.approx_weight_kg ?? '—'} kg`} />
+            {scaleWeight != null && <Row label={t('traceability.details.weight')} value={`${scaleWeight} kg`} />}
+            <Row label={t('lotDetail.estimatedValue')} value={money(lot.estimated_value)} />
+            <Row label={t('lotDetail.status')} value={<Badge value={lot.transaction_status} />} />
+            <Row label={t('lotDetail.status')} value={<Badge value={lot.payment_status} />} />
+            {lot.recycler_name && <Row label={t('lotDetail.recycler')} value={lot.recycler_name} />}
+            <Row label={t('lotDetail.createdAt')} value={date(lot.created_at)} />
             {(collectionImages.length ? collectionImages : lot.image_ref ? [{ id: 'fallback', image_url: lot.image_ref }] : []).map((im: any, i: number) =>
-                <View key={String(im.id || i)} style={{ marginTop: 12 }}><Image source={{ uri: im.image_url }} style={styles.photo} /><Text style={styles.caption}>Collection photo {i + 1}</Text></View>)}
+                <View key={String(im.id || i)} style={{ marginTop: 12 }}><Image source={{ uri: im.image_url }} style={styles.photo} /><Text style={styles.caption}>{t('lotDetail.photos')} {i + 1}</Text></View>)}
         </Card>
 
-        <Card title="⚖️ Pricing & Settlement Traceability">
-            <Text style={styles.subheading}>Transparent 4-stage valuation</Text>
-            <View style={styles.priceBox}><Text style={styles.label}>1. Estimated Value at Creation</Text><Text style={styles.price}>{money(lot.estimated_value)}</Text><Text style={styles.muted}>{approx ? `${approx} kg estimated` : 'Market benchmark reference'}</Text></View>
-            <View style={styles.priceBox}><Text style={styles.label}>2. Accepted Recycler Offer</Text><Text style={styles.price}>{rate != null ? `₹${rate} / kg` : 'Awaiting quote'}</Text><Text style={styles.muted}>{acceptedEstimate ? `Est. payout ${money(acceptedEstimate)}` : 'No quote accepted yet'}</Text></View>
-            <View style={styles.priceBox}><Text style={styles.label}>3. Physical Scale Weight</Text><Text style={styles.price}>{scaleWeight != null ? `${scaleWeight} kg` : 'Pending weigh-in'}</Text><Text style={styles.muted}>Weighed at physical handover</Text></View>
-            <View style={[styles.priceBox, finalValue != null && styles.finalBox]}><Text style={styles.label}>4. Final Sale Value</Text><Text style={[styles.price, finalValue != null && styles.green]}>{finalValue != null ? money(finalValue) : 'Pending handover'}</Text><Text style={styles.muted}>Final Scale Weight × Accepted Rate</Text></View>
+        <Card title={`⚖️ ${t('lotDetail.traceability')}`}>
+            <Text style={styles.subheading}>{t('traceability.subtitle')}</Text>
+            <View style={styles.priceBox}><Text style={styles.label}>1. {t('lotDetail.estimatedValue')}</Text><Text style={styles.price}>{money(lot.estimated_value)}</Text><Text style={styles.muted}>{approx ? `${approx} kg ${t('traceability.details.estimated')}` : t('priceDiscovery.benchmark')}</Text></View>
+            <View style={styles.priceBox}><Text style={styles.label}>2. {t('quotes.accepted')}</Text><Text style={styles.price}>{rate != null ? `₹${rate} / kg` : t('quotes.awaitingRecycler')}</Text><Text style={styles.muted}>{acceptedEstimate ? `${t('common.summary')} ${money(acceptedEstimate)}` : t('quotes.noOffersYet')}</Text></View>
+            <View style={styles.priceBox}><Text style={styles.label}>3. {t('traceability.details.weight')}</Text><Text style={styles.price}>{scaleWeight != null ? `${scaleWeight} kg` : t('status.pending')}</Text><Text style={styles.muted}>{t('traceability.events.handoverInit')}</Text></View>
+            <View style={[styles.priceBox, finalValue != null && styles.finalBox]}><Text style={styles.label}>4. {t('lotDetail.estimatedValue')}</Text><Text style={[styles.price, finalValue != null && styles.green]}>{finalValue != null ? money(finalValue) : t('status.pending')}</Text><Text style={styles.muted}>{t('traceability.events.weightRecorded')}</Text></View>
         </Card>
 
-        <Card title="Recycler Quotes">
-            {accepted ? <View><Text style={styles.complete}>✓ Accepted: {accepted.recycler_name} — ₹{rate}/kg</Text>
-                <Row label="Facility" value={accepted.recycler_name} />
-                <Row label="Phone" value={accepted.contact_details || accepted.recycler_contact_details || 'Available in dispatch'} />
-                {!!(accepted.contact_details || accepted.recycler_contact_details) && <Pressable onPress={() => Linking.openURL(`tel:${accepted.contact_details || accepted.recycler_contact_details}`)}><Text style={styles.link}>📞 Call recycler</Text></Pressable>}
-                <Row label="Pickup" value={accepted.pickup_availability || 'Daily / On Request'} />
+        <Card title={t('quotes.receivedTitle')}>
+            {accepted ? <View><Text style={styles.complete}>✓ {t('quotes.accepted')}: {accepted.recycler_name} — ₹{rate}/kg</Text>
+                <Row label={t('lotDetail.recycler')} value={accepted.recycler_name} />
+                <Row label={t('login.contactDetailsLabel')} value={accepted.contact_details || accepted.recycler_contact_details || t('status.pending')} />
+                {!!(accepted.contact_details || accepted.recycler_contact_details) && <Pressable onPress={() => Linking.openURL(`tel:${accepted.contact_details || accepted.recycler_contact_details}`)}><Text style={styles.link}>📞 {t('recyclers.name')}</Text></Pressable>}
+                <Row label={t('prices.pickup')} value={accepted.pickup_availability || t('login.pickupOnRequest')} />
             </View> : openOffers.length ? openOffers.map((o: any) => {
                 const total = approx > 0 ? Math.round(Number(o.offered_price) * approx) : null;
-                return <View key={String(o.id)} style={styles.offer}><Text style={styles.offerName}>{o.recycler_name}</Text><Text style={styles.price}>₹{Number(o.offered_price)} / kg</Text>{total && <Text style={styles.muted}>Est. payout {money(total)}</Text>}<View style={styles.actions}><Pressable disabled={!!busy} style={styles.accept} onPress={() => offerAction(o.id, 'accept')}><Text style={styles.primaryText}>{busy === o.id ? 'Working...' : 'Accept'}</Text></Pressable><Pressable disabled={!!busy} style={styles.reject} onPress={() => offerAction(o.id, 'reject')}><Text style={styles.dangerText}>Reject</Text></Pressable></View></View>
-            }) : <View><Text style={styles.muted}>No recycler quotes yet.</Text><Pressable style={styles.primary} onPress={() => router.push({ pathname: '/collector/matched-recyclers', params: { lotId, category: String(lot.category || ''), location: String(lot.location || lot.collection_location || ''), weight: String(lot.approx_weight_kg || '') } })}><Text style={styles.primaryText}>Find Recyclers</Text></Pressable></View>}
+                return <View key={String(o.id)} style={styles.offer}><Text style={styles.offerName}>{o.recycler_name}</Text><Text style={styles.price}>₹{Number(o.offered_price)} / kg</Text>{total && <Text style={styles.muted}>{t('quotes.totalOffer')} {money(total)}</Text>}<View style={styles.actions}><Pressable disabled={!!busy} style={styles.accept} onPress={() => offerAction(o.id, 'accept')}><Text style={styles.primaryText}>{busy === o.id ? t('common.loading') : t('quotes.accept')}</Text></Pressable><Pressable disabled={!!busy} style={styles.reject} onPress={() => offerAction(o.id, 'reject')}><Text style={styles.dangerText}>{t('quotes.reject')}</Text></Pressable></View></View>
+            }) : <View><Text style={styles.muted}>{t('quotes.noQuotesYet')}</Text><Pressable style={styles.primary} onPress={() => router.push({ pathname: '/collector/matched-recyclers', params: { lotId, category: String(lot.category || ''), location: String(lot.location || lot.collection_location || ''), weight: String(lot.approx_weight_kg || '') } })}><Text style={styles.primaryText}>{t('dashboard.findRecyclers')}</Text></Pressable></View>}
         </Card>
 
-        <Card title="Traceability Timeline">
+        <Card title={t('traceability.title')}>
             {timeline.map((x: any, i) => <View style={styles.timeline} key={i}><View style={[styles.timelineDot, i <= currentStep && styles.dotDone]}><Text style={styles.dotText}>{i <= currentStep ? '✓' : ''}</Text></View><View style={{ flex: 1 }}><Text style={styles.timelineTitle}>{x[0]}</Text><Text style={styles.muted}>{x[1]}</Text></View></View>)}
-            <Pressable style={styles.secondary} onPress={() => router.push(`/collector/lots/trace/${lotId}` as any)}><Text style={styles.secondaryText}>View Full Traceability →</Text></Pressable>
+            <Pressable style={styles.secondary} onPress={() => router.push(`/collector/lots/trace/${lotId}` as any)}><Text style={styles.secondaryText}>{t('lotDetail.viewTraceability')} →</Text></Pressable>
         </Card>
 
-        {(handover?.handover_reference_number || handover?.handover_reference) && <Card title="Handover Reference">
+        {(handover?.handover_reference_number || handover?.handover_reference) && <Card title={t('lotDetail.handoverRef')}>
             <Text style={styles.reference}>{handover.handover_reference_number || handover.handover_reference}</Text>
-            <Row label="Status" value={<Badge value={handover.status} />} /><Row label="Initiated" value={date(handover.event_timestamp)} />
-            {handover.confirmation_timestamp && <Row label="Confirmed" value={date(handover.confirmation_timestamp)} />}
-            {handover.weight_kg != null && <Row label="Final Weight" value={`${handover.weight_kg} kg`} />}
+            <Row label={t('lotDetail.status')} value={<Badge value={handover.status} />} /><Row label={t('traceability.handoverInitiated')} value={date(handover.event_timestamp)} />
+            {handover.confirmation_timestamp && <Row label={t('traceability.events.confirmed')} value={date(handover.confirmation_timestamp)} />}
+            {handover.weight_kg != null && <Row label={t('traceability.details.weight')} value={`${handover.weight_kg} kg`} />}
         </Card>}
 
-        {handover?.status === 'confirmed' && <Card title="Digital Handover Record">
-            <Row label="Reference" value={handover.handover_reference_number || handover.handover_reference} />
-            <Row label="Collection Weight" value={`${handover.approx_weight_kg ?? '—'} kg`} />
-            <Row label="Final Weight" value={`${handover.weight_kg ?? '—'} kg`} />
-            <Row label="Confirmed" value={date(handover.confirmed_at || handover.confirmation_timestamp)} />
-            <Row label="GPS" value={handover.gps_lat != null && handover.gps_lng != null ? `${handover.gps_lat}, ${handover.gps_lng}` : 'Not recorded'} />
-            <Row label="QR Scan" value={handover.scan_verified ? 'Verified' : 'Manual / not recorded'} />
+        {handover?.status === 'confirmed' && <Card title={t('lotDetail.handoverConfirmed')}>
+            <Row label={t('lotDetail.handoverRef')} value={handover.handover_reference_number || handover.handover_reference} />
+            <Row label={t('traceability.weight')} value={`${handover.approx_weight_kg ?? '—'} kg`} />
+            <Row label={t('traceability.details.weight')} value={`${handover.weight_kg ?? '—'} kg`} />
+            <Row label={t('traceability.events.confirmed')} value={date(handover.confirmed_at || handover.confirmation_timestamp)} />
+            <Row label={t('lotDetail.gpsLocation')} value={handover.gps_lat != null && handover.gps_lng != null ? `${handover.gps_lat}, ${handover.gps_lng}` : t('lotDetail.gpsUnavailable')} />
+            <Row label={t('traceability.events.qrScanned')} value={handover.scan_verified ? t('traceability.details.qrVerified') : t('common.noData')} />
             {confirmationImages.length > 0 && <Image source={{ uri: confirmationImages[confirmationImages.length - 1].image_url }} style={styles.photo} />}
-            <Text style={styles.complete}>✓ Digital handover record complete</Text>
+            <Text style={styles.complete}>✓ {t('lotDetail.handoverConfirmed')}</Text>
         </Card>}
 
         <Modal visible={cancelOpen} transparent animationType="fade" onRequestClose={() => setCancelOpen(false)}>
-            <View style={styles.overlay}><View style={styles.modal}><Text style={styles.cardTitle}>⚠️ Cancel Lot</Text><Text style={styles.muted}>Tell us why you are cancelling this lot.</Text><TextInput multiline value={cancelReason} onChangeText={setCancelReason} placeholder="Cancellation reason" style={styles.input} /><View style={styles.actions}><Pressable style={styles.secondary} onPress={() => setCancelOpen(false)}><Text style={styles.secondaryText}>Keep Lot</Text></Pressable><Pressable style={styles.dangerButton} onPress={doCancel}><Text style={styles.primaryText}>{busy === 'cancel' ? 'Cancelling...' : 'Cancel Lot'}</Text></Pressable></View></View></View>
+            <View style={styles.overlay}><View style={styles.modal}><Text style={styles.cardTitle}>⚠️ {t('lotDetail.cancelLot')}</Text><Text style={styles.muted}>{t('lotDetail.cancelReasonLabel')}</Text><TextInput multiline value={cancelReason} onChangeText={setCancelReason} placeholder={t('lotDetail.cancelReasonPlaceholder')} style={styles.input} /><View style={styles.actions}><Pressable style={styles.secondary} onPress={() => setCancelOpen(false)}><Text style={styles.secondaryText}>{t('common.cancel')}</Text></Pressable><Pressable style={styles.dangerButton} onPress={doCancel}><Text style={styles.primaryText}>{busy === 'cancel' ? t('lotDetail.cancelling') : t('lotDetail.cancelLot')}</Text></Pressable></View></View></View>
         </Modal>
         <View style={{ height: 40 }} />
     </ScrollView>;

@@ -20,6 +20,7 @@ import {
 } from '../../../../../api/client';
 import { BrandedHeader } from '../../../../components/branding/BrandedHeader';
 import { currentCollectorId } from '../../../../../services/auth';
+import { useTranslation } from '../../../../../i18n/config';
 
 type AnyRecord = Record<string, any>;
 
@@ -58,72 +59,72 @@ const formatMoney = (value: any) => {
 
 const EVENT_META: Record<
     string,
-    { title: string; icon: string; description: string }
+    { titleKey: string; icon: string; descriptionKey: string }
 > = {
     LOT_CREATED: {
-        title: 'Lot Created',
+        titleKey: 'traceability.events.created',
         icon: '📦',
-        description: 'The e-waste lot was registered by the collector.',
+        descriptionKey: 'traceability.events.created',
     },
     IMAGE_UPLOADED: {
-        title: 'Collection Evidence Added',
+        titleKey: 'traceability.events.imageUploaded',
         icon: '📷',
-        description: 'A photo was attached as evidence for the lot.',
+        descriptionKey: 'traceability.events.imageUploaded',
     },
     PRICE_ESTIMATED: {
-        title: 'Price Estimated',
+        titleKey: 'traceability.events.valued',
         icon: '₹',
-        description: 'An estimated market value was recorded.',
+        descriptionKey: 'traceability.events.valued',
     },
     RECYCLER_MATCHED: {
-        title: 'Recycler Matched',
+        titleKey: 'traceability.events.matched',
         icon: '♻️',
-        description: 'The lot was matched with recycler candidates.',
+        descriptionKey: 'traceability.events.matched',
     },
     QUOTE_REQUESTED: {
-        title: 'Quote Requested',
+        titleKey: 'traceability.events.quoteReceived',
         icon: '💬',
-        description: 'A quote request was sent to a recycler.',
+        descriptionKey: 'traceability.events.quoteReceived',
     },
     QUOTE_OFFERED: {
-        title: 'Recycler Quote Received',
+        titleKey: 'traceability.events.quoteReceived',
         icon: '🏷️',
-        description: 'A recycler submitted a price offer.',
+        descriptionKey: 'traceability.events.quoteReceived',
     },
     QUOTE_ACCEPTED: {
-        title: 'Quote Accepted',
+        titleKey: 'traceability.events.quoteAccepted',
         icon: '✅',
-        description: 'The collector accepted a recycler quote.',
+        descriptionKey: 'traceability.events.quoteAccepted',
     },
     QR_SCANNED: {
-        title: 'QR Verified',
+        titleKey: 'traceability.events.qrScanned',
         icon: '▣',
-        description: 'The lot QR was scanned during handover.',
+        descriptionKey: 'traceability.events.qrScanned',
     },
     FINAL_WEIGHT_RECORDED: {
-        title: 'Final Weight Recorded',
+        titleKey: 'traceability.events.weightRecorded',
         icon: '⚖️',
-        description: 'The physical scale weight was recorded.',
+        descriptionKey: 'traceability.events.weightRecorded',
     },
     HANDOVER_INITIATED: {
-        title: 'Handover Initiated',
+        titleKey: 'traceability.events.handoverInit',
         icon: '🤝',
-        description: 'A handover reference was generated.',
+        descriptionKey: 'traceability.events.handoverInit',
     },
     HANDOVER_CONFIRMED: {
-        title: 'Handover Confirmed',
+        titleKey: 'traceability.events.handoverConfirmed',
         icon: '✓',
-        description: 'The recycler confirmed receipt of the material.',
+        descriptionKey: 'traceability.events.handoverConfirmed',
     },
     PAYMENT_COMPLETED: {
-        title: 'Payment Completed',
+        titleKey: 'traceability.events.paymentDone',
         icon: '💰',
-        description: 'Payment for the lot was completed.',
+        descriptionKey: 'traceability.events.paymentDone',
     },
     LOT_CANCELLED: {
-        title: 'Lot Cancelled',
+        titleKey: 'status.cancelled',
         icon: '⊘',
-        description: 'The lot lifecycle was cancelled.',
+        descriptionKey: 'status.cancelled',
     },
 };
 
@@ -182,6 +183,7 @@ function EvidenceImage({ item, index }: { item: AnyRecord; index: number }) {
 }
 
 export default function LotTraceabilityScreen() {
+    const { t } = useTranslation();
     const params = useLocalSearchParams<{ lotId: string }>();
     const lotId = String(params.lotId ?? '');
 
@@ -282,19 +284,19 @@ export default function LotTraceabilityScreen() {
 
     const lifecycle = [
         {
-            title: 'Lot Created',
+            title: t('traceability.events.created'),
             done:
                 completedTypes.has('LOT_CREATED') ||
                 Boolean(lot?.created_at),
         },
         {
-            title: 'Valuation Recorded',
+            title: t('traceability.events.valued'),
             done:
                 completedTypes.has('PRICE_ESTIMATED') ||
                 lot?.estimated_value != null,
         },
         {
-            title: 'Recycler Matched',
+            title: t('traceability.events.matched'),
             done:
                 completedTypes.has('RECYCLER_MATCHED') ||
                 ['matched', 'accepted', 'handed_over', 'confirmed'].includes(
@@ -302,7 +304,7 @@ export default function LotTraceabilityScreen() {
                 ),
         },
         {
-            title: 'Quote Accepted',
+            title: t('traceability.events.quoteAccepted'),
             done:
                 completedTypes.has('QUOTE_ACCEPTED') ||
                 ['accepted', 'handed_over', 'confirmed'].includes(
@@ -310,7 +312,7 @@ export default function LotTraceabilityScreen() {
                 ),
         },
         {
-            title: 'Handover Initiated',
+            title: t('traceability.events.handoverInit'),
             done:
                 completedTypes.has('HANDOVER_INITIATED') ||
                 Boolean(
@@ -319,13 +321,13 @@ export default function LotTraceabilityScreen() {
                 ),
         },
         {
-            title: 'Recycler Confirmed',
+            title: t('traceability.events.confirmed'),
             done:
                 completedTypes.has('HANDOVER_CONFIRMED') ||
                 String(handover?.status ?? '').toLowerCase() === 'confirmed',
         },
         {
-            title: 'Payment Completed',
+            title: t('traceability.events.paymentDone'),
             done:
                 completedTypes.has('PAYMENT_COMPLETED') ||
                 String(lot?.payment_status ?? '').toLowerCase() === 'paid',
@@ -342,7 +344,7 @@ export default function LotTraceabilityScreen() {
             <View style={styles.center}>
                 <ActivityIndicator size="large" color="#16a34a" />
                 <Text style={styles.loadingText}>
-                    Loading traceability...
+                    {t('common.loading')}
                 </Text>
             </View>
         );
@@ -362,8 +364,8 @@ export default function LotTraceabilityScreen() {
         >
             <BrandedHeader
                 showBack
-                title="Lot Journey"
-                subtitle={`Lot: ${lotId}`}
+                title={t('traceability.title')}
+                subtitle={`${t('common.lotId')}: ${lotId}`}
                 rightElement={
                     <View style={styles.headerBadges}>
                         <View style={styles.statusBadge}>
@@ -383,7 +385,7 @@ export default function LotTraceabilityScreen() {
             {!!error && (
                 <View style={styles.warning}>
                     <Text style={styles.warningTitle}>
-                        ⚠️ Traceability data incomplete
+                        ⚠️ {t('offline.syncFailed')}
                     </Text>
                     <Text style={styles.warningText}>
                         {error}
@@ -393,7 +395,7 @@ export default function LotTraceabilityScreen() {
 
             <View style={styles.card}>
                 <Text style={styles.cardTitle}>
-                    Lifecycle Progress
+                    {t('traceability.lifecycle')}
                 </Text>
 
                 <View style={styles.progressTrack}>
@@ -406,7 +408,7 @@ export default function LotTraceabilityScreen() {
                 </View>
 
                 <Text style={styles.progressCaption}>
-                    {completedCount} of {lifecycle.length} lifecycle stages completed
+                    {completedCount} {t('common.of')} {lifecycle.length} {t('traceability.lifecycle')}
                 </Text>
 
                 <View style={styles.lifecycle}>
@@ -447,7 +449,7 @@ export default function LotTraceabilityScreen() {
                                     {step.title}
                                 </Text>
                                 <Text style={styles.smallMuted}>
-                                    {step.done ? 'Completed' : 'Pending'}
+                                    {step.done ? t('common.completed') : t('status.pending')}
                                 </Text>
                             </View>
                         </View>
@@ -457,19 +459,19 @@ export default function LotTraceabilityScreen() {
 
             <View style={styles.card}>
                 <Text style={styles.cardTitle}>
-                    Lot Snapshot
+                    {t('traceability.title')}
                 </Text>
 
                 <InfoRow
-                    label="Category"
+                    label={t('lotDetail.category')}
                     value={lot?.category ?? '—'}
                 />
                 <InfoRow
-                    label="Sub-category"
+                    label={t('lotDetail.subCategory')}
                     value={lot?.sub_category ?? '—'}
                 />
                 <InfoRow
-                    label="Estimated weight"
+                    label={t('createLot.weight.label')}
                     value={
                         lot?.approx_weight_kg != null
                             ? `${lot.approx_weight_kg} kg`
@@ -477,53 +479,57 @@ export default function LotTraceabilityScreen() {
                     }
                 />
                 <InfoRow
-                    label="Estimated value"
+                    label={t('lotDetail.estimatedValue')}
                     value={formatMoney(lot?.estimated_value)}
                 />
                 <InfoRow
-                    label="Transaction status"
+                    label={t('lotDetail.status')}
                     value={lot?.transaction_status ?? '—'}
                 />
                 <InfoRow
-                    label="Payment status"
+                    label={t('common.pendingPayment')}
                     value={lot?.payment_status ?? '—'}
                 />
                 <InfoRow
-                    label="Created"
+                    label={t('lotDetail.createdAt')}
                     value={formatDate(lot?.created_at)}
                 />
             </View>
 
             <View style={styles.card}>
                 <Text style={styles.cardTitle}>
-                    Event History
+                    {t('traceability.timeline')}
                 </Text>
                 <Text style={styles.cardSubtitle}>
-                    Backend-recorded events for this lot, shown in chronological order.
+                    {t('traceability.subtitle')}
                 </Text>
 
                 {events.length === 0 ? (
                     <View style={styles.empty}>
                         <Text style={styles.emptyIcon}>🕘</Text>
                         <Text style={styles.emptyTitle}>
-                            No recorded events yet
+                            {t('traceability.noEvents')}
                         </Text>
                         <Text style={styles.emptyText}>
-                            Events will appear here as the lot progresses through valuation,
-                            matching, handover and payment.
+                            {t('traceability.subtitle')}
                         </Text>
                     </View>
                 ) : (
                     <View style={styles.eventList}>
                         {events.map((event, index) => {
                             const type = getEventType(event);
-                            const meta = EVENT_META[type] ?? {
+                            const metaDef = EVENT_META[type];
+                            const meta = metaDef ? {
+                                title: t(metaDef.titleKey),
+                                icon: metaDef.icon,
+                                description: t(metaDef.descriptionKey),
+                            } : {
                                 title: type
                                     .replaceAll('_', ' ')
                                     .toLowerCase()
                                     .replace(/\b\w/g, (c) => c.toUpperCase()),
                                 icon: '•',
-                                description: 'Lot lifecycle event recorded.',
+                                description: t('traceability.subtitle'),
                             };
 
                             return (
@@ -599,11 +605,11 @@ export default function LotTraceabilityScreen() {
                 completedTypes.has('HANDOVER_INITIATED')) && (
                     <View style={styles.card}>
                         <Text style={styles.cardTitle}>
-                            Handover Record
+                            {t('lotDetail.handoverRef')}
                         </Text>
 
                         <InfoRow
-                            label="Reference"
+                            label={t('traceability.details.ref')}
                             value={
                                 handover?.handover_reference_number ??
                                 handover?.handover_reference ??
@@ -612,12 +618,12 @@ export default function LotTraceabilityScreen() {
                         />
 
                         <InfoRow
-                            label="Status"
+                            label={t('common.status') ?? t('lotDetail.status')}
                             value={handover?.status ?? '—'}
                         />
 
                         <InfoRow
-                            label="Recycler"
+                            label={t('lotDetail.recycler')}
                             value={
                                 handover?.recycler_name ??
                                 lot?.recycler_name ??
@@ -626,7 +632,7 @@ export default function LotTraceabilityScreen() {
                         />
 
                         <InfoRow
-                            label="Quoted rate"
+                            label={t('prices.buyingPrice')}
                             value={
                                 handover?.quoted_price != null
                                     ? `${formatMoney(
@@ -637,7 +643,7 @@ export default function LotTraceabilityScreen() {
                         />
 
                         <InfoRow
-                            label="Final weight"
+                            label={t('traceability.details.weight')}
                             value={
                                 handover?.weight_kg != null
                                     ? `${handover.weight_kg} kg`
@@ -646,23 +652,23 @@ export default function LotTraceabilityScreen() {
                         />
 
                         <InfoRow
-                            label="Final value"
+                            label={t('lotDetail.estimatedValue')}
                             value={formatMoney(
                                 handover?.final_price
                             )}
                         />
 
                         <InfoRow
-                            label="QR scan"
+                            label={t('traceability.events.qrScanned')}
                             value={
                                 handover?.scan_verified
-                                    ? 'Verified'
-                                    : 'Not recorded'
+                                    ? t('traceability.details.qrVerified')
+                                    : t('common.noData')
                             }
                         />
 
                         <InfoRow
-                            label="Confirmed"
+                            label={t('traceability.events.confirmed')}
                             value={formatDate(
                                 handover?.confirmation_timestamp ??
                                 handover?.confirmed_at
@@ -673,15 +679,15 @@ export default function LotTraceabilityScreen() {
 
             <View style={styles.card}>
                 <Text style={styles.cardTitle}>
-                    Evidence Chain
+                    {t('traceability.photoEvidence')}
                 </Text>
                 <Text style={styles.cardSubtitle}>
-                    Collection and recycler-confirmation images linked to this lot.
+                    {t('traceability.photoEvidenceDesc')}
                 </Text>
 
                 {images.length === 0 ? (
                     <Text style={styles.emptyText}>
-                        No evidence photos are currently recorded for this lot.
+                        {t('traceability.noEvents')}
                     </Text>
                 ) : (
                     images.map((item, index) => (
@@ -700,11 +706,10 @@ export default function LotTraceabilityScreen() {
                 </Text>
                 <View style={{ flex: 1 }}>
                     <Text style={styles.integrityTitle}>
-                        Traceability Record
+                        {t('traceability.title')}
                     </Text>
                     <Text style={styles.integrityText}>
-                        This screen is generated from the lot's backend lifecycle events,
-                        handover record and evidence images.
+                        {t('traceability.subtitle')}
                     </Text>
                 </View>
             </View>
@@ -714,7 +719,7 @@ export default function LotTraceabilityScreen() {
                 onPress={() => router.back()}
             >
                 <Text style={styles.primaryButtonText}>
-                    Back to Lot Details
+                    {t('common.back')}
                 </Text>
             </Pressable>
 
