@@ -34,6 +34,7 @@ import { LanguageSelector } from '../../../components/LanguageSelector';
 import { useAuth } from '../../../services/auth';
 
 import type { RecyclerIncomingLot } from '../../../types/recycler-lot';
+import { getLotId } from '../../../utils/lot';
 
 import { useTranslation } from '../../../../i18n/config';
 
@@ -90,9 +91,7 @@ export default function RecyclerLotDetailScreen() {
         const found =
           response.data.find(
             candidate =>
-              String(
-                candidate.lot_id,
-              ) === String(id),
+              getLotId(candidate) === String(id),
           );
 
         if (!found) {
@@ -132,135 +131,7 @@ export default function RecyclerLotDetailScreen() {
     void loadLot();
   }, [loadLot]);
 
-  async function handleAccept() {
-    if (
-      !recyclerId ||
-      !lot
-    ) {
-      return;
-    }
 
-    setActionLoading(true);
-
-    try {
-      await acceptRecyclerLot(
-        recyclerId,
-        lot.lot_id,
-      );
-
-      Alert.alert(
-        t(
-          'recyclerLot.success',
-        ),
-        t(
-          'recyclerLot.acceptSuccess',
-        ),
-      );
-
-      router.replace(
-        '/recycler/incoming-lots',
-      );
-    } catch (actionError) {
-      console.error(
-        '[RecyclerLot Accept]',
-        actionError,
-      );
-
-      Alert.alert(
-        t(
-          'common.error',
-        ),
-        t(
-          'recyclerLot.acceptError',
-        ),
-      );
-    } finally {
-      setActionLoading(false);
-    }
-  }
-
-  function confirmReject() {
-    Alert.alert(
-      t(
-        'recyclerLot.rejectTitle',
-      ),
-
-      t(
-        'recyclerLot.rejectConfirm',
-      ),
-
-      [
-        {
-          text: t(
-            'common.cancel',
-          ),
-
-          style: 'cancel',
-        },
-
-        {
-          text: t(
-            'recyclerLot.reject',
-          ),
-
-          style:
-            'destructive',
-
-          onPress: () =>
-            void handleReject(),
-        },
-      ],
-    );
-  }
-
-  async function handleReject() {
-    if (
-      !recyclerId ||
-      !lot
-    ) {
-      return;
-    }
-
-    setActionLoading(true);
-
-    try {
-      await rejectRecyclerLot(
-        recyclerId,
-        lot.lot_id,
-      );
-
-      Alert.alert(
-        t(
-          'recyclerLot.success',
-        ),
-
-        t(
-          'recyclerLot.rejectSuccess',
-        ),
-      );
-
-      router.replace(
-        '/recycler/incoming-lots',
-      );
-    } catch (actionError) {
-      console.error(
-        '[RecyclerLot Reject]',
-        actionError,
-      );
-
-      Alert.alert(
-        t(
-          'common.error',
-        ),
-
-        t(
-          'recyclerLot.rejectError',
-        ),
-      );
-    } finally {
-      setActionLoading(false);
-    }
-  }
 
   async function handleQuote(
     amount: number,
@@ -506,7 +377,7 @@ export default function RecyclerLotDetailScreen() {
           )}
         </Text>
 
-        {(!lot.transaction_status || lot.transaction_status === 'available') && (
+        {(lot.transaction_status === 'quoted' && (!lot.recycler_offer_status || lot.recycler_offer_status === 'requested')) && (
           <Pressable
             disabled={
               actionLoading
@@ -530,58 +401,6 @@ export default function RecyclerLotDetailScreen() {
               )}
             </Text>
           </Pressable>
-        )}
-
-        {lot.transaction_status === 'matched' && (
-          <View
-            style={
-              styles.actionRow
-            }
-          >
-            <Pressable
-              disabled={
-                actionLoading
-              }
-              onPress={() =>
-                void handleAccept()
-              }
-              style={
-                styles.accept
-              }
-            >
-              <Text
-                style={
-                  styles.acceptText
-                }
-              >
-                {t(
-                  'recyclerLot.accept',
-                )}
-              </Text>
-            </Pressable>
-
-            <Pressable
-              disabled={
-                actionLoading
-              }
-              onPress={
-                confirmReject
-              }
-              style={
-                styles.reject
-              }
-            >
-              <Text
-                style={
-                  styles.rejectText
-                }
-              >
-                {t(
-                  'recyclerLot.reject',
-                )}
-              </Text>
-            </Pressable>
-          </View>
         )}
       </ScrollView>
 

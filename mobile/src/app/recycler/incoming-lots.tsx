@@ -24,6 +24,8 @@ import {
   getNormalizedMaterialId, 
   getMaterialDisplayLabel 
 } from '../../utils/lot-helpers';
+import { getLotId } from '../../utils/lot';
+import { Alert } from 'react-native';
 
 export default function IncomingLotsScreen() {
   const { recyclerId } = useAuth();
@@ -164,14 +166,26 @@ export default function IncomingLotsScreen() {
               </Text>
             </View>
           ) : (
-            filteredLots.map(lot => (
-              <IncomingLotCard 
-                key={lot.lot_id} 
-                lot={lot} 
-                kgLabel={t('common.kg') || 'kg'} 
-                onPress={() => router.push(`/recycler/lot/${lot.lot_id}`)}
-              />
-            ))
+            filteredLots.map(lot => {
+              const safeLotId = getLotId(lot);
+              return (
+                <IncomingLotCard 
+                  key={safeLotId || Math.random().toString()} 
+                  lot={lot} 
+                  kgLabel={t('common.kg') || 'kg'} 
+                  onPress={() => {
+                    if (!safeLotId) {
+                      Alert.alert(
+                        t('common.error') || 'Error',
+                        t('recyclerLot.invalidId') || 'Unable to open this lot.'
+                      );
+                      return;
+                    }
+                    router.push(`/recycler/lot/${safeLotId}`);
+                  }}
+                />
+              );
+            })
           )}
         </ScrollView>
       )}
