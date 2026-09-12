@@ -76,6 +76,20 @@ export default function RecyclerLayout() {
           title: 'Recycler Profile',
         }}
       />
+
+      <Stack.Screen
+        name="scan"
+        options={{
+          headerShown: false,
+        }}
+      />
+
+      <Stack.Screen
+        name="map"
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }

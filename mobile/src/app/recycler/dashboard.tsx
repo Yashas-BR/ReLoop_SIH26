@@ -622,11 +622,26 @@ export default function RecyclerDashboardScreen() {
                         'recyclerScan.title',
                     )}
                     description={t(
-                        'recyclerScan.ctaDesc',
+                        'recyclerScan.dashboardDescription',
                     )}
                     onPress={() =>
-                        // @ts-expect-error - Route not yet created
-                        router.push('/recycler/scan')
+                        router.push(
+                            '/recycler/scan' as any,
+                        )
+                    }
+                />
+
+                <QuickAction
+                    title={t(
+                        'recyclerMap.title',
+                    )}
+                    description={t(
+                        'recyclerMap.dashboardDescription',
+                    )}
+                    onPress={() =>
+                        router.push(
+                            '/recycler/map' as any,
+                        )
                     }
                 />
             </View>

@@ -109,7 +109,8 @@
     "lotId": "Lot ID",
     "signOut": "Sign Out",
     "all": "All",
-    "search": "Search"
+    "search": "Search",
+    "ok": "OK"
   },
   "status": {
     "quoted": "Quoted",
@@ -947,7 +948,7 @@
     "nav": "Scan Lot",
     "cta": "Scan Lot",
     "ctaDesc": "Point the camera at a collector's lot QR to verify and confirm the handover on the spot.",
-    "title": "Scan Lot",
+    "title": "Scan QR Code",
     "subtitle": "The QR carries only the lot ID. Scan it to pull the live lot record and verify the physical material before confirming the handover.",
     "cameraMode": "Camera scan",
     "cameraHint": "Align the lot QR inside the box on the lot's printed label or digital card.",
@@ -962,7 +963,16 @@
     "lookingUp": "Looking up lot record…",
     "lotFound": "Lot {{code}} found. Opening the lot card…",
     "notFound": "Lot {{code}} was not found or is not assigned to your facility.",
-    "lookupFail": "Could not reach the lot registry. Try again."
+    "lookupFail": "Could not reach the lot registry. Try again.",
+    "dashboardDescription": "Scan a ReLoop lot or handover QR code.",
+    "instruction": "Place the QR code inside the frame.",
+    "permissionTitle": "Camera Permission Required",
+    "permissionDescription": "ReLoop needs camera access to scan lot and handover QR codes.",
+    "allowCamera": "Allow Camera",
+    "invalidTitle": "Invalid QR Code",
+    "invalidMessage": "This QR code is not a valid ReLoop code.",
+    "scanAgain": "Scan Again",
+    "handoverTitle": "Handover Reference"
   },
   "verify": {
     "qrTitle": "Lot QR",
@@ -1087,7 +1097,14 @@
     "expiring_soon": "Expiring Soon",
     "expired": "Expired",
     "renewal_pending": "Renewal Pending",
-    "active": "Active"
+    "active": "Active",
+    "quoted": "Quoted",
+    "matched": "Matched",
+    "confirmed": "Confirmed",
+    "handed_over": "Handed Over",
+    "suspended": "Suspended",
+    "rejected": "Rejected",
+    "unknown": "Unknown"
   },
   "recyclerLot": {
     "incomingLots": "Incoming Lots",
@@ -1165,5 +1182,13 @@
     "notes": "Notes",
     "notFound": "Activity not found",
     "loadError": "Unable to load activity details."
+  },
+  "recyclerMap": {
+    "title": "Recycler Map",
+    "dashboardDescription": "View your facility and current location on the map.",
+    "recycler": "Recycler Facility",
+    "myLocation": "Go to My Location",
+    "permissionDenied": "Location permission was denied.",
+    "locationError": "Unable to get your current location."
   }
 }
