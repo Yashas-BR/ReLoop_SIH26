@@ -102,3 +102,60 @@ export async function getCachedEarnings(collectorId) {
     return null;
   }
 }
+
+// ── Price Cards (per-category instant valuation) ───────────────────────────
+
+/**
+ * Persist all price cards (all categories for a location).
+ * Key: location string.
+ */
+export async function cachePriceCards(location, cards) {
+  if (!cards || typeof cards !== 'object') return;
+  try {
+    await dbPut('priceCache', {
+      _key: `cards::${location}`,
+      cards,
+      _cachedAt: now(),
+    });
+  } catch { /* IndexedDB unavailable — fail silently */ }
+}
+
+/**
+ * Retrieve cached price cards for a location.
+ * Returns null if nothing cached.
+ */
+export async function getCachedPriceCards(location) {
+  try {
+    return await dbGet('priceCache', `cards::${location}`);
+  } catch {
+    return null;
+  }
+}
+
+// ── Market Pulse ──────────────────────────────────────────────────────────
+
+/**
+ * Persist market pulse data for a location.
+ */
+export async function cacheMarketPulse(location, pulse) {
+  if (!pulse) return;
+  try {
+    await dbPut('priceCache', {
+      _key: `pulse::${location}`,
+      pulse,
+      _cachedAt: now(),
+    });
+  } catch { /* fail silently */ }
+}
+
+/**
+ * Retrieve cached market pulse for a location.
+ */
+export async function getCachedMarketPulse(location) {
+  try {
+    return await dbGet('priceCache', `pulse::${location}`);
+  } catch {
+    return null;
+  }
+}
+

@@ -181,8 +181,6 @@ export const refreshMarketPrices = (days = 90) =>
 export const getRecyclerRateBoard = ({ category, location }) =>
   request(`/prices/ingest/recycler-rates?category=${encodeURIComponent(category)}&location=${encodeURIComponent(location)}`);
 
-// ── Handover / Lots ──────────────────────────────────────────────────────────
-
 /**
  * Create a material lot.
  *
@@ -191,17 +189,24 @@ export const getRecyclerRateBoard = ({ category, location }) =>
  *           POST /v1/handover/lots by the sync manager once online).
  *           Returns { queued: true, queueItem } — NOT a confirmed response.
  *
+ * NOTE: image_refs (base64 data) are intentionally OMITTED from the offline
+ * queue because base64 images can be several MB each, which causes sync to
+ * fail with 413 / payload-too-large errors. The lot is created with all
+ * metadata intact; images can be re-uploaded when the collector is online.
+ *
  * The caller MUST check result.queued to show the correct "Saved offline" UX.
  */
 export async function createLot(data) {
   if (!isOnline()) {
+    // Strip base64 images — too large for reliable sync queue storage
+    const { image_refs: _dropped, ...payloadWithoutImages } = data;
     const queueItem = await enqueue({
       operation: 'createLot',
       entity: 'lot',
       entityId: null,
-      payload: data,
+      payload: payloadWithoutImages,
     });
-    return { queued: true, queueItem };
+    return { queued: true, queueItem, imagesDropped: Array.isArray(data.image_refs) && data.image_refs.length > 0 };
   }
   return request('/handover/lots', { method: 'POST', body: JSON.stringify(data) });
 }
