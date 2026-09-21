@@ -24,13 +24,14 @@ function resolveBaseUrl() {
 
 const BASE = resolveBaseUrl();
 
-import { isOnline } from '../services/offline/offlineUtils.js';
+import { isOnline, generateClientId } from '../services/offline/offlineUtils.js';
 import {
   cacheLots, getCachedLots,
   cacheTransactions, getCachedTransactions,
   cacheEarnings, getCachedEarnings,
 } from '../services/offline/cache.js';
 import { enqueue } from '../services/offline/syncQueue.js';
+import { dbPut } from '../services/offline/db.js';
 
 // Keys that hold identifiers / human-readable codes and must NEVER be coerced
 // to numbers, even if they happen to look numeric.
@@ -199,11 +200,26 @@ export const getRecyclerRateBoard = ({ category, location }) =>
 export async function createLot(data) {
   if (!isOnline()) {
     // Strip base64 images — too large for reliable sync queue storage
-    const { image_refs: _dropped, ...payloadWithoutImages } = data;
+    const { image_refs: droppedImages, ...payloadWithoutImages } = data;
+    const clientId = generateClientId();
+    
+    // Store images separately so sync manager can upload them after the lot is created
+    if (Array.isArray(droppedImages) && droppedImages.length > 0) {
+      dbPut('offlineImages', {
+        clientId,
+        image_refs: droppedImages,
+        collector_id: data.collector_id,
+        gps: (data.collection_lat != null && data.collection_lng != null)
+          ? { lat: data.collection_lat, lng: data.collection_lng }
+          : null,
+      }).catch(() => {});
+    }
+
     const queueItem = await enqueue({
       operation: 'createLot',
       entity: 'lot',
       entityId: null,
+      clientId,
       payload: payloadWithoutImages,
     });
     return { queued: true, queueItem, imagesDropped: Array.isArray(data.image_refs) && data.image_refs.length > 0 };

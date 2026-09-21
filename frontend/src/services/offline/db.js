@@ -13,7 +13,7 @@
  */
 
 const DB_NAME = 'reloop_v1';
-const DB_VERSION = 2;  // bumped: added priceCache store
+const DB_VERSION = 3;  // bumped: added offlineImages store
 
 let _db = null;
 
@@ -55,6 +55,11 @@ function openDB() {
       // --- price cache (instant valuation + market pulse) ---
       if (!db.objectStoreNames.contains('priceCache')) {
         db.createObjectStore('priceCache', { keyPath: '_key' });
+      }
+
+      // --- offline images ---
+      if (!db.objectStoreNames.contains('offlineImages')) {
+        db.createObjectStore('offlineImages', { keyPath: 'clientId' });
       }
     };
 

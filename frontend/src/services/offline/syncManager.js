@@ -27,6 +27,7 @@ import {
   markSuccess,
   markFailed,
 } from './syncQueue.js';
+import { dbGet, dbDelete } from './db.js';
 
 const BASE_DELAY_MS = 1000;
 const MAX_RETRIES = 3;
@@ -66,6 +67,30 @@ async function executeOperation(item) {
         err.status = res.status;
         throw err;
       }
+      
+      // Look for any dropped images in the offline store
+      if (json?.data?.lot?.lot_id && clientId) {
+        try {
+          const offlineImgData = await dbGet('offlineImages', clientId);
+          if (offlineImgData && Array.isArray(offlineImgData.image_refs)) {
+            await fetch(`/v1/handover/lots/${json.data.lot.lot_id}/images`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                image_refs: offlineImgData.image_refs,
+                collector_id: offlineImgData.collector_id,
+                gps: offlineImgData.gps,
+              }),
+            });
+            // Clean up the offline store
+            await dbDelete('offlineImages', clientId);
+          }
+        } catch (imgErr) {
+          // If image upload fails, don't fail the lot creation sync. The lot is safely on the server.
+          console.warn('[Sync] Image upload for synced lot failed:', imgErr);
+        }
+      }
+      
       return json;
     }
 
