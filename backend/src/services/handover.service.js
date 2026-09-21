@@ -279,9 +279,16 @@ export const uploadLotImages = async (lotId, image_refs, collector_id, gps = nul
   }
 
   const uploaded = await Promise.all(
-    image_refs.map((img, i) =>
-      uploadLotImage(img, { lotId, imageType: `COLLECTION-OFFLINE-${i + 1}` }).catch(() => null)
-    )
+    image_refs.map(async (img, i) => {
+      try {
+        const url = await uploadLotImage(img, { lotId, imageType: `COLLECTION-OFFLINE-${i + 1}` });
+        if (!url) throw new Error('Cloudinary returned null URL (check config or payload size)');
+        return url;
+      } catch (err) {
+        console.error(`[uploadLotImages] Failed to upload image ${i+1}:`, err.message);
+        throw new ApiError(500, `Image upload to Cloudinary failed: ${err.message}`);
+      }
+    })
   );
   const validUrls = uploaded.filter(Boolean);
 
