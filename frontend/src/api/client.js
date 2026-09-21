@@ -194,17 +194,17 @@ export const getRecyclerRateBoard = ({ category, location }) =>
  * queue because base64 images can be several MB each, which causes sync to
  * fail with 413 / payload-too-large errors. The lot is created with all
  * metadata intact; images can be re-uploaded when the collector is online.
- *
- * The caller MUST check result.queued to show the correct "Saved offline" UX.
  */
 export async function createLot(data) {
+  // Strip base64 images to prevent massive payloads and blocking uploads
+  const { image_refs: droppedImages, ...payloadWithoutImages } = data;
+  const hasImages = Array.isArray(droppedImages) && droppedImages.length > 0;
+
   if (!isOnline()) {
-    // Strip base64 images — too large for reliable sync queue storage
-    const { image_refs: droppedImages, ...payloadWithoutImages } = data;
     const clientId = generateClientId();
     
     // Store images separately so sync manager can upload them after the lot is created
-    if (Array.isArray(droppedImages) && droppedImages.length > 0) {
+    if (hasImages) {
       dbPut('offlineImages', {
         clientId,
         image_refs: droppedImages,
@@ -222,9 +222,27 @@ export async function createLot(data) {
       clientId,
       payload: payloadWithoutImages,
     });
-    return { queued: true, queueItem, imagesDropped: Array.isArray(data.image_refs) && data.image_refs.length > 0 };
+    return { queued: true, queueItem, imagesDropped: hasImages };
   }
-  return request('/handover/lots', { method: 'POST', body: JSON.stringify(data) });
+
+  // ONLINE: create lot instantly without images
+  const res = await request('/handover/lots', { method: 'POST', body: JSON.stringify(payloadWithoutImages) });
+  
+  // Fire and forget image upload in the background
+  if (hasImages && res?.data?.lot?.lot_id) {
+    request(`/handover/lots/${res.data.lot.lot_id}/images`, {
+      method: 'POST',
+      body: JSON.stringify({
+        image_refs: droppedImages,
+        collector_id: data.collector_id,
+        gps: (data.collection_lat != null && data.collection_lng != null)
+          ? { lat: data.collection_lat, lng: data.collection_lng }
+          : null,
+      })
+    }).catch(err => console.warn('[Background] Image upload failed:', err));
+  }
+
+  return res;
 }
 
 /**
