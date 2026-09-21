@@ -13,7 +13,7 @@
  */
 
 const DB_NAME = 'reloop_v1';
-const DB_VERSION = 3;  // bumped: added offlineImages store
+const DB_VERSION = 4;  // bumped: added appConfig store
 
 let _db = null;
 
@@ -60,6 +60,11 @@ function openDB() {
       // --- offline images ---
       if (!db.objectStoreNames.contains('offlineImages')) {
         db.createObjectStore('offlineImages', { keyPath: 'clientId' });
+      }
+
+      // --- app config (general settings, cached GPS, etc) ---
+      if (!db.objectStoreNames.contains('appConfig')) {
+        db.createObjectStore('appConfig', { keyPath: 'key' });
       }
     };
 

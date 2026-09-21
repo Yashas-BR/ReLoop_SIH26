@@ -153,9 +153,36 @@ export async function cacheMarketPulse(location, pulse) {
  */
 export async function getCachedMarketPulse(location) {
   try {
-    return await dbGet('priceCache', `pulse::${location}`);
-  } catch {
+    const key = `pulse::${location.toLowerCase()}`;
+    const row = await dbGet('priceCache', key);
+    return row ? row.data : null;
+  } catch (err) {
+    console.warn('[Offline Cache] Failed to read market pulse:', err);
     return null;
   }
 }
 
+// ── App Config / GPS ────────────────────────────────────────────────────────
+
+export async function cacheLastGps(lat, lng) {
+  try {
+    await dbPut('appConfig', {
+      key: 'last_known_gps',
+      lat,
+      lng,
+      timestamp: Date.now()
+    });
+  } catch (err) {
+    console.warn('[Offline Cache] Failed to cache GPS:', err);
+  }
+}
+
+export async function getCachedLastGps() {
+  try {
+    const row = await dbGet('appConfig', 'last_known_gps');
+    return row ? { lat: row.lat, lng: row.lng, timestamp: row.timestamp } : null;
+  } catch (err) {
+    console.warn('[Offline Cache] Failed to read cached GPS:', err);
+    return null;
+  }
+}
