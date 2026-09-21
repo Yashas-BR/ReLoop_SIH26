@@ -6,7 +6,7 @@ import {
   submitAiFeedback, updateAiFeedback,
 } from '../api/client';
 import { currentCollectorId, clearSession, getSession } from '../services/auth';
-import { classifyFile } from '../services/classification/analyze';
+import { classifyFile } from '../services/classification/mlClassifier.js';
 import { cacheLastGps, getCachedLastGps } from '../services/offline/cache.js';
 import { isOnline } from '../services/offline/offlineUtils.js';
 import { LoadingSpinner } from '../components/LoadingSpinner';
