@@ -163,7 +163,7 @@ export default function CollectorProfile() {
           </div>
           <div>
             <div style={{ fontWeight: '700', fontSize: '1.15rem' }}>{collector?.name || '—'}</div>
-            <div className="text-muted text-sm">{t('common.collector') || 'Collector'} · {memberSince}</div>
+            <div className="text-muted text-sm">{t('nav.collector') || 'Collector'} · {memberSince}</div>
           </div>
         </div>
 

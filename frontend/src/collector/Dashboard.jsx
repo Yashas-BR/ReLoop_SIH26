@@ -138,7 +138,7 @@ export default function CollectorDashboard() {
 
   const collectorId = currentCollectorId() ?? DEMO_COLLECTOR_ID;
   const session     = getSession();
-  const name        = session?.name || t('common.collector') || 'Collector';
+  const name        = session?.name || t('nav.collector') || 'Collector';
   const firstName   = name.split(' ')[0];
 
   useEffect(() => {
