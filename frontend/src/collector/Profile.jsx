@@ -3,6 +3,7 @@ import { getCollector, updateCollector } from '../api/client';
 import { currentCollectorId, getSession, updateSession } from '../services/auth';
 import { PageLoader, LoadingSpinner } from '../components/LoadingSpinner';
 import { useTranslation } from '../i18n/config.js';
+import MapPicker from '../components/MapPicker.jsx';
 
 const LANGUAGES = [
   { value: 'hi',  label: '🇮🇳 Hindi' },
@@ -274,21 +275,32 @@ export default function CollectorProfile() {
           </div>
           <div>
             <span className="detail-item__label" style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{t('profile.gpsCoords') || 'GPS Coordinates'}</span>
-            <p className="font-mono" style={{ margin: '2px 0 0', fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
+            <p className="font-mono" style={{ margin: '2px 0 0', fontSize: '0.82rem', color: 'var(--color-text-muted)', marginBottom: editing ? '12px' : '0' }}>
               {form?.latitude && form?.longitude
                 ? `${Number(form.latitude).toFixed(5)}, ${Number(form.longitude).toFixed(5)}`
                 : (t('profile.notSet') || 'Not set')}
             </p>
             {editing && (
-              <button 
-                className="btn btn-outline btn-sm" 
-                style={{ marginTop: '8px', width: '100%' }}
-                onClick={handleGetLocation}
-                disabled={gettingLoc}
-              >
-                {gettingLoc ? <LoadingSpinner size="sm" /> : '📍'} 
-                {gettingLoc ? (t('profile.gettingLocation') || 'Getting location...') : (t('profile.updateGPS') || 'Update to Current Location')}
-              </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <MapPicker 
+                  lat={form?.latitude} 
+                  lng={form?.longitude} 
+                  onChange={(lat, lng) => {
+                    handleField('latitude', lat);
+                    handleField('longitude', lng);
+                  }}
+                />
+                <button 
+                  className="btn btn-outline btn-sm" 
+                  style={{ width: '100%' }}
+                  onClick={handleGetLocation}
+                  disabled={gettingLoc}
+                  title="Use Device GPS"
+                >
+                  {gettingLoc ? <LoadingSpinner size="sm" /> : '📍'} 
+                  {gettingLoc ? (t('profile.gettingLocation') || 'Getting location...') : (t('profile.updateGPS') || 'Update to Current Location')}
+                </button>
+              </div>
             )}
           </div>
           <div>
