@@ -30,6 +30,7 @@ export default function CollectorProfile() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [gettingLoc, setGettingLoc] = useState(false);
+  const [showMap, setShowMap] = useState(false);
 
   useEffect(() => {
     if (!collectorId) { setLoading(false); return; }
@@ -86,6 +87,7 @@ export default function CollectorProfile() {
       setCollector(r.data);
       setForm(r.data);
       setEditing(false);
+      setShowMap(false);
       setSuccess(t('profile.updateSuccess') || 'Profile updated successfully!');
       
       // Update session and i18n language in real-time
@@ -130,7 +132,7 @@ export default function CollectorProfile() {
           </button>
         ) : (
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button className="btn btn-ghost" onClick={() => { setEditing(false); setForm(collector); setError(''); setSuccess(''); }} disabled={saving}>
+            <button className="btn btn-ghost" onClick={() => { setEditing(false); setShowMap(false); setForm(collector); setError(''); setSuccess(''); }} disabled={saving}>
               {t('profile.cancel') || 'Cancel'}
             </button>
             <button className="btn btn-accent" onClick={handleSave} disabled={saving} aria-busy={saving}>
@@ -280,7 +282,16 @@ export default function CollectorProfile() {
                 ? `${Number(form.latitude).toFixed(5)}, ${Number(form.longitude).toFixed(5)}`
                 : (t('profile.notSet') || 'Not set')}
             </p>
-            {editing && (
+            {editing && !showMap && (
+              <button
+                className="btn btn-outline btn-sm"
+                style={{ width: '100%' }}
+                onClick={() => setShowMap(true)}
+              >
+                ✏️ Change Coordinates
+              </button>
+            )}
+            {editing && showMap && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <MapPicker 
                   lat={form?.latitude} 
