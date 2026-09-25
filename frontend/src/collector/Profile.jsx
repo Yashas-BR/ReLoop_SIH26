@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getCollector, updateCollector } from '../api/client';
-import { currentCollectorId, getSession } from '../services/auth';
+import { currentCollectorId, getSession, updateSession } from '../services/auth';
 import { PageLoader, LoadingSpinner } from '../components/LoadingSpinner';
 import { useTranslation } from '../i18n/config.js';
 
@@ -18,7 +18,7 @@ const LANGUAGES = [
 const LOCATIONS = ['Bengaluru', 'Delhi', 'Mumbai', 'Hyderabad', 'Chennai', 'Pune', 'Kolkata', 'Ahmedabad', 'Jaipur'];
 
 export default function CollectorProfile() {
-  const { t, lang } = useTranslation();
+  const { t, lang, setLang } = useTranslation();
   const collectorId = currentCollectorId();
 
   const [collector, setCollector] = useState(null);
@@ -86,6 +86,17 @@ export default function CollectorProfile() {
       setForm(r.data);
       setEditing(false);
       setSuccess(t('profile.updateSuccess') || 'Profile updated successfully!');
+      
+      // Update session and i18n language in real-time
+      if (r.data.preferred_language && r.data.preferred_language !== lang) {
+        setLang(r.data.preferred_language);
+      }
+      if (r.data.name || r.data.preferred_language) {
+        updateSession({ 
+          name: r.data.name, 
+          preferred_language: r.data.preferred_language 
+        });
+      }
     } catch (err) {
       setError(err.message || t('profile.updateError') || 'Could not save profile.');
     } finally {
